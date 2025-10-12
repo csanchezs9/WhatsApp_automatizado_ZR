@@ -4,6 +4,12 @@ const { getCategories, getSubCategories, getProducts } = require('./ecommerceSer
 // Almacenamiento temporal de sesiones de usuario (en producción usa Redis o DB)
 const userSessions = {};
 
+// Usuarios que están hablando con un asesor
+const usersWithAdvisor = new Map(); // { userPhone: { startTime: Date, lastAdvisorMessage: Date } }
+
+const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573173745021';
+const ADVISOR_TIMEOUT = parseInt(process.env.ADVISOR_TIMEOUT_MINUTES || '5') * 60 * 1000; // Convertir a milisegundos
+
 /**
  * Normaliza texto quitando tildes y caracteres especiales
  */
@@ -16,10 +22,94 @@ const normalizeText = (text) => {
 };
 
 /**
+ * Verifica si un usuario está actualmente hablando con un asesor
+ */
+const isUserWithAdvisor = (userPhone) => {
+  if (!usersWithAdvisor.has(userPhone)) {
+    return false;
+  }
+
+  const advisorSession = usersWithAdvisor.get(userPhone);
+  const now = Date.now();
+  const timeSinceStart = now - advisorSession.startTime;
+
+  // Si ha pasado el tiempo de timeout desde el inicio, reactivar bot
+  if (timeSinceStart > ADVISOR_TIMEOUT) {
+    console.log(`⏰ Timeout del asesor para ${userPhone}. Reactivando bot...`);
+    usersWithAdvisor.delete(userPhone);
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Activa el modo asesor para un usuario
+ */
+const activateAdvisorMode = async (userPhone) => {
+  const now = Date.now();
+  usersWithAdvisor.set(userPhone, {
+    startTime: now,
+    lastAdvisorMessage: now
+  });
+
+  // Notificar al asesor
+  const advisorMessage = `🔔 *NUEVA SOLICITUD DE ATENCIÓN*\n\n` +
+    `📱 Cliente: +${userPhone}\n` +
+    `⏰ Hora: ${new Date().toLocaleString('es-CO')}\n\n` +
+    `El cliente está esperando hablar contigo.\n` +
+    `Por favor responde desde WhatsApp Business.\n\n` +
+    `⚠️ Si no respondes en ${process.env.ADVISOR_TIMEOUT_MINUTES || 5} minutos, el bot se reactivará automáticamente.`;
+
+  try {
+    await sendTextMessage(ADVISOR_PHONE, advisorMessage);
+    console.log(`✅ Notificación enviada al asesor para cliente ${userPhone}`);
+  } catch (error) {
+    console.error('❌ Error notificando al asesor:', error);
+  }
+
+  // Mensaje al cliente
+  const clientMessage = `✅ *Conectando con un asesor...*\n\n` +
+    `Un momento por favor, te estamos conectando con uno de nuestros asesores.\n\n` +
+    `⏱️ En breve recibirás respuesta personalizada.\n\n` +
+    `_Si deseas volver al menú automático, escribe *menú*_`;
+
+  await sendTextMessage(userPhone, clientMessage);
+  console.log(`👤 Usuario ${userPhone} ahora está en modo asesor`);
+};
+
+/**
+ * Desactiva el modo asesor para un usuario
+ */
+const deactivateAdvisorMode = (userPhone) => {
+  if (usersWithAdvisor.has(userPhone)) {
+    usersWithAdvisor.delete(userPhone);
+    console.log(`🤖 Bot reactivado para ${userPhone}`);
+    return true;
+  }
+  return false;
+};
+
+/**
  * Maneja la selección del menú según el mensaje del usuario
  */
 const handleMenuSelection = async (userPhone, message) => {
   const messageText = message.toLowerCase().trim();
+
+  // VERIFICAR SI EL USUARIO ESTÁ CON UN ASESOR
+  if (isUserWithAdvisor(userPhone)) {
+    // Si escribe "menú", desactivar modo asesor y volver al bot
+    if (messageText === 'menu' || messageText === 'menú' || messageText === 'inicio') {
+      deactivateAdvisorMode(userPhone);
+      await sendTextMessage(userPhone, '🤖 Bot reactivado. Volviendo al menú principal...');
+      await showMainMenu(userPhone);
+      return;
+    }
+    
+    // Si no escribe "menú", no hacer nada (dejar que el asesor responda)
+    console.log(`👤 Mensaje de ${userPhone} ignorado - está con asesor`);
+    return;
+  }
 
   // Inicializar sesión si no existe
   if (!userSessions[userPhone]) {
@@ -83,8 +173,9 @@ const showMainMenu = async (userPhone) => {
     `🚗 Somos tu tienda de confianza para autopartes de calidad.\n\n` +
     `*¿Qué deseas hacer?*\n\n` +
     `1️⃣ Consultar catálogo de productos\n` +
-    `2️⃣ Información de contacto\n` +
-    `3️⃣ Horarios de atención\n\n` +
+    `2️⃣ Hablar con un asesor\n` +
+    `3️⃣ Información de contacto\n` +
+    `4️⃣ Horarios de atención\n\n` +
     `💬 *Escribe el número* de la opción que deseas.`;
 
   await sendTextMessage(userPhone, mensaje);
@@ -97,14 +188,17 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
   // Aceptar número o palabra clave
   if (messageText === '1' || messageText.includes('catálogo') || messageText.includes('catalogo') || messageText.includes('producto')) {
     await showCategories(userPhone);
-  } else if (messageText === '2' || messageText.includes('contacto') || messageText.includes('telefono') || messageText.includes('teléfono')) {
+  } else if (messageText === '2' || messageText.includes('asesor') || messageText.includes('asesora') || messageText.includes('ayuda')) {
+    // Activar modo asesor
+    await activateAdvisorMode(userPhone);
+  } else if (messageText === '3' || messageText.includes('contacto') || messageText.includes('telefono') || messageText.includes('teléfono')) {
     const mensaje = `📞 *INFORMACIÓN DE CONTACTO*\n\n` +
       `WhatsApp: +57 317 374 5021\n` +
       `🌐 Web: zonarepuestera.com.co\n` +
       `📧 Email: info@zonarepuestera.com.co\n\n` +
       `Escribe *menú* para volver al inicio.`;
     await sendTextMessage(userPhone, mensaje);
-  } else if (messageText === '3' || messageText.includes('horario')) {
+  } else if (messageText === '4' || messageText.includes('horario')) {
     const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
       `Lunes a Viernes: 8:00 AM - 6:00 PM\n` +
       `Sábados: 8:00 AM - 2:00 PM\n` +
@@ -114,7 +208,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
   } else {
     await sendTextMessage(
       userPhone,
-      '❌ Opción no válida.\n\nPor favor escribe el *número* de la opción que deseas (1, 2 o 3).\n\nO escribe *menú* para ver las opciones.'
+      '❌ Opción no válida.\n\nPor favor escribe el *número* de la opción que deseas (1, 2, 3 o 4).\n\nO escribe *menú* para ver las opciones.'
     );
   }
 };
@@ -322,5 +416,7 @@ const showProducts = async (userPhone, subcategoryId) => {
 
 module.exports = {
   handleMenuSelection,
-  showMainMenu
+  showMainMenu,
+  isUserWithAdvisor,
+  deactivateAdvisorMode
 };
