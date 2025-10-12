@@ -9,6 +9,40 @@ const usersWithAdvisor = new Map(); // { userPhone: { startTime: Date, lastAdvis
 
 const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573173745021';
 const ADVISOR_TIMEOUT = parseInt(process.env.ADVISOR_TIMEOUT_MINUTES || '5') * 60 * 1000; // Convertir a milisegundos
+const INACTIVITY_TIMEOUT = parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '10') * 60 * 1000; // Timeout de inactividad
+
+/**
+ * Verifica si la sesión del usuario ha expirado por inactividad
+ */
+const isSessionExpired = (userPhone) => {
+  if (!userSessions[userPhone]) {
+    return true;
+  }
+
+  const session = userSessions[userPhone];
+  if (!session.lastActivity) {
+    return false;
+  }
+
+  const now = Date.now();
+  const timeSinceLastActivity = now - session.lastActivity;
+
+  if (timeSinceLastActivity > INACTIVITY_TIMEOUT) {
+    console.log(`⏰ Sesión expirada por inactividad para ${userPhone} (${Math.round(timeSinceLastActivity / 60000)} minutos)`);
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Actualiza el timestamp de última actividad del usuario
+ */
+const updateLastActivity = (userPhone) => {
+  if (userSessions[userPhone]) {
+    userSessions[userPhone].lastActivity = Date.now();
+  }
+};
 
 /**
  * Normaliza texto quitando tildes y caracteres especiales
@@ -96,6 +130,19 @@ const deactivateAdvisorMode = (userPhone) => {
 const handleMenuSelection = async (userPhone, message) => {
   const messageText = message.toLowerCase().trim();
 
+  // VERIFICAR SI LA SESIÓN EXPIRÓ POR INACTIVIDAD
+  if (isSessionExpired(userPhone)) {
+    console.log(`🔄 Sesión expirada para ${userPhone}. Mostrando menú principal...`);
+    // Limpiar modo asesor si estaba activo
+    deactivateAdvisorMode(userPhone);
+    // Mostrar menú de bienvenida
+    await showMainMenu(userPhone);
+    return;
+  }
+
+  // Actualizar timestamp de última actividad
+  updateLastActivity(userPhone);
+
   // VERIFICAR SI EL USUARIO ESTÁ CON UN ASESOR
   if (isUserWithAdvisor(userPhone)) {
     // Si escribe "menú", desactivar modo asesor y volver al bot
@@ -166,7 +213,8 @@ const showMainMenu = async (userPhone) => {
     selectedCategory: null,
     selectedSubcategory: null,
     categoriesList: [],
-    subcategoriesList: []
+    subcategoriesList: [],
+    lastActivity: Date.now()
   };
 
   const mensaje = `👋 *¡Bienvenido a Zona Repuestera!*\n\n` +
@@ -174,8 +222,7 @@ const showMainMenu = async (userPhone) => {
     `*¿Qué deseas hacer?*\n\n` +
     `1️⃣ Consultar catálogo de productos\n` +
     `2️⃣ Hablar con un asesor\n` +
-    `3️⃣ Información de contacto\n` +
-    `4️⃣ Horarios de atención\n\n` +
+    `3️⃣ Horarios de atención\n\n` +
     `💬 *Escribe el número* de la opción que deseas.`;
 
   await sendTextMessage(userPhone, mensaje);
@@ -191,14 +238,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
   } else if (messageText === '2' || messageText.includes('asesor') || messageText.includes('asesora') || messageText.includes('ayuda')) {
     // Activar modo asesor
     await activateAdvisorMode(userPhone);
-  } else if (messageText === '3' || messageText.includes('contacto') || messageText.includes('telefono') || messageText.includes('teléfono')) {
-    const mensaje = `📞 *INFORMACIÓN DE CONTACTO*\n\n` +
-      `WhatsApp: +57 317 374 5021\n` +
-      `🌐 Web: zonarepuestera.com.co\n` +
-      `📧 Email: info@zonarepuestera.com.co\n\n` +
-      `Escribe *menú* para volver al inicio.`;
-    await sendTextMessage(userPhone, mensaje);
-  } else if (messageText === '4' || messageText.includes('horario')) {
+  } else if (messageText === '3' || messageText.includes('horario')) {
     const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
       `Lunes a Viernes: 8:00 AM - 6:00 PM\n` +
       `Sábados: 8:00 AM - 2:00 PM\n` +
@@ -208,7 +248,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
   } else {
     await sendTextMessage(
       userPhone,
-      '❌ Opción no válida.\n\nPor favor escribe el *número* de la opción que deseas (1, 2, 3 o 4).\n\nO escribe *menú* para ver las opciones.'
+      '❌ Opción no válida.\n\nPor favor escribe el *número* de la opción que deseas (1, 2 o 3).\n\nO escribe *menú* para ver las opciones.'
     );
   }
 };
@@ -341,7 +381,18 @@ const handleSubcategorySelection = async (userPhone, message) => {
   const selectedSubcategory = subcategories[numero - 1];
   userSessions[userPhone].selectedSubcategory = selectedSubcategory.id;
   
-  await showProducts(userPhone, selectedSubcategory.id);
+  // Primero verificar si esta subcategoría tiene más subcategorías
+  await sendTextMessage(userPhone, '⏳ Verificando opciones disponibles...');
+  
+  const subSubcategories = await getSubCategories(selectedSubcategory.id);
+  
+  if (subSubcategories && subSubcategories.length > 0) {
+    // Si tiene sub-subcategorías, mostrarlas
+    await showSubCategories(userPhone, selectedSubcategory.id);
+  } else {
+    // Si no tiene más subcategorías, mostrar productos
+    await showProducts(userPhone, selectedSubcategory.id);
+  }
 };
 
 /**
