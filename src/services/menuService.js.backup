@@ -1,0 +1,378 @@
+const { sendTextMessage, sendInteractiveButtons, sendInteractiveList } = require('./whatsappService');
+const { getCategorie      });
+    }
+
+    await sendInteractiveList(
+      userPhone,
+      'Catalogo de Autopartes\n\nSelecciona una categoria:',
+      'Ver Catalogo',
+      sections
+    );
+  } catch (error) {
+    console.error('Error mostrando categorías:', error);tegories, getProducts } = require('./ecommerceService');
+
+// Almacenamiento temporal de sesiones de usuario (en producción usa Redis o DB)
+const userSessions = {};
+
+/**
+ * Maneja la selección del menú según el mensaje del usuario
+ */
+const handleMenuSelection = async (userPhone, message) => {
+  const messageText = message.toLowerCase().trim();
+
+  // Inicializar sesión si no existe
+  if (!userSessions[userPhone]) {
+    userSessions[userPhone] = {
+      state: 'MAIN_MENU',
+      cart: [],
+      selectedCategory: null,
+      selectedSubcategory: null
+    };
+  }
+
+  const session = userSessions[userPhone];
+
+  try {
+    // Comandos globales
+    if (messageText === 'hola' || messageText === 'menu' || messageText === 'inicio') {
+      await showMainMenu(userPhone);
+      return;
+    }
+
+    // Navegación según el estado de la sesión
+    switch (session.state) {
+      case 'MAIN_MENU':
+        await handleMainMenuSelection(userPhone, messageText);
+        break;
+      
+      case 'CATEGORY_LIST':
+        await handleCategorySelection(userPhone, messageText);
+        break;
+      
+      case 'SUBCATEGORY_LIST':
+        await handleSubcategorySelection(userPhone, messageText);
+        break;
+      
+      case 'PRODUCT_LIST':
+        await handleProductSelection(userPhone, messageText);
+        break;
+      
+      case 'CART':
+        await handleCartActions(userPhone, messageText);
+        break;
+      
+      default:
+        await showMainMenu(userPhone);
+    }
+  } catch (error) {
+    console.error('Error en handleMenuSelection:', error);
+    await sendTextMessage(userPhone, '❌ Ocurrió un error. Escribe "menu" para volver al inicio.');
+  }
+};
+
+/**
+ * Muestra el menú principal
+ */
+const showMainMenu = async (userPhone) => {
+  userSessions[userPhone].state = 'MAIN_MENU';
+  
+  const welcomeMessage = `🛒 *¡Bienvenido a AutoPartes Store!*
+
+Soy tu asistente virtual para ayudarte a encontrar las autopartes que necesitas.
+
+Escribe *"catalogo"* para ver nuestros productos disponibles.`;
+
+  await sendTextMessage(userPhone, welcomeMessage);
+  
+  // Mostrar directamente el catálogo
+  setTimeout(() => {
+    showCategories(userPhone);
+  }, 1000);
+};
+
+/**
+ * Maneja la selección del menú principal
+ */
+const handleMainMenuSelection = async (userPhone, selection) => {
+  if (selection.includes('catalogo') || selection.includes('categoria') || selection === '1') {
+    await showCategories(userPhone);
+  } else {
+    await sendTextMessage(userPhone, 'Escribe *"catalogo"* para ver nuestros productos o *"menu"* para volver al inicio.');
+  }
+};
+
+/**
+ * Muestra las categorías disponibles
+ */
+const showCategories = async (userPhone) => {
+  userSessions[userPhone].state = 'CATEGORY_LIST';
+  
+  await sendTextMessage(userPhone, '⏳ Cargando catálogo...');
+  
+  try {
+    const categories = await getCategories();
+    
+    if (!categories || categories.length === 0) {
+      await sendTextMessage(userPhone, '❌ No hay categorías disponibles en este momento.');
+      await showMainMenu(userPhone);
+      return;
+    }
+
+    // Dividir categorías en múltiples secciones si hay más de 10
+    const sections = [];
+    const itemsPerSection = 10;
+    
+    for (let i = 0; i < categories.length; i += itemsPerSection) {
+      const chunk = categories.slice(i, i + itemsPerSection);
+      
+      sections.push({
+        title: 'Catalogo',
+        rows: chunk.map(cat => ({
+          id: `cat_${cat.id}`,
+          title: cat.name.substring(0, 24), // WhatsApp limita a 24 caracteres
+          description: `${cat.subcategory_count || 0} subcategorias`
+        }))
+      });
+    }
+
+    await sendInteractiveList(
+      userPhone,
+      '� *Catálogo de Autopartes*\n\nSelecciona una categoría para explorar nuestros productos:',
+      '📋 Ver Catálogo',
+      sections
+    );
+  } catch (error) {
+    console.error('Error mostrando categorías:', error);
+    await sendTextMessage(userPhone, '❌ Error al cargar el catálogo. Intenta de nuevo más tarde.');
+    await showMainMenu(userPhone);
+  }
+};
+
+/**
+ * Maneja la selección de categoría
+ */
+const handleCategorySelection = async (userPhone, selection) => {
+  if (selection.startsWith('cat_')) {
+    const categoryId = selection.replace('cat_', '');
+    userSessions[userPhone].selectedCategory = categoryId;
+    
+    // Primero intentamos obtener subcategorías
+    await sendTextMessage(userPhone, '⏳ Cargando...');
+    
+    try {
+      const subcategories = await getSubCategories(categoryId);
+      
+      if (subcategories && subcategories.length > 0) {
+        // Si hay subcategorías, las mostramos
+        await showSubCategories(userPhone, categoryId, subcategories);
+      } else {
+        // Si no hay subcategorías, mostramos productos directamente
+        await showProducts(userPhone, categoryId);
+      }
+    } catch (error) {
+      console.error('Error en handleCategorySelection:', error);
+      await sendTextMessage(userPhone, '❌ Error al cargar. Intenta de nuevo.');
+    }
+  } else {
+    await sendTextMessage(userPhone, 'Selección no válida. Escribe "menu" para volver al inicio.');
+  }
+};
+
+/**
+ * Muestra las subcategorías de una categoría
+ */
+const showSubCategories = async (userPhone, categoryId, subcategories) => {
+  userSessions[userPhone].state = 'SUBCATEGORY_LIST';
+  
+  try {
+    // Crear lista de subcategorías
+    const sections = [{
+      title: 'Subcategorías',
+      rows: subcategories.slice(0, 10).map(subcat => ({
+        id: `subcat_${subcat.id}`,
+        title: subcat.name.substring(0, 24),
+        description: `${subcat.product_count || 0} productos`
+      }))
+    }];
+
+    await sendInteractiveList(
+      userPhone,
+      '📂 *Selecciona una subcategoría:*',
+      '📋 Ver Subcategorías',
+      sections
+    );
+  } catch (error) {
+    console.error('Error mostrando subcategorías:', error);
+    await sendTextMessage(userPhone, '❌ Error al cargar subcategorías.');
+  }
+};
+
+/**
+ * Maneja la selección de subcategoría
+ */
+const handleSubcategorySelection = async (userPhone, selection) => {
+  if (selection.startsWith('subcat_')) {
+    const subcategoryId = selection.replace('subcat_', '');
+    userSessions[userPhone].selectedSubcategory = subcategoryId;
+    await showProducts(userPhone, null, subcategoryId);
+  } else {
+    await sendTextMessage(userPhone, 'Selección no válida. Escribe "menu" para volver al inicio.');
+  }
+};
+
+/**
+ * Muestra los productos de una categoría o subcategoría
+ */
+const showProducts = async (userPhone, categoryId = null, subcategoryId = null) => {
+  userSessions[userPhone].state = 'PRODUCT_LIST';
+  
+  await sendTextMessage(userPhone, '⏳ Cargando productos...');
+  
+  try {
+    const products = await getProducts(categoryId, subcategoryId);
+    
+    if (!products || products.length === 0) {
+      await sendTextMessage(userPhone, '❌ No hay productos disponibles en esta categoría.');
+      await showCategories(userPhone);
+      return;
+    }
+
+    // Crear lista de productos con precios formateados
+    const sections = [{
+      title: 'Productos',
+      rows: products.slice(0, 10).map(prod => {
+        // Formatear precio: dividir por 100 si viene en centavos
+        let priceText = 'Consultar';
+        if (prod.price || prod.final_price || prod.base_price) {
+          const price = prod.final_price || prod.price || prod.base_price;
+          const formattedPrice = new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency: 'COP',
+            minimumFractionDigits: 0
+          }).format(price);
+          priceText = formattedPrice;
+        }
+        
+        return {
+          id: `prod_${prod.id}`,
+          title: (prod.code || prod.name).substring(0, 24),
+          description: `${priceText} - ${prod.stock !== undefined ? `Stock: ${prod.stock}` : 'Disponible'}`
+        };
+      })
+    }];
+
+    await sendInteractiveList(
+      userPhone,
+      '🔧 *Productos Disponibles*\n\nSelecciona un producto para ver más detalles:',
+      '🛍️ Ver Productos',
+      sections
+    );
+  } catch (error) {
+    console.error('Error mostrando productos:', error);
+    await sendTextMessage(userPhone, '❌ Error al cargar productos. Intenta de nuevo más tarde.');
+    await showCategories(userPhone);
+  }
+};
+
+/**
+ * Muestra el carrito de compras
+ */
+const showCart = async (userPhone) => {
+  const cart = userSessions[userPhone].cart;
+  
+  if (!cart || cart.length === 0) {
+    await sendTextMessage(userPhone, '🛒 Tu carrito está vacío.\n\nEscribe "menu" para ver nuestros productos.');
+    return;
+  }
+
+  let cartMessage = '🛒 *Tu Carrito de Compras*\n\n';
+  let total = 0;
+
+  cart.forEach((item, index) => {
+    const subtotal = item.price * item.quantity;
+    total += subtotal;
+    cartMessage += `${index + 1}. ${item.name}\n`;
+    cartMessage += `   Cantidad: ${item.quantity} x $${item.price} = $${subtotal}\n\n`;
+  });
+
+  cartMessage += `💰 *Total: $${total.toFixed(2)}*`;
+
+  await sendTextMessage(userPhone, cartMessage);
+  
+  const buttons = [
+    { id: 'finalizar_compra', title: '✅ Finalizar Compra' },
+    { id: 'vaciar_carrito', title: '🗑️ Vaciar Carrito' },
+    { id: 'menu', title: '🔙 Volver al Menú' }
+  ];
+
+  await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+};
+
+/**
+ * Muestra información de ayuda
+ */
+const showHelp = async (userPhone) => {
+  const helpMessage = `❓ *Ayuda - AutoPartes Store*
+
+*Comandos disponibles:*
+• "menu" o "inicio" - Volver al menú principal
+• "categorias" - Ver categorías de productos
+• "carrito" - Ver tu carrito de compras
+
+*¿Cómo comprar?*
+1. Selecciona una categoría
+2. Elige un producto
+3. Agrega al carrito
+4. Finaliza tu compra
+
+*Contacto:*
+📞 Escribe "ayuda" en cualquier momento
+
+¿Necesitas algo más?`;
+
+  await sendTextMessage(userPhone, helpMessage);
+  
+  setTimeout(() => {
+    showMainMenu(userPhone);
+  }, 2000);
+};
+
+/**
+ * Maneja las acciones del carrito
+ */
+const handleCartActions = async (userPhone, action) => {
+  switch (action) {
+    case 'finalizar_compra':
+      await sendTextMessage(userPhone, '✅ Procesando tu pedido...\n\nPronto recibirás la confirmación y el enlace de pago.');
+      // Aquí integrarías con el sistema de pedidos del e-commerce
+      userSessions[userPhone].cart = [];
+      setTimeout(() => showMainMenu(userPhone), 2000);
+      break;
+    
+    case 'vaciar_carrito':
+      userSessions[userPhone].cart = [];
+      await sendTextMessage(userPhone, '🗑️ Carrito vaciado correctamente.');
+      setTimeout(() => showMainMenu(userPhone), 1500);
+      break;
+    
+    default:
+      await showMainMenu(userPhone);
+  }
+};
+
+/**
+ * Maneja la selección de producto
+ */
+const handleProductSelection = async (userPhone, selection) => {
+  if (selection.startsWith('prod_')) {
+    const productId = selection.replace('prod_', '');
+    await sendTextMessage(userPhone, '🔧 Función de agregar al carrito en desarrollo...\n\nEscribe "menu" para volver al inicio.');
+  } else {
+    await sendTextMessage(userPhone, 'Selección no válida. Escribe "menu" para volver al inicio.');
+  }
+};
+
+module.exports = {
+  handleMenuSelection,
+  showMainMenu
+};
