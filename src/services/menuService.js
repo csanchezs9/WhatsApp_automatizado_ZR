@@ -380,6 +380,7 @@ const handleSubcategorySelection = async (userPhone, message) => {
   // Obtener la subcategoría seleccionada (índice = número - 1)
   const selectedSubcategory = subcategories[numero - 1];
   userSessions[userPhone].selectedSubcategory = selectedSubcategory.id;
+  userSessions[userPhone].selectedSubcategoryData = selectedSubcategory; // Guardar datos completos
   
   // Primero verificar si esta subcategoría tiene más subcategorías
   await sendTextMessage(userPhone, '⏳ Verificando opciones disponibles...');
@@ -448,8 +449,24 @@ const showProducts = async (userPhone, subcategoryId) => {
     
     if (products.length > maxProducts) {
       mensaje += `_Mostrando ${maxProducts} de ${products.length} productos_\n\n`;
-      mensaje += `🌐 *Ver todos los productos:*\n`;
-      mensaje += `https://zonarepuestera.com.co\n\n`;
+    }
+    
+    // Obtener datos de la subcategoría para generar el link correcto
+    const subcategoryData = userSessions[userPhone].selectedSubcategoryData;
+    const categoryId = userSessions[userPhone].selectedCategory;
+    
+    if (categoryId && subcategoryId) {
+      // Link directo a los productos de esta subcategoría
+      mensaje += `🌐 *Ver más información en la web:*\n`;
+      mensaje += `https://zonarepuestera.com.co/products/?category=${categoryId}&subcategory=${subcategoryId}\n\n`;
+    } else if (categoryId) {
+      // Fallback: mostrar subcategorías de la categoría
+      mensaje += `🌐 *Ver más en la tienda:*\n`;
+      mensaje += `https://zonarepuestera.com.co/sub-categories/?category=${categoryId}\n\n`;
+    } else {
+      // Fallback general: link a productos
+      mensaje += `🌐 *Ver más en la tienda:*\n`;
+      mensaje += `https://zonarepuestera.com.co/products/\n\n`;
     }
     
     mensaje += `Escribe *menú* para volver al inicio o *catálogo* para seguir navegando.`;
