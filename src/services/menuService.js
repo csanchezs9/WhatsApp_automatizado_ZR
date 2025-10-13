@@ -88,6 +88,37 @@ const normalizeText = (text) => {
 };
 
 /**
+ * Verifica si estamos dentro del horario de atención
+ * Lunes a viernes: 7:00 AM - 5:00 PM
+ * Sábados: 8:00 AM - 1:00 PM
+ * Domingos: Cerrado
+ */
+const isWithinBusinessHours = () => {
+  const now = new Date();
+  const day = now.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
+  const hour = now.getHours();
+  const minutes = now.getMinutes();
+  const currentTime = hour + minutes / 60;
+
+  // Domingo = cerrado
+  if (day === 0) {
+    return false;
+  }
+
+  // Lunes a viernes: 7:00 AM - 5:00 PM
+  if (day >= 1 && day <= 5) {
+    return currentTime >= 7 && currentTime < 17;
+  }
+
+  // Sábado: 8:00 AM - 1:00 PM
+  if (day === 6) {
+    return currentTime >= 8 && currentTime < 13;
+  }
+
+  return false;
+};
+
+/**
  * Verifica si un usuario está actualmente hablando con un asesor
  * Si han pasado 24 horas, finaliza automáticamente la conversación
  */
@@ -114,6 +145,25 @@ const isUserWithAdvisor = (userPhone) => {
  * Activa el modo asesor para un usuario
  */
 const activateAdvisorMode = async (userPhone, userQuery = '') => {
+  // Verificar si estamos dentro del horario de atención
+  if (!isWithinBusinessHours()) {
+    const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
+      `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
+      `📅 *Nuestros horarios son:*\n` +
+      `• Lunes a viernes: 7:00 AM - 5:00 PM\n` +
+      `• Sábados: 8:00 AM - 1:00 PM\n` +
+      `• Domingos: Cerrado\n\n` +
+      `💡 Puedes contactarnos en estos horarios o explorar nuestro catálogo y opciones del menú automático.`;
+
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+
+    await sendInteractiveButtons(userPhone, outOfHoursMessage, buttons);
+    console.log(`⏰ Usuario ${userPhone} intentó contactar asesor fuera de horario`);
+    return;
+  }
+
   const now = Date.now();
   usersWithAdvisor.set(userPhone, {
     startTime: now,
