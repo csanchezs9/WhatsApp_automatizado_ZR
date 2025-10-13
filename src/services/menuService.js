@@ -721,10 +721,14 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     
     await sendInteractiveButtons(userPhone, mensaje, buttons);
   } else {
-    await sendTextMessage(
-      userPhone,
-      '❌ Opción no válida.\n\nPor favor escribe el *número* de la opción que deseas (1, 2, 3, 4, 5 o 6).\n\nO escribe *menú* para ver las opciones.'
-    );
+    const errorMsg = '❌ *Opción no válida.*\n\n' +
+      'Por favor escribe el *número* de la opción que deseas (1, 2, 3, 4, 5 o 6).';
+    
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Ver menú' }
+    ];
+    
+    await sendInteractiveButtons(userPhone, errorMsg, buttons);
   }
 };
 
