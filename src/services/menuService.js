@@ -397,6 +397,10 @@ const handleMenuSelection = async (userPhone, message) => {
       // Simular selección de opción 5
       await handleMainMenuSelection(userPhone, '5');
       return;
+    } else if (menuOption === 'puntos') {
+      // Simular selección de opción 6
+      await handleMainMenuSelection(userPhone, '6');
+      return;
     }
   }
 
@@ -562,6 +566,11 @@ const showMainMenu = async (userPhone) => {
           id: 'menu_envios',
           title: '📮 Envíos y Pagos',
           description: 'Tiempos y métodos de pago'
+        },
+        {
+          id: 'menu_puntos',
+          title: '📍 Puntos de Entrega',
+          description: 'Recogida local y dirección'
         }
       ]
     }
@@ -620,10 +629,22 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       `📦 Empacamos con cuidado para garantizar que tus repuestos lleguen en perfecto estado.\n\n` +
       `Escribe *menú* para volver al inicio.`;
     await sendTextMessage(userPhone, mensaje);
+  } else if (messageText === '6' || messageText.includes('punto') || messageText.includes('entrega') || messageText.includes('recogida') || messageText.includes('dirección') || messageText.includes('direccion')) {
+    const mensaje = `📍 *PUNTOS DE ENTREGA O RECOGIDA LOCAL*\n\n` +
+      `📦 Puedes recoger tu pedido en nuestra sede o coordinar contra entrega (según zona)\n\n` +
+      `📍 *Dirección:* CR 50A # 46 – 48, Piso 3. Itagüí (Antioquia)\n\n` +
+      `📞 *Teléfono:* 316 4 83 61 66\n\n` +
+      `🕓 *Horario:*\n` +
+      `Lunes a viernes 8:00 a.m. – 5:00 p.m.\n` +
+      `Sábados 8:00 a.m. – 12:00 p.m.\n\n` +
+      `📌 Ver en Google Maps:\n` +
+      `https://www.google.com/maps/search/?api=1&query=CR+50A+%23+46-48+Itagüí+Antioquia\n\n` +
+      `Escribe *menú* para volver al inicio.`;
+    await sendTextMessage(userPhone, mensaje);
   } else {
     await sendTextMessage(
       userPhone,
-      '❌ Opción no válida.\n\nPor favor escribe el *número* de la opción que deseas (1, 2, 3, 4 o 5).\n\nO escribe *menú* para ver las opciones.'
+      '❌ Opción no válida.\n\nPor favor escribe el *número* de la opción que deseas (1, 2, 3, 4, 5 o 6).\n\nO escribe *menú* para ver las opciones.'
     );
   }
 };
