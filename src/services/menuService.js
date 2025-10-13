@@ -1,5 +1,7 @@
 const { sendTextMessage, sendInteractiveButtons, sendInteractiveList } = require('./whatsappService');
 const { getCategories, getSubCategories, getProducts } = require('./ecommerceService');
+const fs = require('fs');
+const path = require('path');
 
 // Almacenamiento temporal de sesiones de usuario (en producción usa Redis o DB)
 const userSessions = {};
@@ -14,6 +16,51 @@ const INACTIVITY_TIMEOUT = parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '7
 // Configuración de limpieza de sesiones antiguas
 const MAX_SESSION_AGE = 1 * 24 * 60 * 60 * 1000; // 1 día (24 horas)
 const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // Limpiar cada 24 horas
+
+// Ruta al archivo de promociones
+const PROMO_FILE_PATH = path.join(__dirname, '../data/promoMessage.json');
+
+/**
+ * Lee el mensaje de promociones desde el archivo JSON
+ */
+const getPromoMessage = () => {
+  try {
+    if (fs.existsSync(PROMO_FILE_PATH)) {
+      const data = fs.readFileSync(PROMO_FILE_PATH, 'utf8');
+      const promoData = JSON.parse(data);
+      return promoData.message;
+    }
+  } catch (error) {
+    console.error('Error leyendo mensaje de promociones:', error);
+  }
+  // Mensaje por defecto si hay error
+  return '🔥 *PROMOCIONES Y DESCUENTOS*\n\nActualmente no hay promociones activas.\n\nMantente atento a nuestras redes sociales.';
+};
+
+/**
+ * Actualiza el mensaje de promociones (solo el asesor puede hacerlo)
+ */
+const updatePromoMessage = (newMessage, updatedBy = 'Asesor') => {
+  try {
+    const promoData = {
+      message: newMessage,
+      lastUpdated: new Date().toISOString(),
+      updatedBy: updatedBy
+    };
+    
+    // Crear directorio si no existe
+    const dir = path.dirname(PROMO_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    fs.writeFileSync(PROMO_FILE_PATH, JSON.stringify(promoData, null, 2), 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Error actualizando mensaje de promociones:', error);
+    return false;
+  }
+};
 
 /**
  * Limpia sesiones antiguas de la memoria para prevenir fuga de memoria
@@ -430,6 +477,29 @@ const handleMenuSelection = async (userPhone, message) => {
     return;
   }
 
+  // COMANDO ESPECIAL: /actualizar_promo (solo asesor)
+  if (messageText.startsWith('/actualizar_promo')) {
+    // Verificar que sea el asesor
+    if (userPhone !== ADVISOR_PHONE) {
+      await sendTextMessage(userPhone, '❌ Este comando solo está disponible para el administrador.');
+      return;
+    }
+
+    // Cambiar estado para esperar el nuevo mensaje de promoción
+    userSessions[userPhone].state = 'UPDATING_PROMO';
+    await sendTextMessage(
+      userPhone,
+      `📝 *ACTUALIZAR MENSAJE DE PROMOCIONES*\n\n` +
+      `Por favor, escribe el *nuevo mensaje* que aparecerá en la opción "Promociones y Descuentos".\n\n` +
+      `💡 Puedes usar formato:\n` +
+      `• *Negritas* con asteriscos\n` +
+      `• _Cursivas_ con guiones bajos\n` +
+      `• Emojis 🔥😎\n\n` +
+      `Escribe tu mensaje ahora:`
+    );
+    return;
+  }
+
   // BOTONES DEL MENÚ PRINCIPAL (respuestas interactivas)
   // Manejar botón "Volver al menú"
   if (messageText === 'volver_menu') {
@@ -463,6 +533,10 @@ const handleMenuSelection = async (userPhone, message) => {
     } else if (menuOption === 'puntos') {
       // Simular selección de opción 6
       await handleMainMenuSelection(userPhone, '6');
+      return;
+    } else if (menuOption === 'promociones') {
+      // Simular selección de opción 7
+      await handleMainMenuSelection(userPhone, '7');
       return;
     }
   }
@@ -561,6 +635,25 @@ const handleMenuSelection = async (userPhone, message) => {
         await activateAdvisorMode(userPhone, message);
         break;
       
+      case 'UPDATING_PROMO':
+        // El asesor está actualizando el mensaje de promociones
+        const success = updatePromoMessage(message, userPhone);
+        if (success) {
+          await sendTextMessage(
+            userPhone,
+            `✅ *Mensaje de promociones actualizado correctamente*\n\n` +
+            `El nuevo mensaje ya está disponible para todos los usuarios.\n\n` +
+            `Vista previa:\n${message}`
+          );
+        } else {
+          await sendTextMessage(
+            userPhone,
+            `❌ Error al actualizar el mensaje.\n\nIntenta de nuevo con /actualizar_promo`
+          );
+        }
+        await showMainMenu(userPhone);
+        break;
+      
       case 'WITH_ADVISOR':
         // El usuario ya está con asesor, este caso ya se maneja arriba
         // No debería llegar aquí porque isUserWithAdvisor() ya lo captura
@@ -634,6 +727,11 @@ const showMainMenu = async (userPhone) => {
           id: 'menu_puntos',
           title: '📍 Puntos de Entrega',
           description: 'Recogida local y dirección'
+        },
+        {
+          id: 'menu_promociones',
+          title: '🔥 Promociones',
+          description: 'Descuentos y ofertas del mes'
         }
       ]
     }
@@ -720,9 +818,17 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     ];
     
     await sendInteractiveButtons(userPhone, mensaje, buttons);
+  } else if (messageText === '7' || messageText.includes('promo') || messageText.includes('descuento') || messageText.includes('oferta')) {
+    const mensaje = getPromoMessage();
+    
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
   } else {
     const errorMsg = '❌ *Opción no válida.*\n\n' +
-      'Por favor escribe el *número* de la opción que deseas (1, 2, 3, 4, 5 o 6).';
+      'Por favor escribe el *número* de la opción que deseas (1, 2, 3, 4, 5, 6 o 7).';
     
     const buttons = [
       { id: 'volver_menu', title: '🏠 Ver menú' }
