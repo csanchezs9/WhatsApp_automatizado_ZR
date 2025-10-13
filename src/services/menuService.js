@@ -12,7 +12,7 @@ const ADVISOR_CONVERSATION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 horas en miliseg
 const INACTIVITY_TIMEOUT = parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '7') * 60 * 1000; // 7 minutos de inactividad
 
 // Configuración de limpieza de sesiones antiguas
-const MAX_SESSION_AGE = 7 * 24 * 60 * 60 * 1000; // 7 días
+const MAX_SESSION_AGE = 1 * 24 * 60 * 60 * 1000; // 1 día (24 horas)
 const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // Limpiar cada 24 horas
 
 /**
@@ -23,7 +23,7 @@ const cleanupOldSessions = () => {
   let cleanedCount = 0;
   
   for (const [userPhone, session] of Object.entries(userSessions)) {
-    // Eliminar sesiones sin actividad reciente (más de 7 días)
+    // Eliminar sesiones sin actividad reciente (más de 1 día / 24 horas)
     if (session.lastActivity && (now - session.lastActivity) > MAX_SESSION_AGE) {
       delete userSessions[userPhone];
       cleanedCount++;
