@@ -349,7 +349,7 @@ const handleMenuSelection = async (userPhone, message) => {
       `⏳ *En conversación con asesor*\n\n` +
       `Tu consulta fue enviada. El asesor te responderá pronto.\n\n` +
       `💬 Puedes seguir escribiendo y el asesor verá tus mensajes.\n\n` +
-      `_Para finalizar y volver al menú automático, escribe *menú*_`
+      `_No finalices la sesión, pero si deseas volver al menú automático, escribe *menú*_`
     );
     
     console.log(`👤 Mensaje de ${userPhone} recibido - está en conversación con asesor`);
