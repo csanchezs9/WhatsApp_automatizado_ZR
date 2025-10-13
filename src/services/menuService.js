@@ -473,7 +473,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       userPhone,
       `📝 *Cuéntanos tu consulta*\n\n` +
       `Por favor, escribe en detalle qué información necesitas o en qué podemos ayudarte.\n\n` +
-      `Un asesor recibirá tu mensaje y se contactará contigo en los próximos *10 minutos*.\n\n` +
+      `Un asesor recibirá tu mensaje y se contactará contigo *en breve*.\n\n` +
       `💬 _Escribe tu consulta ahora:_`
     );
   } else if (messageText === '3' || messageText.includes('horario')) {
