@@ -687,7 +687,8 @@ const handleMenuSelection = async (userPhone, message) => {
             `❌ Error al actualizar el mensaje.\n\nIntenta de nuevo con /actualizar_promo`
           );
         }
-        await showMainMenu(userPhone);
+        // Limpiar estado del asesor sin mostrar menú
+        userSessions[userPhone].state = 'MAIN_MENU';
         break;
       
       case 'WITH_ADVISOR':
