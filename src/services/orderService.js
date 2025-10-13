@@ -14,7 +14,7 @@ const getOrdersByEmail = async (email) => {
     console.log(`🔍 Buscando pedidos para email: ${email}`);
     
     // Usar el nuevo endpoint público /by-email/
-    const response = await axios.get(`${ECOMMERCE_API_URL}/v1/orders/by-email/`, {
+    const response = await axios.get(`${ECOMMERCE_API_URL}/orders/by-email/`, {
       params: {
         email: email.trim().toLowerCase()
       }
@@ -48,7 +48,7 @@ const getOrderById = async (orderId) => {
       headers['Authorization'] = `Bearer ${ECOMMERCE_API_TOKEN}`;
     }
     
-    const response = await axios.get(`${ECOMMERCE_API_URL}/v1/orders/orders/${orderId}/`, {
+    const response = await axios.get(`${ECOMMERCE_API_URL}/orders/${orderId}/`, {
       headers: headers
     });
     
@@ -74,7 +74,7 @@ const getOrderHistory = async (orderId) => {
       headers['Authorization'] = `Bearer ${ECOMMERCE_API_TOKEN}`;
     }
     
-    const response = await axios.get(`${ECOMMERCE_API_URL}/v1/orders/orders/${orderId}/history/`, {
+    const response = await axios.get(`${ECOMMERCE_API_URL}/orders/${orderId}/history/`, {
       headers: headers
     });
     
