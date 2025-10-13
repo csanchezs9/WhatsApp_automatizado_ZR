@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const WHATSAPP_API_URL = `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`;
+const WHATSAPP_API_URL = `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`;
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 
 // Configuración de reintentos
