@@ -140,11 +140,15 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
   // Mensaje al cliente
   const clientMessage = `✅ *Solicitud enviada al asesor*\n\n` +
     `Hemos recibido tu consulta:\n_"${userQuery}"_\n\n` +
-    `⏱️ Un asesor se contactará contigo pronto.\n` +
+    `⏱️ *Un asesor se contactará contigo pronto.*\n` +
     `Estate pendiente de la respuesta.\n\n` +
-    `_Si deseas volver al menú automático, escribe *menú*_`;
+    `💡 Si no quieres esperar, puedes volver al menú automático:`;
 
-  await sendTextMessage(userPhone, clientMessage);
+  const buttons = [
+    { id: 'volver_menu', title: '🏠 Volver al menú' }
+  ];
+
+  await sendInteractiveButtons(userPhone, clientMessage, buttons);
   console.log(`👤 Usuario ${userPhone} ahora está en modo asesor con consulta: "${userQuery}"`);
   
   // Cambiar estado de la sesión para que no procese más mensajes como nueva consulta
@@ -291,14 +295,17 @@ const closeClientConversation = async (clientPhone, advisorPhone) => {
   deactivateAdvisorMode(clientPhone);
   
   // Notificar al cliente que la conversación finalizó
-  await sendTextMessage(
-    clientPhone,
-    `✅ *Conversación finalizada*\n\n` +
+  const mensaje = `✅ *Conversación finalizada*\n\n` +
     `El asesor ha finalizado la atención.\n\n` +
-    `Gracias por contactarnos. Si necesitas más ayuda, escribe *menú* para ver las opciones disponibles.`
-  );
+    `Gracias por contactarnos. Si necesitas más ayuda, puedes volver al menú principal.`;
   
-  // NO mostramos el menú automáticamente, esperamos a que el cliente escriba "menú"
+  const buttons = [
+    { id: 'volver_menu', title: '🏠 Volver al menú' }
+  ];
+  
+  await sendInteractiveButtons(clientPhone, mensaje, buttons);
+  
+  // NO mostramos el menú automáticamente, esperamos a que el cliente presione el botón
   
   // Confirmar al asesor
   await sendTextMessage(
@@ -374,6 +381,12 @@ const handleMenuSelection = async (userPhone, message) => {
   }
 
   // BOTONES DEL MENÚ PRINCIPAL (respuestas interactivas)
+  // Manejar botón "Volver al menú"
+  if (messageText === 'volver_menu') {
+    await showMainMenu(userPhone);
+    return;
+  }
+
   if (messageText.startsWith('menu_')) {
     const menuOption = messageText.replace('menu_', '');
     
@@ -605,9 +618,13 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
       `Lunes a Viernes: 7:00 AM - 5:00 PM\n` +
       `Sábados: 8:00 AM - 1:00 PM\n` +
-      `Domingos: Cerrado\n\n` +
-      `Escribe *menú* para volver al inicio.`;
-    await sendTextMessage(userPhone, mensaje);
+      `Domingos: Cerrado`;
+    
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
   } else if (messageText === '4' || messageText.includes('garantía') || messageText.includes('garantia') || messageText.includes('devoluc')) {
     const mensaje = `🛡️ *GARANTÍAS Y DEVOLUCIONES*\n\n` +
       `Si presentas algún inconveniente con tu compra, escríbenos con:\n\n` +
@@ -618,17 +635,25 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `🧾 *Todos nuestros productos cuentan con garantía de 3 meses*, excepto la línea de eléctricos originales.\n\n` +
       `⚠️ *Importante:* Los productos eléctricos originales tienen garantía *solo si presentan fallas de fábrica en el momento de la instalación*.\n\n` +
-      `Después de instalados y en funcionamiento, no aplica garantía por daños causados por mal uso, voltajes incorrectos u otras manipulaciones.\n\n` +
-      `Escribe *menú* para volver al inicio.`;
-    await sendTextMessage(userPhone, mensaje);
+      `Después de instalados y en funcionamiento, no aplica garantía por daños causados por mal uso, voltajes incorrectos u otras manipulaciones.`;
+    
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
   } else if (messageText === '5' || messageText.includes('envío') || messageText.includes('envio') || messageText.includes('pago')) {
     const mensaje = `📮 *INFORMACIÓN SOBRE TIEMPOS DE ENVÍO Y PAGOS*\n\n` +
       `📮 Realizamos envíos a todo Colombia.\n\n` +
       `🚚 *Tiempo estimado:* 1 a 3 días hábiles\n\n` +
       `💳 *Métodos de pago:* Wompi, Addi, transferencia, contra entrega (según zona)\n\n` +
-      `📦 Empacamos con cuidado para garantizar que tus repuestos lleguen en perfecto estado.\n\n` +
-      `Escribe *menú* para volver al inicio.`;
-    await sendTextMessage(userPhone, mensaje);
+      `📦 Empacamos con cuidado para garantizar que tus repuestos lleguen en perfecto estado.`;
+    
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
   } else if (messageText === '6' || messageText.includes('punto') || messageText.includes('entrega') || messageText.includes('recogida') || messageText.includes('dirección') || messageText.includes('direccion')) {
     const mensaje = `📍 *PUNTOS DE ENTREGA O RECOGIDA LOCAL*\n\n` +
       `📦 Puedes recoger tu pedido en nuestra sede o coordinar contra entrega (según zona)\n\n` +
@@ -638,9 +663,13 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       `Lunes a viernes 8:00 a.m. – 5:00 p.m.\n` +
       `Sábados 8:00 a.m. – 12:00 p.m.\n\n` +
       `📌 Ver en Google Maps:\n` +
-      `https://www.google.com/maps/search/?api=1&query=CR+50A+%23+46-48+Itagüí+Antioquia\n\n` +
-      `Escribe *menú* para volver al inicio.`;
-    await sendTextMessage(userPhone, mensaje);
+      `https://www.google.com/maps/search/?api=1&query=CR+50A+%23+46-48+Itagüí+Antioquia`;
+    
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
   } else {
     await sendTextMessage(
       userPhone,
@@ -679,9 +708,12 @@ const showCategories = async (userPhone) => {
     
     mensaje += `\n💬 *Escribe el número* de la categoría que deseas ver.`;
     mensaje += `\n\n_Ejemplo: escribe *1* para ver ${categories[0].name}_`;
-    mensaje += `\n\nEscribe *menú* para volver al inicio.`;
 
-    await sendTextMessage(userPhone, mensaje);
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
   } catch (error) {
     console.error('Error mostrando categorías:', error);
     await sendTextMessage(userPhone, '❌ Error al cargar el catálogo. Intenta de nuevo más tarde.');
@@ -697,14 +729,22 @@ const handleCategorySelection = async (userPhone, message) => {
   const numero = parseInt(message.trim());
   
   if (isNaN(numero) || numero < 1) {
-    await sendTextMessage(userPhone, '❌ Por favor escribe un número válido.\n\nEscribe *catálogo* para ver las categorías de nuevo.');
+    const buttons = [
+      { id: 'menu_catalogo', title: '📦 Ver catálogo' },
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    await sendInteractiveButtons(userPhone, '❌ Por favor escribe un número válido.', buttons);
     return;
   }
 
   const categories = userSessions[userPhone].categoriesList || [];
   
   if (numero > categories.length) {
-    await sendTextMessage(userPhone, `❌ Número inválido. Tenemos ${categories.length} categorías.\n\nEscribe *catálogo* para ver la lista.`);
+    const buttons = [
+      { id: 'menu_catalogo', title: '📦 Ver catálogo' },
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    await sendInteractiveButtons(userPhone, `❌ Número inválido. Tenemos ${categories.length} categorías.`, buttons);
     return;
   }
 
@@ -744,9 +784,12 @@ const showSubCategories = async (userPhone, categoryId) => {
     
     mensaje += `\n💬 *Escribe el número* de la subcategoría que deseas ver.`;
     mensaje += `\n\n_Ejemplo: escribe *1* para ver ${subcategories[0].name}_`;
-    mensaje += `\n\nEscribe *menú* para volver al inicio.`;
 
-    await sendTextMessage(userPhone, mensaje);
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
   } catch (error) {
     console.error('Error mostrando subcategorías:', error);
     await sendTextMessage(userPhone, '❌ Error al cargar subcategorías.');
@@ -762,14 +805,22 @@ const handleSubcategorySelection = async (userPhone, message) => {
   const numero = parseInt(message.trim());
   
   if (isNaN(numero) || numero < 1) {
-    await sendTextMessage(userPhone, '❌ Por favor escribe un número válido.\n\nEscribe *catálogo* para volver al inicio.');
+    const buttons = [
+      { id: 'menu_catalogo', title: '📦 Ver catálogo' },
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    await sendInteractiveButtons(userPhone, '❌ Por favor escribe un número válido.', buttons);
     return;
   }
 
   const subcategories = userSessions[userPhone].subcategoriesList || [];
   
   if (numero > subcategories.length) {
-    await sendTextMessage(userPhone, `❌ Número inválido. Hay ${subcategories.length} subcategorías.\n\nEscribe *catálogo* para volver al inicio.`);
+    const buttons = [
+      { id: 'menu_catalogo', title: '📦 Ver catálogo' },
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    await sendInteractiveButtons(userPhone, `❌ Número inválido. Hay ${subcategories.length} subcategorías.`, buttons);
     return;
   }
 
@@ -865,9 +916,12 @@ const showProducts = async (userPhone, subcategoryId) => {
       mensaje += `https://zonarepuestera.com.co/products/\n\n`;
     }
     
-    mensaje += `Escribe *menú* para volver al inicio o *catálogo* para seguir navegando.`;
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' },
+      { id: 'menu_catalogo', title: '📦 Ver catálogo' }
+    ];
     
-    await sendTextMessage(userPhone, mensaje);
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
     userSessions[userPhone].state = 'MAIN_MENU';
     
   } catch (error) {
