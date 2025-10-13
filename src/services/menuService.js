@@ -228,8 +228,8 @@ const showClientSelectionMenu = async (advisorPhone, activeClients) => {
     
     await sendInteractiveButtons(advisorPhone, bodyText, buttons);
     
-  } else {
-    // Más de 3 clientes: usar lista
+  } else if (activeClients.length <= 10) {
+    // Entre 4 y 10 clientes: usar lista interactiva
     const rows = activeClients.map(([clientPhone, clientData], index) => {
       const timeAgo = Math.floor((Date.now() - clientData.startTime) / 60000);
       const query = clientData.userQuery || 'Sin consulta';
@@ -253,6 +253,31 @@ const showClientSelectionMenu = async (advisorPhone, activeClients) => {
       'Ver conversaciones',
       sections
     );
+  } else {
+    // Más de 10 clientes: usar mensaje de texto con números
+    let message = `🔚 *Tienes ${activeClients.length} conversaciones activas*\n\n`;
+    message += `Escribe el *número* del cliente que deseas finalizar:\n\n`;
+    
+    activeClients.forEach(([clientPhone, clientData], index) => {
+      const timeAgo = Math.floor((Date.now() - clientData.startTime) / 60000);
+      const query = clientData.userQuery || 'Sin consulta';
+      const shortQuery = query.length > 40 ? query.substring(0, 40) + '...' : query;
+      
+      message += `*${index + 1}.* +${clientPhone}\n`;
+      message += `   ⏱️ Hace ${timeAgo} min\n`;
+      message += `   💬 "${shortQuery}"\n\n`;
+    });
+    
+    message += `_Ejemplo: Escribe *1* para finalizar la primera conversación_`;
+    
+    await sendTextMessage(advisorPhone, message);
+    
+    // Guardar el estado para procesar la respuesta numérica
+    if (!userSessions[advisorPhone]) {
+      userSessions[advisorPhone] = {};
+    }
+    userSessions[advisorPhone].state = 'SELECTING_CLIENT_TO_FINALIZE';
+    userSessions[advisorPhone].clientList = activeClients;
   }
 };
 
@@ -294,6 +319,40 @@ const handleMenuSelection = async (userPhone, message) => {
   if (messageText === '/finalizar' && userPhone === ADVISOR_PHONE) {
     console.log(`🔚 Comando /finalizar recibido del asesor`);
     await finalizeAdvisorConversation(userPhone);
+    return;
+  }
+
+  // SELECCIÓN NUMÉRICA DE CLIENTE (cuando hay más de 10 clientes)
+  if (userPhone === ADVISOR_PHONE && 
+      userSessions[userPhone]?.state === 'SELECTING_CLIENT_TO_FINALIZE') {
+    const selectedNumber = parseInt(messageText);
+    const clientList = userSessions[userPhone].clientList;
+    
+    if (isNaN(selectedNumber) || selectedNumber < 1 || selectedNumber > clientList.length) {
+      await sendTextMessage(
+        userPhone,
+        `❌ *Número inválido*\n\nPor favor escribe un número entre 1 y ${clientList.length}`
+      );
+      return;
+    }
+    
+    // Obtener el cliente seleccionado (índice empieza en 0)
+    const [clientPhone, clientData] = clientList[selectedNumber - 1];
+    console.log(`🔚 Asesor seleccionó finalizar conversación con ${clientPhone} (opción ${selectedNumber})`);
+    
+    // Limpiar el estado
+    delete userSessions[userPhone].state;
+    delete userSessions[userPhone].clientList;
+    
+    // Verificar que el cliente todavía está activo
+    if (usersWithAdvisor.has(clientPhone)) {
+      await closeClientConversation(clientPhone, userPhone);
+    } else {
+      await sendTextMessage(
+        userPhone,
+        `❌ *Error*\n\nEse cliente ya no está en conversación activa.`
+      );
+    }
     return;
   }
 
