@@ -81,8 +81,23 @@ El bot debe mostrar exactamente lo que la API devuelve.
 
 ## 🔧 Timeouts Configurados
 
-- **ADVISOR_TIMEOUT:** 5 minutos (tiempo de espera para respuesta del asesor)
-- **INACTIVITY_TIMEOUT:** 10 minutos (auto-reset de sesión por inactividad)
+- **ADVISOR_CONVERSATION_TIMEOUT:** 24 horas (cierre automático de conversación con asesor)
+- **INACTIVITY_TIMEOUT:** 7 minutos (auto-reset de sesión por inactividad solo cuando navega con el bot)
+
+**Importante sobre conversaciones con asesor:**
+- Cuando un usuario inicia conversación con asesor, tiene **24 horas** de ventana
+- Después de 24 horas, la conversación se cierra automáticamente (mecanismo de seguridad)
+- El cliente puede volver a contactar cuando quiera iniciando una nueva conversación
+
+**Formas de finalizar conversación con asesor:**
+1. ⭐ **Asesor escribe `/finalizar`** (recomendado) - Cierra automáticamente
+2. Cliente escribe "menú", "menu" o "inicio"
+3. Timeout de 24 horas (si asesor olvida finalizar)
+
+**Timeout de inactividad (7 minutos):**
+- Solo aplica cuando el usuario navega con el bot (sin asesor)
+- NO aplica durante conversaciones con asesor
+- Cuando el usuario supera 7 minutos de inactividad navegando solo, su sesión se reinicia
 
 ---
 

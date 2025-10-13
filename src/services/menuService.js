@@ -8,8 +8,8 @@ const userSessions = {};
 const usersWithAdvisor = new Map(); // { userPhone: { startTime: Date, lastAdvisorMessage: Date } }
 
 const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573173745021';
-const ADVISOR_TIMEOUT = parseInt(process.env.ADVISOR_TIMEOUT_MINUTES || '5') * 60 * 1000; // Convertir a milisegundos
-const INACTIVITY_TIMEOUT = parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '10') * 60 * 1000; // Timeout de inactividad
+const ADVISOR_CONVERSATION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+const INACTIVITY_TIMEOUT = parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '7') * 60 * 1000; // 7 minutos de inactividad
 
 /**
  * Verifica si la sesión del usuario ha expirado por inactividad
@@ -57,6 +57,7 @@ const normalizeText = (text) => {
 
 /**
  * Verifica si un usuario está actualmente hablando con un asesor
+ * Si han pasado 24 horas, finaliza automáticamente la conversación
  */
 const isUserWithAdvisor = (userPhone) => {
   if (!usersWithAdvisor.has(userPhone)) {
@@ -67,9 +68,9 @@ const isUserWithAdvisor = (userPhone) => {
   const now = Date.now();
   const timeSinceStart = now - advisorSession.startTime;
 
-  // Si ha pasado el tiempo de timeout desde el inicio, reactivar bot
-  if (timeSinceStart > ADVISOR_TIMEOUT) {
-    console.log(`⏰ Timeout del asesor para ${userPhone}. Reactivando bot...`);
+  // Si han pasado 24 horas desde el inicio, finalizar conversación automáticamente
+  if (timeSinceStart > ADVISOR_CONVERSATION_TIMEOUT) {
+    console.log(`⏰ Conversación con asesor expiró después de 24h para ${userPhone}`);
     usersWithAdvisor.delete(userPhone);
     return false;
   }
@@ -80,20 +81,22 @@ const isUserWithAdvisor = (userPhone) => {
 /**
  * Activa el modo asesor para un usuario
  */
-const activateAdvisorMode = async (userPhone) => {
+const activateAdvisorMode = async (userPhone, userQuery = '') => {
   const now = Date.now();
   usersWithAdvisor.set(userPhone, {
     startTime: now,
-    lastAdvisorMessage: now
+    lastAdvisorMessage: now,
+    userQuery: userQuery
   });
 
-  // Notificar al asesor
+  // Notificar al asesor con la consulta del usuario
   const advisorMessage = `🔔 *NUEVA SOLICITUD DE ATENCIÓN*\n\n` +
     `📱 Cliente: +${userPhone}\n` +
     `⏰ Hora: ${new Date().toLocaleString('es-CO')}\n\n` +
-    `El cliente está esperando hablar contigo.\n` +
+    `💬 *Consulta del cliente:*\n"${userQuery}"\n\n` +
     `Por favor responde desde WhatsApp Business.\n\n` +
-    `⚠️ Si no respondes en ${process.env.ADVISOR_TIMEOUT_MINUTES || 5} minutos, el bot se reactivará automáticamente.`;
+    `📌 *Para finalizar la conversación:*\n` +
+    `Escribe "/finalizar" en este chat (del bot) o dile al cliente que escriba "menú".`;
 
   try {
     await sendTextMessage(ADVISOR_PHONE, advisorMessage);
@@ -103,13 +106,19 @@ const activateAdvisorMode = async (userPhone) => {
   }
 
   // Mensaje al cliente
-  const clientMessage = `✅ *Conectando con un asesor...*\n\n` +
-    `Un momento por favor, te estamos conectando con uno de nuestros asesores.\n\n` +
-    `⏱️ En breve recibirás respuesta personalizada.\n\n` +
+  const clientMessage = `✅ *Solicitud enviada al asesor*\n\n` +
+    `Hemos recibido tu consulta:\n_"${userQuery}"_\n\n` +
+    `⏱️ Un asesor se contactará contigo pronto.\n` +
+    `Estate pendiente de la respuesta.\n\n` +
     `_Si deseas volver al menú automático, escribe *menú*_`;
 
   await sendTextMessage(userPhone, clientMessage);
-  console.log(`👤 Usuario ${userPhone} ahora está en modo asesor`);
+  console.log(`👤 Usuario ${userPhone} ahora está en modo asesor con consulta: "${userQuery}"`);
+  
+  // Cambiar estado de la sesión para que no procese más mensajes como nueva consulta
+  if (userSessions[userPhone]) {
+    userSessions[userPhone].state = 'WITH_ADVISOR';
+  }
 };
 
 /**
@@ -125,16 +134,213 @@ const deactivateAdvisorMode = (userPhone) => {
 };
 
 /**
+ * Finaliza la conversación desde el lado del asesor
+ * Si hay 1 cliente: cierra directamente
+ * Si hay varios: muestra menú para elegir
+ * Si no hay ninguno: notifica
+ */
+const finalizeAdvisorConversation = async (advisorPhone) => {
+  console.log(`🔍 Buscando conversaciones activas para asesor ${advisorPhone}...`);
+  
+  // Obtener todos los clientes activos con asesor
+  const activeClients = Array.from(usersWithAdvisor.entries());
+  
+  if (activeClients.length === 0) {
+    // No hay clientes activos
+    await sendTextMessage(
+      advisorPhone,
+      `⚠️ *No hay conversaciones activas*\n\n` +
+      `No se encontró ningún cliente en conversación con asesor en este momento.`
+    );
+    return false;
+  }
+  
+  if (activeClients.length === 1) {
+    // Solo 1 cliente: cerrar directamente
+    const [clientPhone, clientData] = activeClients[0];
+    await closeClientConversation(clientPhone, advisorPhone);
+    return true;
+  }
+  
+  // Múltiples clientes: mostrar menú para elegir
+  await showClientSelectionMenu(advisorPhone, activeClients);
+  return true;
+};
+
+/**
+ * Muestra un menú interactivo con los clientes activos para que el asesor elija cuál cerrar
+ */
+const showClientSelectionMenu = async (advisorPhone, activeClients) => {
+  console.log(`📋 Mostrando menú de selección con ${activeClients.length} clientes activos`);
+  
+  // Crear botones (máximo 3 por limitación de WhatsApp)
+  if (activeClients.length <= 3) {
+    // Usar botones interactivos
+    const buttons = activeClients.map(([clientPhone, clientData], index) => {
+      const timeAgo = Math.floor((Date.now() - clientData.startTime) / 60000); // minutos
+      return {
+        id: `finalizar_${clientPhone}`,
+        title: `Cliente ${index + 1} (${timeAgo}m)`
+      };
+    });
+    
+    let bodyText = `🔚 *Selecciona qué conversación finalizar:*\n\n`;
+    activeClients.forEach(([clientPhone, clientData], index) => {
+      const timeAgo = Math.floor((Date.now() - clientData.startTime) / 60000);
+      const query = clientData.userQuery || 'Sin consulta';
+      const shortQuery = query.length > 30 ? query.substring(0, 30) + '...' : query;
+      bodyText += `${index + 1}. +${clientPhone}\n`;
+      bodyText += `   ⏱️ Hace ${timeAgo} min\n`;
+      bodyText += `   💬 "${shortQuery}"\n\n`;
+    });
+    
+    await sendInteractiveButtons(advisorPhone, bodyText, buttons);
+    
+  } else {
+    // Más de 3 clientes: usar lista
+    const rows = activeClients.map(([clientPhone, clientData], index) => {
+      const timeAgo = Math.floor((Date.now() - clientData.startTime) / 60000);
+      const query = clientData.userQuery || 'Sin consulta';
+      const shortQuery = query.length > 20 ? query.substring(0, 20) + '...' : query;
+      
+      return {
+        id: `finalizar_${clientPhone}`,
+        title: `+${clientPhone}`,
+        description: `Hace ${timeAgo}m: ${shortQuery}`
+      };
+    });
+    
+    const sections = [{
+      title: 'Conversaciones activas',
+      rows: rows
+    }];
+    
+    await sendInteractiveList(
+      advisorPhone,
+      `🔚 *Tienes ${activeClients.length} conversaciones activas*\n\nSelecciona cuál deseas finalizar:`,
+      'Ver conversaciones',
+      sections
+    );
+  }
+};
+
+/**
+ * Cierra la conversación con un cliente específico
+ */
+const closeClientConversation = async (clientPhone, advisorPhone) => {
+  console.log(`✅ Finalizando conversación con cliente ${clientPhone}`);
+  
+  // Desactivar modo asesor para ese cliente
+  deactivateAdvisorMode(clientPhone);
+  
+  // Notificar al cliente que la conversación finalizó
+  await sendTextMessage(
+    clientPhone,
+    `✅ *Conversación finalizada*\n\n` +
+    `El asesor ha finalizado la atención.\n\n` +
+    `Gracias por contactarnos. Si necesitas más ayuda, escribe *menú* para ver las opciones disponibles.`
+  );
+  
+  // NO mostramos el menú automáticamente, esperamos a que el cliente escriba "menú"
+  
+  // Confirmar al asesor
+  await sendTextMessage(
+    advisorPhone,
+    `✅ *Conversación finalizada correctamente*\n\n` +
+    `Cliente: +${clientPhone}\n` +
+    `El bot ha sido reactivado para este cliente.`
+  );
+};
+
+/**
  * Maneja la selección del menú según el mensaje del usuario
  */
 const handleMenuSelection = async (userPhone, message) => {
   const messageText = message.toLowerCase().trim();
 
-  // VERIFICAR SI LA SESIÓN EXPIRÓ POR INACTIVIDAD
+  // COMANDO /FINALIZAR DESDE EL ASESOR
+  if (messageText === '/finalizar' && userPhone === ADVISOR_PHONE) {
+    console.log(`🔚 Comando /finalizar recibido del asesor`);
+    await finalizeAdvisorConversation(userPhone);
+    return;
+  }
+
+  // SELECCIÓN DE CLIENTE PARA FINALIZAR (desde menú interactivo)
+  if (userPhone === ADVISOR_PHONE && messageText.startsWith('finalizar_')) {
+    const clientPhone = messageText.replace('finalizar_', '');
+    console.log(`🔚 Asesor seleccionó finalizar conversación con ${clientPhone}`);
+    
+    // Verificar que el cliente está realmente en conversación con asesor
+    if (usersWithAdvisor.has(clientPhone)) {
+      await closeClientConversation(clientPhone, userPhone);
+    } else {
+      await sendTextMessage(
+        userPhone,
+        `❌ *Error*\n\nEse cliente ya no está en conversación activa.`
+      );
+    }
+    return;
+  }
+
+  // VERIFICAR SI ESTABA CON ASESOR PERO EXPIRÓ (24 horas)
+  if (usersWithAdvisor.has(userPhone)) {
+    const advisorSession = usersWithAdvisor.get(userPhone);
+    const timeSinceStart = Date.now() - advisorSession.startTime;
+    
+    if (timeSinceStart > ADVISOR_CONVERSATION_TIMEOUT) {
+      // Conversación expiró - notificar al cliente
+      console.log(`⏰ Conversación con asesor expiró (24h) para ${userPhone}`);
+      usersWithAdvisor.delete(userPhone);
+      
+      await sendTextMessage(
+        userPhone,
+        `⏰ *Conversación finalizada*\n\n` +
+        `Han pasado 24 horas desde tu última conversación con el asesor.\n\n` +
+        `La conversación ha sido cerrada automáticamente.\n\n` +
+        `Si necesitas ayuda nuevamente, escribe *menú* para ver las opciones disponibles.`
+      );
+      return;
+    }
+  }
+
+  // SI EL USUARIO ESTÁ CON UN ASESOR (y NO ha expirado)
+  if (isUserWithAdvisor(userPhone)) {
+    // Si escribe "menú", desactivar modo asesor y volver al bot
+    if (messageText === 'menu' || messageText === 'menú' || messageText === 'inicio') {
+      deactivateAdvisorMode(userPhone);
+      await sendTextMessage(userPhone, '✅ Conversación con asesor finalizada.\n\n🤖 Bot reactivado. Volviendo al menú principal...');
+      await showMainMenu(userPhone);
+      return;
+    }
+    
+    // Actualizar actividad y enviar recordatorio
+    updateLastActivity(userPhone);
+    
+    // Enviar mensaje recordatorio al usuario
+    await sendTextMessage(
+      userPhone,
+      `⏳ *En conversación con asesor*\n\n` +
+      `Tu consulta fue enviada. El asesor te responderá pronto.\n\n` +
+      `💬 Puedes seguir escribiendo y el asesor verá tus mensajes.\n\n` +
+      `_Para finalizar y volver al menú automático, escribe *menú*_`
+    );
+    
+    console.log(`👤 Mensaje de ${userPhone} recibido - está en conversación con asesor`);
+    return;
+  }
+
+  // VERIFICAR SI LA SESIÓN EXPIRÓ POR INACTIVIDAD (solo si NO está con asesor)
   if (isSessionExpired(userPhone)) {
     console.log(`🔄 Sesión expirada para ${userPhone}. Mostrando menú principal...`);
     // Limpiar modo asesor si estaba activo
     deactivateAdvisorMode(userPhone);
+    // Notificar al usuario que su sesión expiró
+    await sendTextMessage(
+      userPhone,
+      `⏱️ *Tu sesión ha expirado*\n\n` +
+      `Por inactividad, hemos reiniciado la conversación.\n\n` +
+      `A continuación, verás el menú principal. 👇`
+    );
     // Mostrar menú de bienvenida
     await showMainMenu(userPhone);
     return;
@@ -142,21 +348,6 @@ const handleMenuSelection = async (userPhone, message) => {
 
   // Actualizar timestamp de última actividad
   updateLastActivity(userPhone);
-
-  // VERIFICAR SI EL USUARIO ESTÁ CON UN ASESOR
-  if (isUserWithAdvisor(userPhone)) {
-    // Si escribe "menú", desactivar modo asesor y volver al bot
-    if (messageText === 'menu' || messageText === 'menú' || messageText === 'inicio') {
-      deactivateAdvisorMode(userPhone);
-      await sendTextMessage(userPhone, '🤖 Bot reactivado. Volviendo al menú principal...');
-      await showMainMenu(userPhone);
-      return;
-    }
-    
-    // Si no escribe "menú", no hacer nada (dejar que el asesor responda)
-    console.log(`👤 Mensaje de ${userPhone} ignorado - está con asesor`);
-    return;
-  }
 
   // Inicializar sesión si no existe
   if (!userSessions[userPhone]) {
@@ -183,6 +374,18 @@ const handleMenuSelection = async (userPhone, message) => {
     switch (session.state) {
       case 'MAIN_MENU':
         await handleMainMenuSelection(userPhone, messageText);
+        break;
+      
+      case 'WAITING_ADVISOR_QUERY':
+        // El usuario escribió su consulta, ahora activar modo asesor con esa consulta
+        await activateAdvisorMode(userPhone, message);
+        break;
+      
+      case 'WITH_ADVISOR':
+        // El usuario ya está con asesor, este caso ya se maneja arriba
+        // No debería llegar aquí porque isUserWithAdvisor() ya lo captura
+        console.log(`⚠️ Usuario ${userPhone} en estado WITH_ADVISOR pero no está en usersWithAdvisor`);
+        await showMainMenu(userPhone);
         break;
       
       case 'CATEGORY_LIST':
@@ -223,7 +426,8 @@ const showMainMenu = async (userPhone) => {
     `1️⃣ Consultar catálogo de productos\n` +
     `2️⃣ Hablar con un asesor\n` +
     `3️⃣ Horarios de atención\n\n` +
-    `💬 *Escribe el número* de la opción que deseas.`;
+    `💬 *Escribe el número* de la opción que deseas.\n\n` +
+    `_Si estás ausente durante 7 minutos, se terminará la sesión._`;
 
   await sendTextMessage(userPhone, mensaje);
 };
@@ -236,8 +440,15 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
   if (messageText === '1' || messageText.includes('catálogo') || messageText.includes('catalogo') || messageText.includes('producto')) {
     await showCategories(userPhone);
   } else if (messageText === '2' || messageText.includes('asesor') || messageText.includes('asesora') || messageText.includes('ayuda')) {
-    // Activar modo asesor
-    await activateAdvisorMode(userPhone);
+    // Cambiar estado para esperar la consulta del usuario
+    userSessions[userPhone].state = 'WAITING_ADVISOR_QUERY';
+    await sendTextMessage(
+      userPhone,
+      `📝 *Cuéntanos tu consulta*\n\n` +
+      `Por favor, escribe en detalle qué información necesitas o en qué podemos ayudarte.\n\n` +
+      `Un asesor recibirá tu mensaje y se contactará contigo en los próximos *10 minutos*.\n\n` +
+      `💬 _Escribe tu consulta ahora:_`
+    );
   } else if (messageText === '3' || messageText.includes('horario')) {
     const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
       `Lunes a Viernes: 8:00 AM - 6:00 PM\n` +
@@ -486,5 +697,7 @@ module.exports = {
   handleMenuSelection,
   showMainMenu,
   isUserWithAdvisor,
-  deactivateAdvisorMode
+  deactivateAdvisorMode,
+  finalizeAdvisorConversation,
+  updateLastActivity  // Exportar para que el webhook la pueda usar
 };

@@ -1,5 +1,7 @@
 const { sendWhatsAppMessage } = require('../services/whatsappService');
-const { handleMenuSelection } = require('../services/menuService');
+const { handleMenuSelection, updateLastActivity, isUserWithAdvisor } = require('../services/menuService');
+
+const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573173745021';
 
 /**
  * Verificación del webhook de WhatsApp
@@ -46,6 +48,40 @@ const handleIncomingMessage = async (req, res) => {
         const messageType = message.type;
 
         console.log(`📱 Mensaje de ${from}: ${messageBody}`);
+
+        // Si el mensaje viene del ASESOR, verificar si es comando /finalizar o respuesta interactiva
+        if (from === ADVISOR_PHONE) {
+          console.log(`👨‍💼 Mensaje del asesor recibido: ${messageBody}`);
+          
+          // Si el asesor escribe /finalizar, procesar como comando
+          if (messageBody.trim().toLowerCase() === '/finalizar') {
+            await handleMenuSelection(from, messageBody);
+            res.sendStatus(200);
+            return;
+          }
+          
+          // Si el asesor selecciona un botón/lista interactiva (ej: finalizar cliente)
+          if (messageType === 'interactive') {
+            const interactiveResponse = message.interactive;
+            let selectedOption = null;
+            
+            if (interactiveResponse.type === 'button_reply') {
+              selectedOption = interactiveResponse.button_reply.id;
+            } else if (interactiveResponse.type === 'list_reply') {
+              selectedOption = interactiveResponse.list_reply.id;
+            }
+            
+            if (selectedOption && selectedOption.startsWith('finalizar_')) {
+              await handleMenuSelection(from, selectedOption);
+              res.sendStatus(200);
+              return;
+            }
+          }
+          
+          // Nota: Los demás mensajes del asesor se manejan directamente en WhatsApp Business
+          res.sendStatus(200);
+          return;
+        }
 
         // Procesar el mensaje según el tipo
         if (messageType === 'text') {
