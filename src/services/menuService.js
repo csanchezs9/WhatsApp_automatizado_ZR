@@ -484,16 +484,18 @@ const handleMenuSelection = async (userPhone, message) => {
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `� *Finalizar conversaciones*\n` +
       `   Finaliza conversaciones activas con clientes\n` +
+      `   📝 También puedes escribir: */finalizar*\n` +
       `   • 1 sesión: Finaliza automáticamente\n` +
       `   • 2-3 sesiones: Muestra botones\n` +
       `   • 4-10 sesiones: Muestra lista\n` +
       `   • +10 sesiones: Selección numérica\n\n` +
       `🔥 *Actualizar promociones*\n` +
       `   Actualiza el mensaje de promociones\n` +
+      `   📝 También puedes escribir: */actualizar_promo*\n` +
       `   El bot te pedirá el nuevo texto\n` +
       `   📏 Límite: 4000 caracteres\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `💡 *Selecciona un comando:*`;
+      `💡 *Selecciona un comando o escríbelo:*`;
     
     await sendInteractiveButtons(
       userPhone,
