@@ -373,6 +373,25 @@ const handleMenuSelection = async (userPhone, message) => {
     return;
   }
 
+  // BOTONES DEL MENÚ PRINCIPAL (respuestas interactivas)
+  if (messageText.startsWith('menu_')) {
+    const menuOption = messageText.replace('menu_', '');
+    
+    if (menuOption === 'catalogo') {
+      // Simular selección de opción 1
+      await handleMainMenuSelection(userPhone, '1');
+      return;
+    } else if (menuOption === 'asesor') {
+      // Simular selección de opción 2
+      await handleMainMenuSelection(userPhone, '2');
+      return;
+    } else if (menuOption === 'horarios') {
+      // Simular selección de opción 3
+      await handleMainMenuSelection(userPhone, '3');
+      return;
+    }
+  }
+
   // VERIFICAR SI ESTABA CON ASESOR PERO EXPIRÓ (24 horas)
   if (usersWithAdvisor.has(userPhone)) {
     const advisorSession = usersWithAdvisor.get(userPhone);
@@ -506,16 +525,28 @@ const showMainMenu = async (userPhone) => {
     lastActivity: Date.now()
   };
 
-  const mensaje = `👋 *¡Bienvenido a Zona Repuestera!*\n\n` +
+  // Crear botones interactivos del menú principal
+  const buttons = [
+    {
+      id: 'menu_catalogo',
+      title: '📦 Ver catálogo'
+    },
+    {
+      id: 'menu_asesor',
+      title: '💬 Hablar con asesor'
+    },
+    {
+      id: 'menu_horarios',
+      title: '🕒 Ver horarios'
+    }
+  ];
+
+  const bodyText = `👋 *¡Bienvenido a Zona Repuestera!*\n\n` +
     `🚗 Somos tu tienda de confianza para autopartes de calidad.\n\n` +
     `*¿Qué deseas hacer?*\n\n` +
-    `1️⃣ Consultar catálogo de productos\n` +
-    `2️⃣ Hablar con un asesor\n` +
-    `3️⃣ Horarios de atención\n\n` +
-    `💬 *Escribe el número* de la opción que deseas.\n\n` +
     `_Si estás ausente durante 7 minutos, se terminará la sesión._`;
 
-  await sendTextMessage(userPhone, mensaje);
+  await sendInteractiveButtons(userPhone, bodyText, buttons);
 };
 
 /**
