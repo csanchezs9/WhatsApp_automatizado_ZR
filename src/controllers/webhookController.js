@@ -86,8 +86,9 @@ const handleIncomingMessage = async (req, res) => {
         if (from === ADVISOR_PHONE) {
           console.log(`👨‍💼 Mensaje del asesor recibido: ${messageBody}`);
           
-          // Si el asesor escribe /finalizar, procesar como comando
-          if (messageBody.trim().toLowerCase() === '/finalizar') {
+          // Si el asesor escribe comandos especiales, procesarlos
+          const lowerMessage = messageBody.trim().toLowerCase();
+          if (lowerMessage === '/finalizar' || lowerMessage === '/comandos' || lowerMessage.startsWith('/actualizar_promo')) {
             await handleMenuSelection(from, messageBody);
             res.sendStatus(200);
             return;
@@ -109,6 +110,15 @@ const handleIncomingMessage = async (req, res) => {
               res.sendStatus(200);
               return;
             }
+          }
+          
+          // Si el asesor está actualizando promociones, procesar el mensaje
+          const { getUserSession } = require('../services/menuService');
+          const advisorSession = getUserSession(from);
+          if (advisorSession && advisorSession.state === 'UPDATING_PROMO') {
+            await handleMenuSelection(from, messageBody);
+            res.sendStatus(200);
+            return;
           }
           
           // Nota: Los demás mensajes del asesor se manejan directamente en WhatsApp Business

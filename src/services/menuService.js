@@ -1126,5 +1126,6 @@ module.exports = {
   isUserWithAdvisor,
   deactivateAdvisorMode,
   finalizeAdvisorConversation,
-  updateLastActivity  // Exportar para que el webhook la pueda usar
+  updateLastActivity,  // Exportar para que el webhook la pueda usar
+  getUserSession: (userPhone) => userSessions[userPhone]  // Exportar para verificar estado
 };
