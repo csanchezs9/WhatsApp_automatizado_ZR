@@ -480,23 +480,69 @@ const handleMenuSelection = async (userPhone, message) => {
   // COMANDO ESPECIAL: /comandos (solo asesor)
   if (messageText === '/comandos' && userPhone === ADVISOR_PHONE) {
     const comandosMsg = `🤖 *COMANDOS DE ADMINISTRADOR*\n\n` +
-      `Estos son los comandos especiales disponibles para el asesor:\n\n` +
+      `Estos son los comandos especiales disponibles:\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `📋 */comandos*\n` +
-      `   Muestra esta lista de comandos\n\n` +
-      `🔚 */finalizar*\n` +
+      `� *Finalizar conversaciones*\n` +
       `   Finaliza conversaciones activas con clientes\n` +
       `   • 1 sesión: Finaliza automáticamente\n` +
       `   • 2-3 sesiones: Muestra botones\n` +
       `   • 4-10 sesiones: Muestra lista\n` +
       `   • +10 sesiones: Selección numérica\n\n` +
-      `🔥 */actualizar_promo*\n` +
+      `🔥 *Actualizar promociones*\n` +
       `   Actualiza el mensaje de promociones\n` +
-      `   El bot te pedirá el nuevo texto\n\n` +
+      `   El bot te pedirá el nuevo texto\n` +
+      `   📏 Límite: 4000 caracteres\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `💡 *Nota:* Estos comandos solo funcionan desde el número de asesor configurado.`;
+      `💡 *Selecciona un comando:*`;
     
-    await sendTextMessage(userPhone, comandosMsg);
+    await sendInteractiveButtons(
+      userPhone,
+      comandosMsg,
+      [
+        { id: 'cmd_finalizar', title: '🔚 Finalizar' },
+        { id: 'cmd_promo', title: '🔥 Actualizar Promo' }
+      ],
+      'Comandos Admin'
+    );
+    return;
+  }
+
+  // BOTONES DEL MENÚ DE COMANDOS (solo asesor)
+  if (userPhone === ADVISOR_PHONE && messageText === 'cmd_finalizar') {
+    console.log(`🔚 Asesor presionó botón de /finalizar`);
+    await finalizeAdvisorConversation(userPhone);
+    return;
+  }
+
+  if (userPhone === ADVISOR_PHONE && messageText === 'cmd_promo') {
+    console.log(`🔥 Asesor presionó botón de /actualizar_promo`);
+    // Inicializar sesión si no existe
+    if (!userSessions[userPhone]) {
+      userSessions[userPhone] = {
+        state: 'MAIN_MENU',
+        cart: [],
+        selectedCategory: null,
+        selectedSubcategory: null,
+        categoriesList: [],
+        subcategoriesList: [],
+        lastActivity: Date.now()
+      };
+    }
+
+    // Cambiar estado para esperar el nuevo mensaje de promoción
+    userSessions[userPhone].state = 'UPDATING_PROMO';
+    await sendTextMessage(
+      userPhone,
+      `📝 *ACTUALIZAR MENSAJE DE PROMOCIONES*\n\n` +
+      `Por favor, escribe el *nuevo mensaje* que aparecerá en la opción "Promociones y Descuentos".\n\n` +
+      `💡 *Puedes usar formato:*\n` +
+      `• *Negritas* con asteriscos\n` +
+      `• _Cursivas_ con guiones bajos\n` +
+      `• Emojis 🔥😎🎉\n` +
+      `• Saltos de línea para organizar\n\n` +
+      `📏 *Límite:* Máximo 4000 caracteres\n\n` +
+      `Escribe tu mensaje ahora:`
+    );
     return;
   }
 

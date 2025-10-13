@@ -105,6 +105,14 @@ const handleIncomingMessage = async (req, res) => {
               selectedOption = interactiveResponse.list_reply.id;
             }
             
+            // Procesar botones del menú de comandos (cmd_finalizar, cmd_promo)
+            if (selectedOption && (selectedOption === 'cmd_finalizar' || selectedOption === 'cmd_promo')) {
+              await handleMenuSelection(from, selectedOption);
+              res.sendStatus(200);
+              return;
+            }
+            
+            // Procesar botones de finalizar conversación específica
             if (selectedOption && selectedOption.startsWith('finalizar_')) {
               await handleMenuSelection(from, selectedOption);
               res.sendStatus(200);
