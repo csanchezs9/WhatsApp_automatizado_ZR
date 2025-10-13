@@ -508,6 +508,19 @@ const handleMenuSelection = async (userPhone, message) => {
       return;
     }
 
+    // Inicializar sesión si no existe
+    if (!userSessions[userPhone]) {
+      userSessions[userPhone] = {
+        state: 'MAIN_MENU',
+        cart: [],
+        selectedCategory: null,
+        selectedSubcategory: null,
+        categoriesList: [],
+        subcategoriesList: [],
+        lastActivity: Date.now()
+      };
+    }
+
     // Cambiar estado para esperar el nuevo mensaje de promoción
     userSessions[userPhone].state = 'UPDATING_PROMO';
     await sendTextMessage(
