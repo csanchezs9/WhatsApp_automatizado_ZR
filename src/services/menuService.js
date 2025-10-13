@@ -389,6 +389,14 @@ const handleMenuSelection = async (userPhone, message) => {
       // Simular selección de opción 3
       await handleMainMenuSelection(userPhone, '3');
       return;
+    } else if (menuOption === 'garantias') {
+      // Simular selección de opción 4
+      await handleMainMenuSelection(userPhone, '4');
+      return;
+    } else if (menuOption === 'envios') {
+      // Simular selección de opción 5
+      await handleMainMenuSelection(userPhone, '5');
+      return;
     }
   }
 
@@ -525,28 +533,46 @@ const showMainMenu = async (userPhone) => {
     lastActivity: Date.now()
   };
 
-  // Crear botones interactivos del menú principal
-  const buttons = [
+  // Crear lista interactiva del menú principal
+  const sections = [
     {
-      id: 'menu_catalogo',
-      title: '📦 Ver catálogo'
-    },
-    {
-      id: 'menu_asesor',
-      title: '💬 Hablar con asesor'
-    },
-    {
-      id: 'menu_horarios',
-      title: '🕒 Ver horarios'
+      title: "Opciones disponibles",
+      rows: [
+        {
+          id: 'menu_catalogo',
+          title: '📦 Ver catálogo',
+          description: 'Explora nuestros productos'
+        },
+        {
+          id: 'menu_asesor',
+          title: '💬 Hablar con asesor',
+          description: 'Atención personalizada'
+        },
+        {
+          id: 'menu_horarios',
+          title: '🕒 Ver horarios',
+          description: 'Horarios de atención'
+        },
+        {
+          id: 'menu_garantias',
+          title: '🛡️ Garantías',
+          description: 'Garantías y devoluciones'
+        },
+        {
+          id: 'menu_envios',
+          title: '📮 Envíos y Pagos',
+          description: 'Tiempos y métodos de pago'
+        }
+      ]
     }
   ];
 
-  const bodyText = `👋 *¡Bienvenido a Zona Repuestera!*\n\n` +
-    `🚗 Somos tu tienda de confianza para autopartes de calidad.\n\n` +
-    `*¿Qué deseas hacer?*\n\n` +
+  const bodyText = `👋 ¡Hola! Soy *ZonaBot*, el asistente virtual de Zona Repuestera 🚗💬\n\n` +
+    `Estoy aquí para ayudarte con todo lo que necesites sobre *autopartes, cotizaciones, envío y más*.\n\n` +
+    `Por favor selecciona una de las siguientes opciones para continuar 👇🏻\n\n` +
     `_Si estás ausente durante 7 minutos, se terminará la sesión._`;
 
-  await sendInteractiveButtons(userPhone, bodyText, buttons);
+  await sendInteractiveList(userPhone, bodyText, '📋 Ver opciones', sections);
 };
 
 /**
@@ -568,15 +594,36 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     );
   } else if (messageText === '3' || messageText.includes('horario')) {
     const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
-      `Lunes a Viernes: 8:00 AM - 6:00 PM\n` +
-      `Sábados: 8:00 AM - 2:00 PM\n` +
+      `Lunes a Viernes: 7:00 AM - 5:00 PM\n` +
+      `Sábados: 8:00 AM - 1:00 PM\n` +
       `Domingos: Cerrado\n\n` +
+      `Escribe *menú* para volver al inicio.`;
+    await sendTextMessage(userPhone, mensaje);
+  } else if (messageText === '4' || messageText.includes('garantía') || messageText.includes('garantia') || messageText.includes('devoluc')) {
+    const mensaje = `🛡️ *GARANTÍAS Y DEVOLUCIONES*\n\n` +
+      `Si presentas algún inconveniente con tu compra, escríbenos con:\n\n` +
+      `✔ Número de pedido\n` +
+      `✔ Nombre del producto\n` +
+      `✔ Breve descripción del caso\n\n` +
+      `Nuestro equipo revisará tu solicitud y te responderá lo antes posible.\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🧾 *Todos nuestros productos cuentan con garantía de 3 meses*, excepto la línea de eléctricos originales.\n\n` +
+      `⚠️ *Importante:* Los productos eléctricos originales tienen garantía *solo si presentan fallas de fábrica en el momento de la instalación*.\n\n` +
+      `Después de instalados y en funcionamiento, no aplica garantía por daños causados por mal uso, voltajes incorrectos u otras manipulaciones.\n\n` +
+      `Escribe *menú* para volver al inicio.`;
+    await sendTextMessage(userPhone, mensaje);
+  } else if (messageText === '5' || messageText.includes('envío') || messageText.includes('envio') || messageText.includes('pago')) {
+    const mensaje = `📮 *INFORMACIÓN SOBRE TIEMPOS DE ENVÍO Y PAGOS*\n\n` +
+      `📮 Realizamos envíos a todo Colombia.\n\n` +
+      `🚚 *Tiempo estimado:* 1 a 3 días hábiles\n\n` +
+      `💳 *Métodos de pago:* Wompi, Addi, transferencia, contra entrega (según zona)\n\n` +
+      `📦 Empacamos con cuidado para garantizar que tus repuestos lleguen en perfecto estado.\n\n` +
       `Escribe *menú* para volver al inicio.`;
     await sendTextMessage(userPhone, mensaje);
   } else {
     await sendTextMessage(
       userPhone,
-      '❌ Opción no válida.\n\nPor favor escribe el *número* de la opción que deseas (1, 2 o 3).\n\nO escribe *menú* para ver las opciones.'
+      '❌ Opción no válida.\n\nPor favor escribe el *número* de la opción que deseas (1, 2, 3, 4 o 5).\n\nO escribe *menú* para ver las opciones.'
     );
   }
 };
