@@ -594,6 +594,17 @@ const handleMenuSelection = async (userPhone, message) => {
     return;
   }
 
+  // Manejar botón "Repetir correo"
+  if (messageText === 'repetir_correo') {
+    userSessions[userPhone].state = 'WAITING_EMAIL_FOR_ORDERS';
+    await sendTextMessage(
+      userPhone,
+      '📧 *Por favor, ingresa tu correo electrónico*\n\n' +
+      'Escribe el correo que usaste al hacer tu compra:'
+    );
+    return;
+  }
+
   if (messageText.startsWith('menu_')) {
     const menuOption = messageText.replace('menu_', '');
     
@@ -1265,7 +1276,7 @@ const handleOrdersEmailInput = async (userPhone, email) => {
       
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' },
-        { id: 'menu_asesor', title: '💬 Hablar con asesor' }
+        { id: 'repetir_correo', title: '� Repetir correo' }
       ];
       
       await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
@@ -1283,8 +1294,7 @@ const handleOrdersEmailInput = async (userPhone, email) => {
       await sendTextMessage(userPhone, orderDetails);
       
       const buttons = [
-        { id: 'volver_menu', title: '🏠 Volver al menú' },
-        { id: 'menu_asesor', title: '💬 Hablar con asesor' }
+        { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
       
       await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
@@ -1370,8 +1380,7 @@ const handleOrderSelection = async (userPhone, orderIdText) => {
   await sendTextMessage(userPhone, orderDetails);
   
   const buttons = [
-    { id: 'volver_menu', title: '🏠 Volver al menú' },
-    { id: 'menu_asesor', title: '💬 Hablar con asesor' }
+    { id: 'volver_menu', title: '🏠 Volver al menú' }
   ];
   
   await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);

@@ -109,13 +109,13 @@ const formatOrderDetails = (order) => {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  })}\n\n`;
+  })}\n`;
   
-  message += `📊 *Estado:* ${order.status}\n\n`;
+  message += `📊 *Estado:* ${order.status}\n`;
   
   // Información de envío
   if (order.shipping_method) {
-    message += `🚚 *Método de envío:* ${order.shipping_method.name}\n`;
+    message += `🚚 *Transportadora:* ${order.shipping_method.name}\n`;
   }
   
   // Número de rastreo si existe
@@ -123,7 +123,7 @@ const formatOrderDetails = (order) => {
     message += `📍 *Número de guía:* ${order.tracking_number}\n`;
   }
   
-  message += `\n━━━━━━━━━━━━━━━━━━━━\n\n`;
+  message += `\n━━━━━━━━━━━━━━━━━━━━\n`;
   
   // Productos
   message += `🛍️ *Productos:*\n`;
@@ -131,11 +131,11 @@ const formatOrderDetails = (order) => {
     order.items.forEach((item, index) => {
       message += `${index + 1}. ${item.product_detail.name} (${item.product_detail.code})\n`;
       message += `   Cantidad: ${item.quantity} × $${parseFloat(item.unit_price).toLocaleString('es-CO')}\n`;
-      message += `   Subtotal: $${parseFloat(item.total_price).toLocaleString('es-CO')}\n\n`;
+      message += `   Subtotal: $${parseFloat(item.total_price).toLocaleString('es-CO')}\n`;
     });
   }
   
-  message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+  message += `\n━━━━━━━━━━━━━━━━━━━━\n`;
   
   // Totales
   message += `💰 *Resumen de pagos:*\n`;
@@ -144,25 +144,9 @@ const formatOrderDetails = (order) => {
     message += `• Descuento: ${order.discount}%\n`;
   }
   message += `• Envío: $${parseFloat(order.shipping_cost).toLocaleString('es-CO')}\n`;
-  message += `• *Total: $${parseFloat(order.total).toLocaleString('es-CO')}*\n\n`;
+  message += `• *Total: $${parseFloat(order.total).toLocaleString('es-CO')}*\n`;
   
-  // Información de facturación
-  if (order.customer_billing) {
-    message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-    message += `👤 *Información del cliente:*\n`;
-    message += `${order.customer_billing.first_name} ${order.customer_billing.last_name}\n`;
-    if (order.customer_billing.phone) {
-      message += `📱 ${order.customer_billing.phone}\n`;
-    }
-    if (order.customer_billing.address) {
-      message += `📍 ${order.customer_billing.address}\n`;
-      if (order.customer_billing.city) {
-        message += `   ${order.customer_billing.city}\n`;
-      }
-    }
-  }
-  
-  // Notas
+  // Notas (si existen)
   if (order.notes) {
     message += `\n📝 *Notas:* ${order.notes}\n`;
   }
