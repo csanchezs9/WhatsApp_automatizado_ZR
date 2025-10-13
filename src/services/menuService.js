@@ -633,7 +633,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     const mensaje = `📍 *PUNTOS DE ENTREGA O RECOGIDA LOCAL*\n\n` +
       `📦 Puedes recoger tu pedido en nuestra sede o coordinar contra entrega (según zona)\n\n` +
       `📍 *Dirección:* CR 50A # 46 – 48, Piso 3. Itagüí (Antioquia)\n\n` +
-      `📞 *Teléfono:* 316 4 83 61 66\n\n` +
+      `📞 *Teléfono:* 316 483 6166\n\n` +
       `🕓 *Horario:*\n` +
       `Lunes a viernes 8:00 a.m. – 5:00 p.m.\n` +
       `Sábados 8:00 a.m. – 12:00 p.m.\n\n` +
