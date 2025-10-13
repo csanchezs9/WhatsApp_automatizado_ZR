@@ -477,6 +477,29 @@ const handleMenuSelection = async (userPhone, message) => {
     return;
   }
 
+  // COMANDO ESPECIAL: /comandos (solo asesor)
+  if (messageText === '/comandos' && userPhone === ADVISOR_PHONE) {
+    const comandosMsg = `🤖 *COMANDOS DE ADMINISTRADOR*\n\n` +
+      `Estos son los comandos especiales disponibles para el asesor:\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `📋 */comandos*\n` +
+      `   Muestra esta lista de comandos\n\n` +
+      `🔚 */finalizar*\n` +
+      `   Finaliza conversaciones activas con clientes\n` +
+      `   • 1 sesión: Finaliza automáticamente\n` +
+      `   • 2-3 sesiones: Muestra botones\n` +
+      `   • 4-10 sesiones: Muestra lista\n` +
+      `   • +10 sesiones: Selección numérica\n\n` +
+      `🔥 */actualizar_promo*\n` +
+      `   Actualiza el mensaje de promociones\n` +
+      `   El bot te pedirá el nuevo texto\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `💡 *Nota:* Estos comandos solo funcionan desde el número de asesor configurado.`;
+    
+    await sendTextMessage(userPhone, comandosMsg);
+    return;
+  }
+
   // COMANDO ESPECIAL: /actualizar_promo (solo asesor)
   if (messageText.startsWith('/actualizar_promo')) {
     // Verificar que sea el asesor
