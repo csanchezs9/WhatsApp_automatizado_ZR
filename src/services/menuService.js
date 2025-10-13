@@ -1,5 +1,6 @@
 const { sendTextMessage, sendInteractiveButtons, sendInteractiveList } = require('./whatsappService');
 const { getCategories, getSubCategories, getProducts } = require('./ecommerceService');
+const { getOrdersByEmail, formatOrdersList, formatOrderDetails, isValidEmail } = require('./orderService');
 const fs = require('fs');
 const path = require('path');
 
@@ -721,6 +722,16 @@ const handleMenuSelection = async (userPhone, message) => {
         await activateAdvisorMode(userPhone, message);
         break;
       
+      case 'WAITING_EMAIL_FOR_ORDERS':
+        // El usuario escribió su email para consultar pedidos
+        await handleOrdersEmailInput(userPhone, message);
+        break;
+      
+      case 'VIEWING_ORDER_DETAILS':
+        // El usuario seleccionó un pedido para ver detalles
+        await handleOrderSelection(userPhone, messageText);
+        break;
+      
       case 'UPDATING_PROMO':
         // El asesor está actualizando el mensaje de promociones
         // Validar longitud del mensaje (límite de WhatsApp: 4096, dejamos margen)
@@ -833,6 +844,11 @@ const showMainMenu = async (userPhone) => {
           id: 'menu_promociones',
           title: '🔥 Promociones',
           description: 'Descuentos y ofertas del mes'
+        },
+        {
+          id: 'menu_pedidos',
+          title: '📦 Estado de Pedido',
+          description: 'Consulta el estado de tu pedido'
         }
       ]
     }
@@ -933,9 +949,18 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     ];
     
     await sendInteractiveButtons(userPhone, buttonMessage, buttons);
+  } else if (messageText === '8' || messageText.includes('pedido') || messageText.includes('orden') || messageText.includes('estado')) {
+    // Solicitar email para consultar pedidos
+    userSessions[userPhone].state = 'WAITING_EMAIL_FOR_ORDERS';
+    await sendTextMessage(
+      userPhone,
+      `📦 *CONSULTA DE PEDIDOS*\n\n` +
+      `Para consultar el estado de tu pedido, por favor escribe el *correo electrónico* que usaste al realizar tu compra.\n\n` +
+      `✉️ _Escribe tu correo ahora:_`
+    );
   } else {
     const errorMsg = '❌ *Opción no válida.*\n\n' +
-      'Por favor escribe el *número* de la opción que deseas (1, 2, 3, 4, 5, 6 o 7).';
+      'Por favor escribe el *número* de la opción que deseas (1-8) o selecciona del menú.';
     
     const buttons = [
       { id: 'volver_menu', title: '🏠 Ver menú' }
@@ -1202,6 +1227,155 @@ const showProducts = async (userPhone, subcategoryId) => {
     const categoryId = userSessions[userPhone].selectedCategory;
     await showSubCategories(userPhone, categoryId);
   }
+};
+
+/**
+ * Maneja la entrada de email para consultar pedidos
+ */
+const handleOrdersEmailInput = async (userPhone, email) => {
+  const trimmedEmail = email.trim();
+  
+  // Validar formato de email
+  if (!isValidEmail(trimmedEmail)) {
+    await sendTextMessage(
+      userPhone,
+      `❌ *Email inválido*\n\n` +
+      `Por favor ingresa un correo electrónico válido.\n\n` +
+      `Ejemplo: *juan@email.com*\n\n` +
+      `_Escribe tu correo nuevamente:_`
+    );
+    return;
+  }
+
+  try {
+    // Mostrar mensaje de carga
+    await sendTextMessage(userPhone, '⏳ Buscando pedidos...');
+    
+    // Obtener pedidos del backend
+    const orders = await getOrdersByEmail(trimmedEmail);
+    
+    if (!orders || orders.length === 0) {
+      await sendTextMessage(
+        userPhone,
+        `📦 *No se encontraron pedidos*\n\n` +
+        `No hay pedidos asociados al correo *${trimmedEmail}*.\n\n` +
+        `Verifica que el correo sea el mismo que usaste al hacer tu compra.\n\n` +
+        `💡 Si necesitas ayuda, puedes hablar con un asesor.`
+      );
+      
+      const buttons = [
+        { id: 'volver_menu', title: '🏠 Volver al menú' },
+        { id: 'menu_asesor', title: '💬 Hablar con asesor' }
+      ];
+      
+      await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+      userSessions[userPhone].state = 'MAIN_MENU';
+      return;
+    }
+
+    // Guardar pedidos en la sesión
+    userSessions[userPhone].ordersList = orders;
+    userSessions[userPhone].ordersEmail = trimmedEmail;
+
+    // Si solo hay 1 pedido, mostrar detalles directamente
+    if (orders.length === 1) {
+      const orderDetails = formatOrderDetails(orders[0]);
+      await sendTextMessage(userPhone, orderDetails);
+      
+      const buttons = [
+        { id: 'volver_menu', title: '🏠 Volver al menú' },
+        { id: 'menu_asesor', title: '💬 Hablar con asesor' }
+      ];
+      
+      await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+      userSessions[userPhone].state = 'MAIN_MENU';
+      return;
+    }
+
+    // Si hay múltiples pedidos, mostrar lista resumida
+    const ordersList = formatOrdersList(orders);
+    await sendTextMessage(userPhone, ordersList);
+    
+    await sendTextMessage(
+      userPhone,
+      `\n💬 *Para ver detalles de un pedido:*\n` +
+      `Escribe el *número del pedido*\n\n` +
+      `_Ejemplo: escribe *${orders[0].id}* para ver el pedido #${orders[0].id}_`
+    );
+    
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    
+    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    userSessions[userPhone].state = 'VIEWING_ORDER_DETAILS';
+    
+  } catch (error) {
+    console.error('Error al buscar pedidos:', error);
+    await sendTextMessage(
+      userPhone,
+      `❌ *Error al consultar pedidos*\n\n` +
+      `No se pudieron obtener los pedidos en este momento.\n\n` +
+      `Por favor intenta más tarde o contacta con un asesor.`
+    );
+    
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' },
+      { id: 'menu_asesor', title: '💬 Hablar con asesor' }
+    ];
+    
+    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    userSessions[userPhone].state = 'MAIN_MENU';
+  }
+};
+
+/**
+ * Maneja la selección de un pedido específico para ver detalles
+ */
+const handleOrderSelection = async (userPhone, orderIdText) => {
+  const orderId = parseInt(orderIdText.trim());
+  
+  if (isNaN(orderId)) {
+    await sendTextMessage(
+      userPhone,
+      `❌ *Número inválido*\n\n` +
+      `Por favor escribe el número del pedido que deseas consultar.\n\n` +
+      `_Ejemplo: escribe *123* para ver el pedido #123_`
+    );
+    return;
+  }
+
+  const ordersList = userSessions[userPhone].ordersList;
+  if (!ordersList || ordersList.length === 0) {
+    await sendTextMessage(userPhone, '❌ No hay pedidos disponibles. Por favor inicia una nueva consulta.');
+    await showMainMenu(userPhone);
+    return;
+  }
+
+  // Buscar el pedido en la lista
+  const order = ordersList.find(o => o.id === orderId);
+  
+  if (!order) {
+    await sendTextMessage(
+      userPhone,
+      `❌ *Pedido no encontrado*\n\n` +
+      `El pedido #${orderId} no está en tu lista de pedidos.\n\n` +
+      `Verifica el número e intenta nuevamente.`
+    );
+    return;
+  }
+
+  // Mostrar detalles del pedido
+  const orderDetails = formatOrderDetails(order);
+  await sendTextMessage(userPhone, orderDetails);
+  
+  const buttons = [
+    { id: 'volver_menu', title: '🏠 Volver al menú' },
+    { id: 'menu_asesor', title: '💬 Hablar con asesor' }
+  ];
+  
+  await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+  userSessions[userPhone].state = 'MAIN_MENU';
 };
 
 module.exports = {
