@@ -11,6 +11,38 @@ const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573173745021';
 const ADVISOR_CONVERSATION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
 const INACTIVITY_TIMEOUT = parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '7') * 60 * 1000; // 7 minutos de inactividad
 
+// Configuración de limpieza de sesiones antiguas
+const MAX_SESSION_AGE = 7 * 24 * 60 * 60 * 1000; // 7 días
+const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // Limpiar cada 24 horas
+
+/**
+ * Limpia sesiones antiguas de la memoria para prevenir fuga de memoria
+ */
+const cleanupOldSessions = () => {
+  const now = Date.now();
+  let cleanedCount = 0;
+  
+  for (const [userPhone, session] of Object.entries(userSessions)) {
+    // Eliminar sesiones sin actividad reciente (más de 7 días)
+    if (session.lastActivity && (now - session.lastActivity) > MAX_SESSION_AGE) {
+      delete userSessions[userPhone];
+      cleanedCount++;
+    }
+  }
+  
+  if (cleanedCount > 0) {
+    console.log(`🧹 Limpieza automática: ${cleanedCount} sesiones antiguas eliminadas`);
+  }
+  
+  console.log(`📊 Sesiones activas: ${Object.keys(userSessions).length}`);
+};
+
+// Ejecutar limpieza periódica cada 24 horas
+setInterval(cleanupOldSessions, CLEANUP_INTERVAL);
+
+// Ejecutar limpieza inicial 10 segundos después de arrancar
+setTimeout(cleanupOldSessions, 10000);
+
 /**
  * Verifica si la sesión del usuario ha expirado por inactividad
  */
@@ -288,17 +320,12 @@ const handleMenuSelection = async (userPhone, message) => {
     const timeSinceStart = Date.now() - advisorSession.startTime;
     
     if (timeSinceStart > ADVISOR_CONVERSATION_TIMEOUT) {
-      // Conversación expiró - notificar al cliente
-      console.log(`⏰ Conversación con asesor expiró (24h) para ${userPhone}`);
+      // Conversación expiró - cierre silencioso (sin mensaje)
+      console.log(`⏰ Conversación con asesor expiró (24h) para ${userPhone} - Cierre silencioso`);
       usersWithAdvisor.delete(userPhone);
       
-      await sendTextMessage(
-        userPhone,
-        `⏰ *Conversación finalizada*\n\n` +
-        `Han pasado 24 horas desde tu última conversación con el asesor.\n\n` +
-        `La conversación ha sido cerrada automáticamente.\n\n` +
-        `Si necesitas ayuda nuevamente, escribe *menú* para ver las opciones disponibles.`
-      );
+      // Simplemente mostrar el menú normalmente (experiencia fluida)
+      await showMainMenu(userPhone);
       return;
     }
   }

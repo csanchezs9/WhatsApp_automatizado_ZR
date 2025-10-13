@@ -3,6 +3,27 @@ const { handleMenuSelection, updateLastActivity, isUserWithAdvisor } = require('
 
 const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573173745021';
 
+// Cache de mensajes procesados para prevenir duplicados
+const processedMessages = new Map(); // { messageId: timestamp }
+const MESSAGE_EXPIRY = 5 * 60 * 1000; // 5 minutos
+
+// Limpieza periódica de mensajes antiguos cada 5 minutos
+setInterval(() => {
+  const now = Date.now();
+  let cleanedCount = 0;
+  
+  for (const [messageId, timestamp] of processedMessages.entries()) {
+    if (now - timestamp > MESSAGE_EXPIRY) {
+      processedMessages.delete(messageId);
+      cleanedCount++;
+    }
+  }
+  
+  if (cleanedCount > 0) {
+    console.log(`🧹 Limpieza: ${cleanedCount} message IDs antiguos eliminados`);
+  }
+}, MESSAGE_EXPIRY);
+
 /**
  * Verificación del webhook de WhatsApp
  */
@@ -43,6 +64,18 @@ const handleIncomingMessage = async (req, res) => {
           body.entry[0].changes[0].value.messages[0]) {
         
         const message = body.entry[0].changes[0].value.messages[0];
+        const messageId = message.id;
+        
+        // Validar si el mensaje ya fue procesado (prevenir duplicados)
+        if (processedMessages.has(messageId)) {
+          console.log(`⚠️ Mensaje duplicado detectado: ${messageId} - Ignorando`);
+          res.sendStatus(200);
+          return;
+        }
+        
+        // Marcar mensaje como procesado
+        processedMessages.set(messageId, Date.now());
+        
         const from = message.from; // Número del usuario
         const messageBody = message.text?.body || '';
         const messageType = message.type;
