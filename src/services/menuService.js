@@ -527,10 +527,12 @@ const handleMenuSelection = async (userPhone, message) => {
       userPhone,
       `📝 *ACTUALIZAR MENSAJE DE PROMOCIONES*\n\n` +
       `Por favor, escribe el *nuevo mensaje* que aparecerá en la opción "Promociones y Descuentos".\n\n` +
-      `💡 Puedes usar formato:\n` +
+      `💡 *Puedes usar formato:*\n` +
       `• *Negritas* con asteriscos\n` +
       `• _Cursivas_ con guiones bajos\n` +
-      `• Emojis 🔥😎\n\n` +
+      `• Emojis 🔥😎🎉\n` +
+      `• Saltos de línea para organizar\n\n` +
+      `📏 *Límite:* Máximo 4000 caracteres\n\n` +
       `Escribe tu mensaje ahora:`
     );
     return;
@@ -673,13 +675,27 @@ const handleMenuSelection = async (userPhone, message) => {
       
       case 'UPDATING_PROMO':
         // El asesor está actualizando el mensaje de promociones
+        // Validar longitud del mensaje (límite de WhatsApp: 4096, dejamos margen)
+        if (message.length > 4000) {
+          await sendTextMessage(
+            userPhone,
+            `❌ *Mensaje demasiado largo*\n\n` +
+            `Tu mensaje tiene *${message.length} caracteres*.\n` +
+            `El límite es *4000 caracteres*.\n\n` +
+            `Por favor, acorta el mensaje e intenta nuevamente con /actualizar_promo`
+          );
+          userSessions[userPhone].state = 'MAIN_MENU';
+          break;
+        }
+
         const success = updatePromoMessage(message, userPhone);
         if (success) {
           await sendTextMessage(
             userPhone,
             `✅ *Mensaje de promociones actualizado correctamente*\n\n` +
             `El nuevo mensaje ya está disponible para todos los usuarios.\n\n` +
-            `Vista previa:\n${message}`
+            `📊 Longitud: ${message.length} caracteres\n\n` +
+            `Vista previa:\n━━━━━━━━━━━━━━━━━━━━\n${message}`
           );
         } else {
           await sendTextMessage(
@@ -856,13 +872,19 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     
     await sendInteractiveButtons(userPhone, mensaje, buttons);
   } else if (messageText === '7' || messageText.includes('promo') || messageText.includes('descuento') || messageText.includes('oferta')) {
+    // Obtener mensaje de promociones
     const mensaje = getPromoMessage();
     
+    // Enviar el mensaje de promociones sin botones (sin límite de caracteres)
+    await sendTextMessage(userPhone, mensaje);
+    
+    // Enviar botones en mensaje separado
+    const buttonMessage = '¿Qué deseas hacer ahora?';
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
     
-    await sendInteractiveButtons(userPhone, mensaje, buttons);
+    await sendInteractiveButtons(userPhone, buttonMessage, buttons);
   } else {
     const errorMsg = '❌ *Opción no válida.*\n\n' +
       'Por favor escribe el *número* de la opción que deseas (1, 2, 3, 4, 5, 6 o 7).';
