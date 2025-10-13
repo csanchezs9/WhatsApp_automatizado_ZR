@@ -959,23 +959,28 @@ const showProducts = async (userPhone, subcategoryId) => {
     if (categoryId && subcategoryId) {
       // Link directo a los productos de esta subcategoría
       mensaje += `🌐 *Ver más información en la web:*\n`;
-      mensaje += `https://zonarepuestera.com.co/products/?category=${categoryId}&subcategory=${subcategoryId}\n\n`;
+      mensaje += `https://zonarepuestera.com.co/products/?category=${categoryId}&subcategory=${subcategoryId}`;
     } else if (categoryId) {
       // Fallback: mostrar subcategorías de la categoría
       mensaje += `🌐 *Ver más en la tienda:*\n`;
-      mensaje += `https://zonarepuestera.com.co/sub-categories/?category=${categoryId}\n\n`;
+      mensaje += `https://zonarepuestera.com.co/sub-categories/?category=${categoryId}`;
     } else {
       // Fallback general: link a productos
       mensaje += `🌐 *Ver más en la tienda:*\n`;
-      mensaje += `https://zonarepuestera.com.co/products/\n\n`;
+      mensaje += `https://zonarepuestera.com.co/products/`;
     }
     
+    // Enviar el mensaje con los productos (sin botones para evitar límite de 1024 caracteres)
+    await sendTextMessage(userPhone, mensaje);
+    
+    // Enviar botones en un mensaje separado corto
+    const buttonMessage = '¿Qué deseas hacer ahora?';
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' },
       { id: 'menu_catalogo', title: '📦 Ver catálogo' }
     ];
     
-    await sendInteractiveButtons(userPhone, mensaje, buttons);
+    await sendInteractiveButtons(userPhone, buttonMessage, buttons);
     userSessions[userPhone].state = 'MAIN_MENU';
     
   } catch (error) {
