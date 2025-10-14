@@ -1303,10 +1303,10 @@ const showCategories = async (userPhone) => {
 
     // Crear mensaje con todas las categorías numeradas
     let mensaje = `🔧 *Estas son nuestras categorías principales*\n\n`;
-    
+
     categories.forEach((cat, index) => {
       const numero = index + 1;
-      const subcatInfo = cat.subcategory_count ? `\t\t(${cat.subcategory_count} subcategorías)` : '';
+      const subcatInfo = cat.subcategory_count ? ` (${cat.subcategory_count})` : '';
       mensaje += `${numero}. ${cat.name}${subcatInfo}\n`;
     });
     
