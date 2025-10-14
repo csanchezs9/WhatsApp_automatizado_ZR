@@ -190,13 +190,13 @@ function formatProductList(products, page = 1, perPage = 10, filters = {}) {
     
     if (hasMore) {
         // Construir URL del catálogo con filtros
-        let catalogUrl = 'https://zonarepuestera.com.co/catalogo';
+        let catalogUrl = 'https://zonarepuestera.com.co/products/';
         const params = [];
         
-        if (filters.brand) params.push(`marca=${filters.brand}`);
-        if (filters.model) params.push(`modelo=${filters.model}`);
-        if (filters.category) params.push(`categoria=${filters.category}`);
-        if (filters.subcategory) params.push(`subcategoria=${filters.subcategory}`);
+        if (filters.brand) params.push(`brand=${filters.brand}`);
+        if (filters.model) params.push(`model=${filters.model}`);
+        if (filters.category) params.push(`category=${filters.category}`);
+        if (filters.subcategory) params.push(`subcategory=${filters.subcategory}`);
         
         if (params.length > 0) {
             catalogUrl += '?' + params.join('&');
