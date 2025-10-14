@@ -1306,7 +1306,7 @@ const showCategories = async (userPhone) => {
 
     categories.forEach((cat, index) => {
       const numero = index + 1;
-      const subcatInfo = cat.subcategory_count ? ` (${cat.subcategory_count})` : '';
+      const subcatInfo = cat.subcategory_count ? ` (${cat.subcategory_count}sub)` : '';
       mensaje += `${numero}. ${cat.name}${subcatInfo}\n`;
     });
     
