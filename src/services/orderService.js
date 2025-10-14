@@ -172,7 +172,8 @@ const formatOrdersList = (orders) => {
     'Cancelado': '❌'
   };
 
-  let message = `📦 *Tus pedidos* (${orders.length})\n\n`;
+  let message = `¡Excelente! 🎉\n\n` +
+    `Tu correo tiene *${orders.length} ${orders.length === 1 ? 'pedido' : 'pedidos'}* registrado${orders.length === 1 ? '' : 's'}. Aquí está${orders.length === 1 ? '' : 'n'}:\n\n`;
   
   orders.forEach((order, index) => {
     const emoji = statusEmojis[order.status] || '📦';

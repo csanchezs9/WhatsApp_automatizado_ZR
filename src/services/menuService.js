@@ -871,7 +871,8 @@ const handleMenuSelection = async (userPhone, message) => {
         if (!isNaN(categoryIndex) && categoryIndex > 0 && userSessions[userPhone].quoteCategoriesList) {
           const selectedCategory = userSessions[userPhone].quoteCategoriesList[categoryIndex - 1];
           if (selectedCategory) {
-            await showQuoteSubcategories(userPhone, selectedCategory.id);
+            userSessions[userPhone].quoteCategoryName = selectedCategory.name;
+            await showQuoteSubcategories(userPhone, selectedCategory.id, selectedCategory.name);
           } else {
             await sendTextMessage(userPhone, '❌ Número inválido. Por favor elige un número de la lista.');
           }
@@ -1030,9 +1031,9 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     userSessions[userPhone].state = 'WAITING_ADVISOR_QUERY';
     await sendTextMessage(
       userPhone,
-      `📝 *Cuéntanos tu consulta*\n\n` +
-      `Por favor, escribe en detalle qué información necesitas o en qué podemos ayudarte.\n\n` +
-      `Un asesor recibirá tu mensaje y se contactará contigo *en breve*.\n\n` +
+      `¡Perfecto! 👨‍💼\n\n` +
+      `*¿Has elegido hablar con un asesor?*\n\n` +
+      `Cuéntanos aquí tu problema o consulta, y un asesor se contactará contigo *en breve* para ayudarte. 😊\n\n` +
       `💬 _Escribe tu consulta ahora:_`
     );
   } else if (messageText === '3' || messageText.includes('horario')) {
@@ -1110,9 +1111,10 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     userSessions[userPhone].state = 'WAITING_EMAIL_FOR_ORDERS';
     await sendTextMessage(
       userPhone,
-      `📦 *CONSULTA DE PEDIDOS*\n\n` +
-      `Para consultar el estado de tu pedido, por favor escribe el *correo electrónico* que usaste al realizar tu compra.\n\n` +
-      `✉️ _Escribe tu correo ahora:_`
+      `¡Perfecto! 🎯\n\n` +
+      `📦 *¿Quieres consultar tu pedido?*\n\n` +
+      `Por favor, escríbeme el 📧 *correo electrónico* con el que hiciste tu compra y te mostraré toda la información de tu pedido. 😊\n\n` +
+      `✍️ _Escribe tu correo aquí:_`
     );
   } else {
     const errorMsg = '❌ *Opción no válida.*\n\n' +
@@ -1146,7 +1148,7 @@ const showCategories = async (userPhone) => {
     userSessions[userPhone].categoriesList = categories;
 
     // Crear mensaje con todas las categorías numeradas
-    let mensaje = `📋 *CATEGORÍAS DISPONIBLES*\n\n`;
+    let mensaje = `🔧 *Estas son nuestras categorías principales*\n\n`;
     
     categories.forEach((cat, index) => {
       const numero = index + 1;
@@ -1199,20 +1201,21 @@ const handleCategorySelection = async (userPhone, message) => {
   // Obtener la categoría seleccionada (índice = número - 1)
   const selectedCategory = categories[numero - 1];
   userSessions[userPhone].selectedCategory = selectedCategory.id;
-  
-  await showSubCategories(userPhone, selectedCategory.id);
+  userSessions[userPhone].selectedCategoryName = selectedCategory.name;
+
+  await showSubCategories(userPhone, selectedCategory.id, selectedCategory.name);
 };
 
 /**
  * Muestra las subcategorías de una categoría
  */
-const showSubCategories = async (userPhone, categoryId) => {
+const showSubCategories = async (userPhone, categoryId, categoryName = null) => {
   userSessions[userPhone].state = 'SUBCATEGORY_LIST';
   await sendTextMessage(userPhone, '⏳ Cargando subcategorías...');
-  
+
   try {
     const subcategories = await getSubCategories(categoryId);
-    
+
     if (!subcategories || subcategories.length === 0) {
       await sendTextMessage(userPhone, '❌ No hay subcategorías disponibles para esta categoría.');
       await showCategories(userPhone);
@@ -1223,7 +1226,9 @@ const showSubCategories = async (userPhone, categoryId) => {
     userSessions[userPhone].subcategoriesList = subcategories;
 
     // Crear mensaje con todas las subcategorías numeradas
-    let mensaje = `📋 *SUBCATEGORÍAS DISPONIBLES*\n\n`;
+    // Usar el nombre de la categoría si está disponible, sino buscar en la sesión
+    const catName = categoryName || userSessions[userPhone].selectedCategoryName || 'esta categoría';
+    let mensaje = `¡Perfecto! *Estas son las subcategorías de ${catName}*\n\n`;
     
     subcategories.forEach((subcat, index) => {
       const numero = index + 1;
@@ -1415,13 +1420,12 @@ const handleOrdersEmailInput = async (userPhone, email) => {
         userPhone,
         `📦 *No se encontraron pedidos*\n\n` +
         `No hay pedidos asociados al correo *${trimmedEmail}*.\n\n` +
-        `Verifica que el correo sea el mismo que usaste al hacer tu compra.\n\n` +
-        `💡 Si necesitas ayuda, puedes hablar con un asesor.`
+        `Verifica que el correo sea el mismo que usaste al hacer tu compra.`
       );
-      
+
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' },
-        { id: 'repetir_correo', title: '� Repetir correo' }
+        { id: 'repetir_correo', title: '✉️ Repetir correo' }
       ];
       
       await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
@@ -1553,8 +1557,8 @@ const startQuoteFlow = async (userPhone) => {
 
   await sendTextMessage(
     userPhone,
-    `🔍 *COTIZAR AUTOPARTE*\n\n` +
-    `Te ayudaré a encontrar la autoparte que necesitas.\n\n` +
+    `*Trabajo para ti 24/7 para responder tus consultas rapidamente y ayudarte con tu cotización.*\n\n` +
+    `*!Vamos a buscar tu repuesto!*\n\n` +
     `Buscaremos por:\n` +
     `1️⃣ Marca de tu vehículo\n` +
     `2️⃣ Modelo\n` +
@@ -1680,12 +1684,12 @@ const showQuoteCategories = async (userPhone) => {
 /**
  * Muestra las subcategorías de una categoría disponibles para la marca y modelo seleccionados
  */
-const showQuoteSubcategories = async (userPhone, categoryId) => {
+const showQuoteSubcategories = async (userPhone, categoryId, categoryName = null) => {
   const brandId = userSessions[userPhone].quoteFilters.brand;
   const modelId = userSessions[userPhone].quoteFilters.model;
-  
+
   const result = await getProductSubcategories(categoryId, brandId, modelId);
-  
+
   if (!result.success || !result.data || result.data.length === 0) {
     // Si no hay subcategorías, buscar productos directamente
     userSessions[userPhone].quoteFilters.category = categoryId;
@@ -1697,7 +1701,8 @@ const showQuoteSubcategories = async (userPhone, categoryId) => {
   userSessions[userPhone].quoteFilters.category = categoryId;
 
   // Crear lista numerada en texto
-  let message = `🔖 *SELECCIONA LA SUBCATEGORÍA*\n\n`;
+  const catName = categoryName || userSessions[userPhone].quoteCategoryName || 'esta categoría';
+  let message = `¡Perfecto! *Estas son las subcategorías de ${catName}*\n\n`;
 
   result.data.forEach((subcategory, index) => {
     message += `${index + 1}. ${subcategory.name}\n`;
