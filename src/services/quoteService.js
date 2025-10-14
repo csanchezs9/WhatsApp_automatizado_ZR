@@ -166,21 +166,19 @@ function formatProduct(product) {
 /**
  * Formatea una lista de productos para WhatsApp
  */
-function formatProductList(products, page = 1, perPage = 5) {
-    const start = (page - 1) * perPage;
-    const end = start + perPage;
-    const paginatedProducts = products.slice(start, end);
-    const totalPages = Math.ceil(products.length / perPage);
+function formatProductList(products, page = 1, perPage = 10, filters = {}) {
+    const maxDisplay = 10; // Máximo de productos a mostrar
+    const displayProducts = products.slice(0, maxDisplay);
+    const hasMore = products.length > maxDisplay;
     
     let message = `🔍 *Resultados de búsqueda*\n`;
-    message += `📊 Encontrados: ${products.length} productos\n`;
-    message += `📄 Página ${page} de ${totalPages}\n\n`;
+    message += `📊 Encontrados: ${products.length} productos\n\n`;
     
-    paginatedProducts.forEach((product, index) => {
+    displayProducts.forEach((product, index) => {
         const price = product.discounted_price || product.base_price || 0;
         const savings = product.savings || 0;
         
-        message += `*${start + index + 1}.* ${product.description || product.name}\n`;
+        message += `*${index + 1}.* ${product.description || product.name}\n`;
         message += `   💰 $${Math.round(price).toLocaleString('es-CO')}`;
         
         if (savings > 0) {
@@ -190,12 +188,26 @@ function formatProductList(products, page = 1, perPage = 5) {
         message += `\n   📊 Stock: ${product.stock || 0} unidades\n\n`;
     });
     
-    if (totalPages > 1) {
-        message += `\n_Responde con el número del producto para ver más detalles_`;
-        message += `\n_O "siguiente" para ver más productos_`;
-    } else {
-        message += `\n_Responde con el número del producto para ver más detalles_`;
+    if (hasMore) {
+        // Construir URL del catálogo con filtros
+        let catalogUrl = 'https://zonarepuestera.com.co/catalogo';
+        const params = [];
+        
+        if (filters.brand) params.push(`marca=${filters.brand}`);
+        if (filters.model) params.push(`modelo=${filters.model}`);
+        if (filters.category) params.push(`categoria=${filters.category}`);
+        if (filters.subcategory) params.push(`subcategoria=${filters.subcategory}`);
+        
+        if (params.length > 0) {
+            catalogUrl += '?' + params.join('&');
+        }
+        
+        message += `\n📱 *Mostrando primeros ${maxDisplay} de ${products.length} productos*\n\n`;
+        message += `🌐 Para ver todos los productos disponibles, ingresa aquí:\n`;
+        message += `${catalogUrl}\n\n`;
     }
+    
+    message += `\n_Responde con el número del producto para ver más detalles_`;
     
     return message;
 }

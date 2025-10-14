@@ -1713,7 +1713,7 @@ const searchQuoteProducts = async (userPhone) => {
   userSessions[userPhone].quoteResultsPage = 1;
   userSessions[userPhone].state = 'QUOTE_VIEW_RESULTS';
 
-  const productList = formatProductList(result.data, 1, 5);
+  const productList = formatProductList(result.data, 1, 10, filters);
   await sendTextMessage(userPhone, productList);
   
   const buttons = [
