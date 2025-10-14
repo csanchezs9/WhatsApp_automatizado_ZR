@@ -638,44 +638,101 @@ const handleMenuSelection = async (userPhone, message) => {
     return;
   }
 
+  // Manejar botones interactivos del menú principal
   if (messageText.startsWith('menu_')) {
     const menuOption = messageText.replace('menu_', '');
-    
+
     if (menuOption === 'cotizar') {
-      // Nueva opción: Cotizar una autoparte
       await startQuoteFlow(userPhone);
       return;
     } else if (menuOption === 'catalogo') {
-      // Simular selección de opción 1
-      await handleMainMenuSelection(userPhone, '1');
+      await showCategories(userPhone);
       return;
     } else if (menuOption === 'asesor') {
-      // Simular selección de opción 2
-      await handleMainMenuSelection(userPhone, '2');
+      userSessions[userPhone].state = 'WAITING_ADVISOR_QUERY';
+      await sendTextMessage(
+        userPhone,
+        `¡Perfecto! 👨‍💼\n\n` +
+        `*¿Has elegido hablar con un asesor?*\n\n` +
+        `Cuéntanos aquí tu problema o consulta, y un asesor se contactará contigo *en breve* para ayudarte. 😊\n\n` +
+        `💬 _Escribe tu consulta ahora:_`
+      );
       return;
     } else if (menuOption === 'horarios') {
-      // Simular selección de opción 3
-      await handleMainMenuSelection(userPhone, '3');
+      userSessions[userPhone].state = 'VIEWING_INFO';
+      const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
+        `Lunes a Viernes: 7:00 AM - 5:00 PM\n` +
+        `Sábados: 8:00 AM - 1:00 PM\n` +
+        `Domingos: Cerrado`;
+      const buttons = [
+        { id: 'volver_menu', title: '🏠 Volver al menú' }
+      ];
+      await sendInteractiveButtons(userPhone, mensaje, buttons);
       return;
     } else if (menuOption === 'garantias') {
-      // Simular selección de opción 4
-      await handleMainMenuSelection(userPhone, '4');
+      userSessions[userPhone].state = 'VIEWING_INFO';
+      const mensaje = `🛡️ *GARANTÍAS Y DEVOLUCIONES*\n\n` +
+        `Si presentas algún inconveniente con tu compra, escríbenos con:\n\n` +
+        `✔ Número de pedido\n` +
+        `✔ Nombre del producto\n` +
+        `✔ Breve descripción del caso\n\n` +
+        `Nuestro equipo revisará tu solicitud y te responderá lo antes posible.\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🧾 *Todos nuestros productos cuentan con garantía de 3 meses*, excepto la línea de eléctricos originales.\n\n` +
+        `⚠️ *Importante:* Los productos eléctricos originales tienen garantía *solo si presentan fallas de fábrica en el momento de la instalación*.\n\n` +
+        `Después de instalados y en funcionamiento, no aplica garantía por daños causados por mal uso, voltajes incorrectos u otras manipulaciones.`;
+      const buttons = [
+        { id: 'volver_menu', title: '🏠 Volver al menú' }
+      ];
+      await sendInteractiveButtons(userPhone, mensaje, buttons);
       return;
     } else if (menuOption === 'envios') {
-      // Simular selección de opción 5
-      await handleMainMenuSelection(userPhone, '5');
+      userSessions[userPhone].state = 'VIEWING_INFO';
+      const mensaje = `📮 *INFORMACIÓN SOBRE TIEMPOS DE ENVÍO Y PAGOS*\n\n` +
+        `📮 Realizamos envíos a todo Colombia.\n\n` +
+        `🚚 *Tiempo estimado:* 1 a 3 días hábiles\n\n` +
+        `💳 *Métodos de pago:* Wompi, Addi, transferencia, contra entrega (según zona)\n\n` +
+        `📦 Empacamos con cuidado para garantizar que tus repuestos lleguen en perfecto estado.`;
+      const buttons = [
+        { id: 'volver_menu', title: '🏠 Volver al menú' }
+      ];
+      await sendInteractiveButtons(userPhone, mensaje, buttons);
       return;
     } else if (menuOption === 'puntos') {
-      // Simular selección de opción 6
-      await handleMainMenuSelection(userPhone, '6');
+      userSessions[userPhone].state = 'VIEWING_INFO';
+      const mensaje = `📍 *PUNTOS DE ENTREGA O RECOGIDA LOCAL*\n\n` +
+        `📦 Puedes recoger tu pedido en nuestra sede o coordinar contra entrega (según zona)\n\n` +
+        `📍 *Dirección:* CR 50A # 46 – 48, Piso 3. Itagüí (Antioquia)\n\n` +
+        `📞 *Teléfono:* 316 483 6166\n\n` +
+        `🕓 *Horario:*\n` +
+        `Lunes a viernes 8:00 a.m. – 5:00 p.m.\n` +
+        `Sábados 8:00 a.m. – 12:00 p.m.\n\n` +
+        `📌 Ver en Google Maps:\n` +
+        `https://www.google.com/maps/search/?api=1&query=CR+50A+%23+46-48+Itagüí+Antioquia`;
+      const buttons = [
+        { id: 'volver_menu', title: '🏠 Volver al menú' }
+      ];
+      await sendInteractiveButtons(userPhone, mensaje, buttons);
       return;
     } else if (menuOption === 'promociones') {
-      // Simular selección de opción 7
-      await handleMainMenuSelection(userPhone, '7');
+      userSessions[userPhone].state = 'VIEWING_INFO';
+      const mensaje = getPromoMessage();
+      await sendTextMessage(userPhone, mensaje);
+      const buttonMessage = '¿Qué deseas hacer ahora?';
+      const buttons = [
+        { id: 'volver_menu', title: '🏠 Volver al menú' }
+      ];
+      await sendInteractiveButtons(userPhone, buttonMessage, buttons);
       return;
     } else if (menuOption === 'pedidos') {
-      // Opción 8: Estado de pedido
-      await handleMainMenuSelection(userPhone, '8');
+      userSessions[userPhone].state = 'WAITING_EMAIL_FOR_ORDERS';
+      await sendTextMessage(
+        userPhone,
+        `¡Perfecto! 🎯\n\n` +
+        `📦 *¿Quieres consultar tu pedido?*\n\n` +
+        `Por favor, escríbeme el 📧 *correo electrónico* con el que hiciste tu compra y te mostraré toda la información de tu pedido. 😊\n\n` +
+        `✍️ _Escribe tu correo aquí:_`
+      );
       return;
     }
   }
@@ -910,7 +967,7 @@ const handleMenuSelection = async (userPhone, message) => {
           const currentPage = userSessions[userPhone].quoteResultsPage || 1;
           const results = userSessions[userPhone].quoteResults || [];
           const totalPages = Math.ceil(results.length / 5);
-          
+
           if (currentPage < totalPages) {
             userSessions[userPhone].quoteResultsPage = currentPage + 1;
             const productList = formatProductList(results, currentPage + 1, 5);
@@ -921,6 +978,16 @@ const handleMenuSelection = async (userPhone, message) => {
         } else {
           await sendTextMessage(userPhone, '❌ Por favor ingresa el número del producto que deseas ver o escribe "siguiente" para más resultados.');
         }
+        break;
+
+      case 'VIEWING_INFO':
+        // Usuario está viendo información estática (horarios, garantías, envíos, puntos, promociones)
+        // Solo aceptar botones, rechazar cualquier otro input
+        const errorMsg = '❌ *Opción no válida.*';
+        const buttons = [
+          { id: 'volver_menu', title: '🏠 Volver al menú' }
+        ];
+        await sendInteractiveButtons(userPhone, errorMsg, buttons);
         break;
 
       default:
@@ -1021,12 +1088,13 @@ const showMainMenu = async (userPhone) => {
 
 /**
  * Maneja la selección en el menú principal
+ * IMPORTANTE: Solo acepta palabras clave (no números), ya que el menú es interactivo
  */
 const handleMainMenuSelection = async (userPhone, messageText) => {
-  // Aceptar número o palabra clave
-  if (messageText === '1' || messageText.includes('catálogo') || messageText.includes('catalogo') || messageText.includes('producto')) {
+  // Solo aceptar palabras clave (no números)
+  if (messageText.includes('catálogo') || messageText.includes('catalogo') || messageText.includes('producto')) {
     await showCategories(userPhone);
-  } else if (messageText === '2' || messageText.includes('asesor') || messageText.includes('asesora') || messageText.includes('ayuda')) {
+  } else if (messageText.includes('asesor') || messageText.includes('asesora') || messageText.includes('ayuda')) {
     // Cambiar estado para esperar la consulta del usuario
     userSessions[userPhone].state = 'WAITING_ADVISOR_QUERY';
     await sendTextMessage(
@@ -1036,18 +1104,20 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       `Cuéntanos aquí tu problema o consulta, y un asesor se contactará contigo *en breve* para ayudarte. 😊\n\n` +
       `💬 _Escribe tu consulta ahora:_`
     );
-  } else if (messageText === '3' || messageText.includes('horario')) {
+  } else if (messageText.includes('horario')) {
+    userSessions[userPhone].state = 'VIEWING_INFO';
     const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
       `Lunes a Viernes: 7:00 AM - 5:00 PM\n` +
       `Sábados: 8:00 AM - 1:00 PM\n` +
       `Domingos: Cerrado`;
-    
+
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
-    
+
     await sendInteractiveButtons(userPhone, mensaje, buttons);
-  } else if (messageText === '4' || messageText.includes('garantía') || messageText.includes('garantia') || messageText.includes('devoluc')) {
+  } else if (messageText.includes('garantía') || messageText.includes('garantia') || messageText.includes('devoluc')) {
+    userSessions[userPhone].state = 'VIEWING_INFO';
     const mensaje = `🛡️ *GARANTÍAS Y DEVOLUCIONES*\n\n` +
       `Si presentas algún inconveniente con tu compra, escríbenos con:\n\n` +
       `✔ Número de pedido\n` +
@@ -1058,25 +1128,27 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       `🧾 *Todos nuestros productos cuentan con garantía de 3 meses*, excepto la línea de eléctricos originales.\n\n` +
       `⚠️ *Importante:* Los productos eléctricos originales tienen garantía *solo si presentan fallas de fábrica en el momento de la instalación*.\n\n` +
       `Después de instalados y en funcionamiento, no aplica garantía por daños causados por mal uso, voltajes incorrectos u otras manipulaciones.`;
-    
+
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
-    
+
     await sendInteractiveButtons(userPhone, mensaje, buttons);
-  } else if (messageText === '5' || messageText.includes('envío') || messageText.includes('envio') || messageText.includes('pago')) {
+  } else if (messageText.includes('envío') || messageText.includes('envio') || messageText.includes('pago')) {
+    userSessions[userPhone].state = 'VIEWING_INFO';
     const mensaje = `📮 *INFORMACIÓN SOBRE TIEMPOS DE ENVÍO Y PAGOS*\n\n` +
       `📮 Realizamos envíos a todo Colombia.\n\n` +
       `🚚 *Tiempo estimado:* 1 a 3 días hábiles\n\n` +
       `💳 *Métodos de pago:* Wompi, Addi, transferencia, contra entrega (según zona)\n\n` +
       `📦 Empacamos con cuidado para garantizar que tus repuestos lleguen en perfecto estado.`;
-    
+
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
-    
+
     await sendInteractiveButtons(userPhone, mensaje, buttons);
-  } else if (messageText === '6' || messageText.includes('punto') || messageText.includes('entrega') || messageText.includes('recogida') || messageText.includes('dirección') || messageText.includes('direccion')) {
+  } else if (messageText.includes('punto') || messageText.includes('entrega') || messageText.includes('recogida') || messageText.includes('dirección') || messageText.includes('direccion')) {
+    userSessions[userPhone].state = 'VIEWING_INFO';
     const mensaje = `📍 *PUNTOS DE ENTREGA O RECOGIDA LOCAL*\n\n` +
       `📦 Puedes recoger tu pedido en nuestra sede o coordinar contra entrega (según zona)\n\n` +
       `📍 *Dirección:* CR 50A # 46 – 48, Piso 3. Itagüí (Antioquia)\n\n` +
@@ -1086,27 +1158,28 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       `Sábados 8:00 a.m. – 12:00 p.m.\n\n` +
       `📌 Ver en Google Maps:\n` +
       `https://www.google.com/maps/search/?api=1&query=CR+50A+%23+46-48+Itagüí+Antioquia`;
-    
+
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
-    
+
     await sendInteractiveButtons(userPhone, mensaje, buttons);
-  } else if (messageText === '7' || messageText.includes('promo') || messageText.includes('descuento') || messageText.includes('oferta')) {
+  } else if (messageText.includes('promo') || messageText.includes('descuento') || messageText.includes('oferta')) {
+    userSessions[userPhone].state = 'VIEWING_INFO';
     // Obtener mensaje de promociones
     const mensaje = getPromoMessage();
-    
+
     // Enviar el mensaje de promociones sin botones (sin límite de caracteres)
     await sendTextMessage(userPhone, mensaje);
-    
+
     // Enviar botones en mensaje separado
     const buttonMessage = '¿Qué deseas hacer ahora?';
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
-    
+
     await sendInteractiveButtons(userPhone, buttonMessage, buttons);
-  } else if (messageText === '8' || messageText.includes('pedido') || messageText.includes('orden') || messageText.includes('estado')) {
+  } else if (messageText.includes('pedido') || messageText.includes('orden') || messageText.includes('estado')) {
     // Solicitar email para consultar pedidos
     userSessions[userPhone].state = 'WAITING_EMAIL_FOR_ORDERS';
     await sendTextMessage(
@@ -1117,7 +1190,9 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       `✍️ _Escribe tu correo aquí:_`
     );
   } else {
-    const errorMsg = '❌ *Opción no válida.*';
+    // Rechazar cualquier otro input (incluyendo números)
+    const errorMsg = `❌ *Opción no válida.*\n\n` +
+      `Por favor, usa el botón *"📋 Ver opciones"* del menú para seleccionar una opción.`;
 
     const buttons = [
       { id: 'volver_menu', title: '🏠 Ver menú' }
