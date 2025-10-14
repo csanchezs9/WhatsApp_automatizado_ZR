@@ -105,8 +105,10 @@ async function searchProducts(filters = {}) {
         if (filters.category) params.append('category', filters.category);
         if (filters.subcategory) params.append('subcategory', filters.subcategory);
         
-        const url = `${ECOMMERCE_API_URL}/products/?${params.toString()}`;
+        const url = `${ECOMMERCE_API_URL}/products/products/?${params.toString()}`;
+        console.log(`🔍 Buscando productos: ${url}`);
         const response = await axios.get(url);
+        console.log(`📦 Encontrados: ${response.data.count || 0} productos`);
         
         return {
             success: true,
