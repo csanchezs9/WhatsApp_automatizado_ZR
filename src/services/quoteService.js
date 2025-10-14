@@ -49,7 +49,7 @@ async function getCarModels(brandId) {
  */
 async function getCategories() {
     try {
-        const response = await axios.get(`${ECOMMERCE_API_URL}/categorias/`);
+        const response = await axios.get(`${ECOMMERCE_API_URL}/catalog/categorias/`);
         return {
             success: true,
             data: response.data.results || response.data
@@ -68,7 +68,7 @@ async function getCategories() {
  */
 async function getSubcategories(categoryId) {
     try {
-        const response = await axios.get(`${ECOMMERCE_API_URL}/sub-categorias/?category=${categoryId}`);
+        const response = await axios.get(`${ECOMMERCE_API_URL}/catalog/sub-categorias/?category=${categoryId}`);
         return {
             success: true,
             data: response.data.results || response.data

@@ -825,6 +825,22 @@ const handleMenuSelection = async (userPhone, message) => {
         }
         break;
       
+      case 'QUOTE_SELECT_MODEL':
+        // Usuario seleccionó un modelo de vehículo (por número)
+        const modelIndex = parseInt(messageText);
+        if (!isNaN(modelIndex) && modelIndex > 0 && userSessions[userPhone].carModelsList) {
+          const selectedModel = userSessions[userPhone].carModelsList[modelIndex - 1];
+          if (selectedModel) {
+            userSessions[userPhone].quoteFilters.model = selectedModel.id;
+            await showQuoteCategories(userPhone);
+          } else {
+            await sendTextMessage(userPhone, '❌ Número inválido. Por favor elige un número de la lista.');
+          }
+        } else {
+          await sendTextMessage(userPhone, '❌ Por favor responde con el número del modelo que deseas.');
+        }
+        break;
+      
       case 'QUOTE_SELECT_CATEGORY':
         // Usuario seleccionó una categoría de producto (por número)
         const categoryIndex = parseInt(messageText);
