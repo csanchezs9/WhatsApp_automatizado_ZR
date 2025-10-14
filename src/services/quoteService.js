@@ -128,31 +128,32 @@ async function searchProducts(filters = {}) {
  * Formatea la información de un producto para WhatsApp
  */
 function formatProduct(product) {
-    const price = product.inventoryprice?.final_price || product.inventoryprice?.base_price || 0;
-    const stock = product.inventoryprice?.stock || 0;
-    const discount = product.inventoryprice?.discount_percent || 0;
+    // El serializer devuelve los campos directamente, no en inventoryprice
+    const price = product.discounted_price || product.base_price || 0;
+    const stock = product.stock || 0;
+    const basePrice = product.base_price || 0;
+    const savings = product.savings || 0;
     
-    let message = `📦 *${product.description}*\n`;
+    let message = `📦 *${product.description || product.name}*\n`;
     message += `🔧 Código: ${product.code}\n`;
-    message += `🏷️ Marca: ${product.brand?.name || 'N/A'}\n`;
-    message += `📁 Categoría: ${product.category?.name || 'N/A'}`;
+    message += `🏷️ Marca: ${product.brand || 'N/A'}\n`;
+    message += `📁 Categoría: ${product.category || 'N/A'}`;
     
     if (product.subcategory?.name) {
         message += ` → ${product.subcategory.name}`;
     }
     
-    message += `\n💰 Precio: $${price.toLocaleString('es-CO')}`;
+    message += `\n💰 Precio: $${Math.round(price).toLocaleString('es-CO')}`;
     
-    if (discount > 0) {
-        const originalPrice = product.inventoryprice?.base_price || 0;
-        message += ` ~~$${originalPrice.toLocaleString('es-CO')}~~ (-${discount}% OFF)`;
+    if (savings > 0) {
+        message += ` ~~$${Math.round(basePrice).toLocaleString('es-CO')}~~ (AHORRO: $${Math.round(savings).toLocaleString('es-CO')})`;
     }
     
     message += `\n📊 Stock: ${stock} unidades`;
     
-    // Autos compatibles
+    // Autos compatibles (vienen como array de strings)
     if (product.compatible_cars && product.compatible_cars.length > 0) {
-        const cars = product.compatible_cars.slice(0, 3).map(c => `${c.brand?.name} ${c.name}`).join(', ');
+        const cars = product.compatible_cars.slice(0, 3).join(', ');
         message += `\n🚗 Compatible: ${cars}`;
         if (product.compatible_cars.length > 3) {
             message += ` y ${product.compatible_cars.length - 3} más`;
@@ -176,14 +177,17 @@ function formatProductList(products, page = 1, perPage = 5) {
     message += `📄 Página ${page} de ${totalPages}\n\n`;
     
     paginatedProducts.forEach((product, index) => {
-        message += `*${start + index + 1}.* ${product.description}\n`;
-        message += `   💰 $${(product.inventoryprice?.final_price || 0).toLocaleString('es-CO')}`;
+        const price = product.discounted_price || product.base_price || 0;
+        const savings = product.savings || 0;
         
-        if (product.inventoryprice?.discount_percent > 0) {
-            message += ` (-${product.inventoryprice.discount_percent}% OFF)`;
+        message += `*${start + index + 1}.* ${product.description || product.name}\n`;
+        message += `   💰 $${Math.round(price).toLocaleString('es-CO')}`;
+        
+        if (savings > 0) {
+            message += ` (AHORRO: $${Math.round(savings).toLocaleString('es-CO')})`;
         }
         
-        message += `\n   📊 Stock: ${product.inventoryprice?.stock || 0} unidades\n\n`;
+        message += `\n   📊 Stock: ${product.stock || 0} unidades\n\n`;
     });
     
     if (totalPages > 1) {
