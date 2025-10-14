@@ -188,26 +188,25 @@ function formatProductList(products, page = 1, perPage = 10, filters = {}) {
         message += `\n   📊 Stock: ${product.stock || 0} unidades\n\n`;
     });
     
-    if (hasMore) {
-        // Construir URL del catálogo con filtros
-        let catalogUrl = 'https://zonarepuestera.com.co/products/';
-        const params = [];
-        
-        if (filters.brand) params.push(`brand=${filters.brand}`);
-        if (filters.model) params.push(`model=${filters.model}`);
-        if (filters.category) params.push(`category=${filters.category}`);
-        if (filters.subcategory) params.push(`subcategory=${filters.subcategory}`);
-        
-        if (params.length > 0) {
-            catalogUrl += '?' + params.join('&');
-        }
-        
-        message += `\n📱 *Mostrando primeros ${maxDisplay} de ${products.length} productos*\n\n`;
-        message += `🌐 Para ver todos los productos disponibles, ingresa aquí:\n`;
-        message += `${catalogUrl}\n\n`;
+    // Construir URL del catálogo con filtros (siempre mostrar)
+    let catalogUrl = 'https://zonarepuestera.com.co/products/';
+    const params = [];
+    
+    if (filters.brand) params.push(`brand=${filters.brand}`);
+    if (filters.model) params.push(`model=${filters.model}`);
+    if (filters.category) params.push(`category=${filters.category}`);
+    if (filters.subcategory) params.push(`subcategory=${filters.subcategory}`);
+    
+    if (params.length > 0) {
+        catalogUrl += '?' + params.join('&');
     }
     
-    message += `\n_Responde con el número del producto para ver más detalles_`;
+    if (hasMore) {
+        message += `\n📱 *Mostrando primeros ${maxDisplay} de ${products.length} productos*\n\n`;
+    }
+    
+    message += `🌐 *Ver todos los productos en el catálogo:*\n`;
+    message += `${catalogUrl}`;
     
     return message;
 }
