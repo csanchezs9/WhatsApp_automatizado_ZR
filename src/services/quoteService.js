@@ -7,7 +7,7 @@ const ECOMMERCE_API_URL = process.env.ECOMMERCE_API_URL || 'https://zonarepueste
  */
 async function getCarBrands() {
     try {
-        const response = await axios.get(`${ECOMMERCE_API_URL}/car-brands/`);
+        const response = await axios.get(`${ECOMMERCE_API_URL}/vehicles/car-brands/`);
         return {
             success: true,
             data: response.data.results || response.data
@@ -26,10 +26,14 @@ async function getCarBrands() {
  */
 async function getCarModels(brandId) {
     try {
-        const response = await axios.get(`${ECOMMERCE_API_URL}/car-brands/${brandId}/`);
+        const url = `${ECOMMERCE_API_URL}/vehicles/car-models/?brand=${brandId}`;
+        console.log(`🔍 Consultando modelos: ${url}`);
+        const response = await axios.get(url);
+        console.log('📦 Respuesta de modelos:', JSON.stringify(response.data, null, 2));
+        
         return {
             success: true,
-            data: response.data.models || []
+            data: response.data || []
         };
     } catch (error) {
         console.error('❌ Error obteniendo modelos:', error.response?.data || error.message);

@@ -810,46 +810,52 @@ const handleMenuSelection = async (userPhone, message) => {
         break;
 
       case 'QUOTE_SELECT_BRAND':
-        // Usuario seleccionó una marca de vehículo
-        if (messageText.startsWith('quote_brand_')) {
-          const brandId = parseInt(messageText.replace('quote_brand_', ''));
-          await showCarModels(userPhone, brandId);
+        // Usuario seleccionó una marca de vehículo (por número)
+        const brandIndex = parseInt(messageText);
+        if (!isNaN(brandIndex) && brandIndex > 0 && userSessions[userPhone].carBrandsList) {
+          const selectedBrand = userSessions[userPhone].carBrandsList[brandIndex - 1];
+          if (selectedBrand) {
+            // Mostrar modelos de la marca seleccionada
+            await showCarModels(userPhone, selectedBrand.id);
+          } else {
+            await sendTextMessage(userPhone, '❌ Número inválido. Por favor elige un número de la lista.');
+          }
         } else {
-          await sendTextMessage(userPhone, '❌ Selección inválida. Por favor elige una marca de la lista.');
-        }
-        break;
-      
-      case 'QUOTE_SELECT_MODEL':
-        // Usuario seleccionó un modelo de vehículo
-        if (messageText.startsWith('quote_model_')) {
-          const modelId = parseInt(messageText.replace('quote_model_', ''));
-          userSessions[userPhone].quoteFilters.model = modelId;
-          await showQuoteCategories(userPhone);
-        } else {
-          await sendTextMessage(userPhone, '❌ Selección inválida. Por favor elige un modelo de la lista.');
+          await sendTextMessage(userPhone, '❌ Por favor responde con el número de la marca que deseas.');
         }
         break;
       
       case 'QUOTE_SELECT_CATEGORY':
-        // Usuario seleccionó una categoría de producto
-        if (messageText.startsWith('quote_category_')) {
-          const categoryId = parseInt(messageText.replace('quote_category_', ''));
-          await showQuoteSubcategories(userPhone, categoryId);
+        // Usuario seleccionó una categoría de producto (por número)
+        const categoryIndex = parseInt(messageText);
+        if (!isNaN(categoryIndex) && categoryIndex > 0 && userSessions[userPhone].quoteCategoriesList) {
+          const selectedCategory = userSessions[userPhone].quoteCategoriesList[categoryIndex - 1];
+          if (selectedCategory) {
+            await showQuoteSubcategories(userPhone, selectedCategory.id);
+          } else {
+            await sendTextMessage(userPhone, '❌ Número inválido. Por favor elige un número de la lista.');
+          }
         } else {
-          await sendTextMessage(userPhone, '❌ Selección inválida. Por favor elige una categoría de la lista.');
+          await sendTextMessage(userPhone, '❌ Por favor responde con el número de la categoría que necesitas.');
         }
         break;
       
       case 'QUOTE_SELECT_SUBCATEGORY':
-        // Usuario seleccionó una subcategoría o decidió omitirla
-        if (messageText === 'quote_skip_subcategory') {
+        // Usuario seleccionó una subcategoría o decidió omitirla (por número)
+        const subcategoryIndex = parseInt(messageText);
+        if (subcategoryIndex === 0) {
+          // Omitir subcategoría
           await searchQuoteProducts(userPhone);
-        } else if (messageText.startsWith('quote_subcategory_')) {
-          const subcategoryId = parseInt(messageText.replace('quote_subcategory_', ''));
-          userSessions[userPhone].quoteFilters.subcategory = subcategoryId;
-          await searchQuoteProducts(userPhone);
+        } else if (!isNaN(subcategoryIndex) && subcategoryIndex > 0 && userSessions[userPhone].quoteSubcategoriesList) {
+          const selectedSubcategory = userSessions[userPhone].quoteSubcategoriesList[subcategoryIndex - 1];
+          if (selectedSubcategory) {
+            userSessions[userPhone].quoteFilters.subcategory = selectedSubcategory.id;
+            await searchQuoteProducts(userPhone);
+          } else {
+            await sendTextMessage(userPhone, '❌ Número inválido. Por favor elige un número de la lista o 0 para omitir.');
+          }
         } else {
-          await sendTextMessage(userPhone, '❌ Selección inválida. Por favor elige una opción de la lista.');
+          await sendTextMessage(userPhone, '❌ Por favor responde con el número de la subcategoría o 0 para omitir.');
         }
         break;
       
@@ -1527,23 +1533,18 @@ const showCarBrands = async (userPhone) => {
 
   userSessions[userPhone].carBrandsList = result.data;
   
-  // Crear lista interactiva con las marcas
-  const rows = result.data.slice(0, 10).map((brand, index) => ({
-    id: `quote_brand_${brand.id}`,
-    title: brand.name,
-    description: `Seleccionar ${brand.name}`
-  }));
+  // Crear lista numerada en texto (sin límite de 10)
+  let message = `🚗 *SELECCIONA LA MARCA DE TU VEHÍCULO*\n\n`;
+  message += `Tenemos ${result.data.length} marcas disponibles.\n\n`;
+  
+  result.data.forEach((brand, index) => {
+    message += `${index + 1}. ${brand.name}\n`;
+  });
+  
+  message += `\n📝 *Responde con el número* de la marca que deseas.`;
 
-  const sections = [{
-    title: "Marcas de Vehículos",
-    rows: rows
-  }];
-
-  const bodyText = `🚗 *SELECCIONA LA MARCA DE TU VEHÍCULO*\n\n` +
-    `Tenemos ${result.data.length} marcas disponibles.\n\n` +
-    `_Selecciona una marca de la lista:_`;
-
-  await sendInteractiveList(userPhone, bodyText, '🚗 Ver marcas', sections);
+  await sendTextMessage(userPhone, message);
+  userSessions[userPhone].state = 'QUOTE_SELECT_BRAND';
 };
 
 /**
@@ -1564,25 +1565,19 @@ const showCarModels = async (userPhone, brandId) => {
   userSessions[userPhone].carModelsList = result.data;
   userSessions[userPhone].quoteFilters.brand = brandId;
   
-  // Crear lista interactiva con los modelos
-  const rows = result.data.slice(0, 10).map((model, index) => ({
-    id: `quote_model_${model.id}`,
-    title: model.name,
-    description: `Seleccionar ${model.name}`
-  }));
-
-  const sections = [{
-    title: "Modelos Disponibles",
-    rows: rows
-  }];
-
   const brandName = userSessions[userPhone].carBrandsList.find(b => b.id === brandId)?.name || '';
   
-  const bodyText = `🚙 *SELECCIONA EL MODELO DE TU ${brandName.toUpperCase()}*\n\n` +
-    `Tenemos ${result.data.length} modelos disponibles.\n\n` +
-    `_Selecciona un modelo de la lista:_`;
+  // Crear lista numerada en texto
+  let message = `🚙 *SELECCIONA EL MODELO DE TU ${brandName.toUpperCase()}*\n\n`;
+  message += `Tenemos ${result.data.length} modelos disponibles.\n\n`;
+  
+  result.data.forEach((model, index) => {
+    message += `${index + 1}. ${model.name}\n`;
+  });
+  
+  message += `\n📝 *Responde con el número* del modelo que deseas.`;
 
-  await sendInteractiveList(userPhone, bodyText, '🚙 Ver modelos', sections);
+  await sendTextMessage(userPhone, message);
   userSessions[userPhone].state = 'QUOTE_SELECT_MODEL';
 };
 
@@ -1603,23 +1598,17 @@ const showQuoteCategories = async (userPhone) => {
 
   userSessions[userPhone].quoteCategoriesList = result.data;
   
-  // Crear lista interactiva con las categorías
-  const rows = result.data.slice(0, 10).map((category, index) => ({
-    id: `quote_category_${category.id}`,
-    title: category.name,
-    description: category.description || `Ver ${category.name}`
-  }));
+  // Crear lista numerada en texto
+  let message = `📁 *SELECCIONA LA CATEGORÍA DEL REPUESTO*\n\n`;
+  message += `¿Qué tipo de repuesto necesitas?\n\n`;
+  
+  result.data.forEach((category, index) => {
+    message += `${index + 1}. ${category.name}\n`;
+  });
+  
+  message += `\n📝 *Responde con el número* de la categoría que necesitas.`;
 
-  const sections = [{
-    title: "Categorías de Repuestos",
-    rows: rows
-  }];
-
-  const bodyText = `📁 *SELECCIONA LA CATEGORÍA DEL REPUESTO*\n\n` +
-    `¿Qué tipo de repuesto necesitas?\n\n` +
-    `_Selecciona una categoría:_`;
-
-  await sendInteractiveList(userPhone, bodyText, '📁 Ver categorías', sections);
+  await sendTextMessage(userPhone, message);
   userSessions[userPhone].state = 'QUOTE_SELECT_CATEGORY';
 };
 
@@ -1638,32 +1627,17 @@ const showQuoteSubcategories = async (userPhone, categoryId) => {
   userSessions[userPhone].quoteSubcategoriesList = result.data;
   userSessions[userPhone].quoteFilters.category = categoryId;
   
-  // Crear lista interactiva con las subcategorías
-  const rows = result.data.slice(0, 10).map((subcategory, index) => ({
-    id: `quote_subcategory_${subcategory.id}`,
-    title: subcategory.name,
-    description: subcategory.description || `Ver ${subcategory.name}`
-  }));
-
-  // Agregar opción para omitir subcategoría
-  rows.push({
-    id: 'quote_skip_subcategory',
-    title: '⏭️ Omitir subcategoría',
-    description: 'Buscar sin filtro de subcategoría'
-  });
-
-  const sections = [{
-    title: "Subcategorías",
-    rows: rows
-  }];
-
-  const categoryName = userSessions[userPhone].quoteCategoriesList.find(c => c.id === categoryId)?.name || '';
+  // Crear lista numerada en texto
+  let message = `🔖 *SELECCIONA LA SUBCATEGORÍA*\n\n`;
   
-  const bodyText = `📂 *SELECCIONA LA SUBCATEGORÍA*\n\n` +
-    `Categoría: ${categoryName}\n\n` +
-    `_Selecciona una subcategoría o omite este filtro:_`;
+  result.data.forEach((subcategory, index) => {
+    message += `${index + 1}. ${subcategory.name}\n`;
+  });
+  
+  message += `\n0. ⏭️ Omitir subcategoría (buscar sin filtro)\n`;
+  message += `\n📝 *Responde con el número* de la subcategoría o 0 para omitir.`;
 
-  await sendInteractiveList(userPhone, bodyText, '📂 Ver subcategorías', sections);
+  await sendTextMessage(userPhone, message);
   userSessions[userPhone].state = 'QUOTE_SELECT_SUBCATEGORY';
 };
 
