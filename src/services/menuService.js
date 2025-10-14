@@ -1598,15 +1598,18 @@ const showCarModels = async (userPhone, brandId) => {
 };
 
 /**
- * Muestra las categorías de productos
+ * Muestra las categorías de productos disponibles para la marca y modelo seleccionados
  */
 const showQuoteCategories = async (userPhone) => {
-  const result = await getProductCategories();
+  const brandId = userSessions[userPhone].quoteFilters.brand;
+  const modelId = userSessions[userPhone].quoteFilters.model;
+  
+  const result = await getProductCategories(brandId, modelId);
   
   if (!result.success || !result.data || result.data.length === 0) {
     await sendTextMessage(
       userPhone,
-      `❌ *Error*\n\nNo se pudieron cargar las categorías de productos.\n\nIntenta nuevamente.`
+      `❌ *Error*\n\nNo se encontraron categorías de productos disponibles para este modelo.\n\nIntenta con otro modelo.`
     );
     await showMainMenu(userPhone);
     return;
@@ -1629,13 +1632,17 @@ const showQuoteCategories = async (userPhone) => {
 };
 
 /**
- * Muestra las subcategorías de una categoría
+ * Muestra las subcategorías de una categoría disponibles para la marca y modelo seleccionados
  */
 const showQuoteSubcategories = async (userPhone, categoryId) => {
-  const result = await getProductSubcategories(categoryId);
+  const brandId = userSessions[userPhone].quoteFilters.brand;
+  const modelId = userSessions[userPhone].quoteFilters.model;
+  
+  const result = await getProductSubcategories(categoryId, brandId, modelId);
   
   if (!result.success || !result.data || result.data.length === 0) {
     // Si no hay subcategorías, buscar productos directamente
+    userSessions[userPhone].quoteFilters.category = categoryId;
     await searchQuoteProducts(userPhone);
     return;
   }

@@ -45,11 +45,16 @@ async function getCarModels(brandId) {
 }
 
 /**
- * Obtiene todas las categorías de productos
+ * Obtiene las categorías de productos disponibles para una marca y modelo
+ * @param {number} brandId - ID de la marca
+ * @param {number} modelId - ID del modelo
  */
-async function getCategories() {
+async function getCategories(brandId, modelId) {
     try {
-        const response = await axios.get(`${ECOMMERCE_API_URL}/catalog/categorias/`);
+        const url = `${ECOMMERCE_API_URL}/catalog/categorias/?brand=${brandId}&model=${modelId}`;
+        console.log(`🔍 Consultando categorías: ${url}`);
+        const response = await axios.get(url);
+        console.log('📦 Respuesta de categorías:', JSON.stringify(response.data, null, 2));
         return {
             success: true,
             data: response.data.results || response.data
@@ -64,11 +69,17 @@ async function getCategories() {
 }
 
 /**
- * Obtiene las subcategorías de una categoría específica
+ * Obtiene las subcategorías disponibles para una categoría, marca y modelo específicos
+ * @param {number} categoryId - ID de la categoría
+ * @param {number} brandId - ID de la marca
+ * @param {number} modelId - ID del modelo
  */
-async function getSubcategories(categoryId) {
+async function getSubcategories(categoryId, brandId, modelId) {
     try {
-        const response = await axios.get(`${ECOMMERCE_API_URL}/catalog/sub-categorias/?category=${categoryId}`);
+        const url = `${ECOMMERCE_API_URL}/catalog/sub-categorias/?category=${categoryId}&brand=${brandId}&model=${modelId}`;
+        console.log(`🔍 Consultando subcategorías: ${url}`);
+        const response = await axios.get(url);
+        console.log('📦 Respuesta de subcategorías:', JSON.stringify(response.data, null, 2));
         return {
             success: true,
             data: response.data.results || response.data
