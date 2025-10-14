@@ -1117,13 +1117,12 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       `✍️ _Escribe tu correo aquí:_`
     );
   } else {
-    const errorMsg = '❌ *Opción no válida.*\n\n' +
-      'Por favor selecciona una opción del menú o escribe el número correspondiente (1-9).';
-    
+    const errorMsg = '❌ *Opción no válida.*';
+
     const buttons = [
       { id: 'volver_menu', title: '🏠 Ver menú' }
     ];
-    
+
     await sendInteractiveButtons(userPhone, errorMsg, buttons);
   }
 };
