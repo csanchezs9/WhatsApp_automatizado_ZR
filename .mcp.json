@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "github": {
+      "url": "https://mcp.github.com",
+      "token": "${GITHUB_TOKEN}"
+    }
+  }
+}

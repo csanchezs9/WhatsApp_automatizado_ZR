@@ -427,7 +427,31 @@ const closeClientConversation = async (clientPhone, advisorPhone) => {
  * Maneja la selección del menú según el mensaje del usuario
  */
 const handleMenuSelection = async (userPhone, message) => {
-  const messageText = message.toLowerCase().trim();
+  // VALIDACIONES DE SEGURIDAD
+  try {
+    // Validar que userPhone existe y es string
+    if (!userPhone || typeof userPhone !== 'string') {
+      console.error('❌ userPhone inválido:', userPhone);
+      return;
+    }
+
+    // Validar que message existe
+    if (message === null || message === undefined) {
+      console.error('❌ mensaje null/undefined de:', userPhone);
+      return;
+    }
+
+    // Convertir message a string si no lo es
+    message = String(message);
+
+    // Limitar longitud del mensaje para prevenir ataques
+    const MAX_MESSAGE_LENGTH = 10000;
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      console.warn(`⚠️ Mensaje muy largo (${message.length} chars) de ${userPhone} - Truncando`);
+      message = message.substring(0, MAX_MESSAGE_LENGTH);
+    }
+
+    const messageText = message.toLowerCase().trim();
 
   // COMANDO /FINALIZAR DESDE EL ASESOR
   if (messageText === '/finalizar' && userPhone === ADVISOR_PHONE) {
@@ -903,8 +927,18 @@ const handleMenuSelection = async (userPhone, message) => {
     }
   } catch (error) {
     console.error('Error manejando selección:', error);
-    await sendTextMessage(userPhone, '❌ Ocurrió un error. Por favor intenta de nuevo.');
-    await showMainMenu(userPhone);
+    // Intentar enviar mensaje de error al usuario
+    try {
+      await sendTextMessage(userPhone, '❌ Ocurrió un error. Por favor intenta de nuevo.');
+      await showMainMenu(userPhone);
+    } catch (innerError) {
+      console.error('❌ Error crítico enviando mensaje de error:', innerError);
+      // No hacer nada más, evitar loop infinito
+    }
+  }
+  } catch (outerError) {
+    // Capturar errores en las validaciones iniciales
+    console.error('❌ Error crítico en handleMenuSelection:', outerError);
   }
 };
 
@@ -944,7 +978,7 @@ const showMainMenu = async (userPhone) => {
           },
           {
             id: 'menu_garantias',
-            title: '🛡️ Garantías y devoluc.',
+            title: '🛡️ Garantías',
             description: 'Garantías y devoluciones'
           },
           {
@@ -1552,14 +1586,18 @@ const showCarBrands = async (userPhone) => {
   // Crear lista numerada en texto (sin límite de 10)
   let message = `🚗 *SELECCIONA LA MARCA DE TU VEHÍCULO*\n\n`;
   message += `Tenemos ${result.data.length} marcas disponibles.\n\n`;
-  
+
   result.data.forEach((brand, index) => {
     message += `${index + 1}. ${brand.name}\n`;
   });
-  
+
   message += `\n📝 *Responde con el número* de la marca que deseas.`;
 
-  await sendTextMessage(userPhone, message);
+  const buttons = [
+    { id: 'volver_menu', title: '🏠 Volver al menú' }
+  ];
+
+  await sendInteractiveButtons(userPhone, message, buttons);
   userSessions[userPhone].state = 'QUOTE_SELECT_BRAND';
 };
 
@@ -1582,18 +1620,22 @@ const showCarModels = async (userPhone, brandId) => {
   userSessions[userPhone].quoteFilters.brand = brandId;
   
   const brandName = userSessions[userPhone].carBrandsList.find(b => b.id === brandId)?.name || '';
-  
+
   // Crear lista numerada en texto
   let message = `🚙 *SELECCIONA EL MODELO DE TU ${brandName.toUpperCase()}*\n\n`;
   message += `Tenemos ${result.data.length} modelos disponibles.\n\n`;
-  
+
   result.data.forEach((model, index) => {
     message += `${index + 1}. ${model.name}\n`;
   });
-  
+
   message += `\n📝 *Responde con el número* del modelo que deseas.`;
 
-  await sendTextMessage(userPhone, message);
+  const buttons = [
+    { id: 'volver_menu', title: '🏠 Volver al menú' }
+  ];
+
+  await sendInteractiveButtons(userPhone, message, buttons);
   userSessions[userPhone].state = 'QUOTE_SELECT_MODEL';
 };
 
@@ -1616,18 +1658,22 @@ const showQuoteCategories = async (userPhone) => {
   }
 
   userSessions[userPhone].quoteCategoriesList = result.data;
-  
+
   // Crear lista numerada en texto
   let message = `📁 *SELECCIONA LA CATEGORÍA DEL REPUESTO*\n\n`;
   message += `¿Qué tipo de repuesto necesitas?\n\n`;
-  
+
   result.data.forEach((category, index) => {
     message += `${index + 1}. ${category.name}\n`;
   });
-  
+
   message += `\n📝 *Responde con el número* de la categoría que necesitas.`;
 
-  await sendTextMessage(userPhone, message);
+  const buttons = [
+    { id: 'volver_menu', title: '🏠 Volver al menú' }
+  ];
+
+  await sendInteractiveButtons(userPhone, message, buttons);
   userSessions[userPhone].state = 'QUOTE_SELECT_CATEGORY';
 };
 
@@ -1649,18 +1695,22 @@ const showQuoteSubcategories = async (userPhone, categoryId) => {
 
   userSessions[userPhone].quoteSubcategoriesList = result.data;
   userSessions[userPhone].quoteFilters.category = categoryId;
-  
+
   // Crear lista numerada en texto
   let message = `🔖 *SELECCIONA LA SUBCATEGORÍA*\n\n`;
-  
+
   result.data.forEach((subcategory, index) => {
     message += `${index + 1}. ${subcategory.name}\n`;
   });
-  
+
   message += `\n0. ⏭️ Omitir subcategoría (buscar sin filtro)\n`;
   message += `\n📝 *Responde con el número* de la subcategoría o 0 para omitir.`;
 
-  await sendTextMessage(userPhone, message);
+  const buttons = [
+    { id: 'volver_menu', title: '🏠 Volver al menú' }
+  ];
+
+  await sendInteractiveButtons(userPhone, message, buttons);
   userSessions[userPhone].state = 'QUOTE_SELECT_SUBCATEGORY';
 };
 
