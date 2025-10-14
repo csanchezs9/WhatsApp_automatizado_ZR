@@ -635,6 +635,12 @@ const handleMenuSelection = async (userPhone, message) => {
       '📧 *Por favor, ingresa tu correo electrónico*\n\n' +
       'Escribe el correo que usaste al hacer tu compra:'
     );
+
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+
+    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
     return;
   }
 
@@ -1469,7 +1475,7 @@ const showProducts = async (userPhone, subcategoryId) => {
  */
 const handleOrdersEmailInput = async (userPhone, email) => {
   const trimmedEmail = email.trim();
-  
+
   // Validar formato de email
   if (!isValidEmail(trimmedEmail)) {
     await sendTextMessage(
@@ -1477,8 +1483,15 @@ const handleOrdersEmailInput = async (userPhone, email) => {
       `❌ *Email inválido*\n\n` +
       `Por favor ingresa un correo electrónico válido.\n\n` +
       `Ejemplo: *juan@email.com*\n\n` +
-      `_Escribe tu correo nuevamente:_`
+      `_Escribe tu correo nuevamente o vuelve al menú:_`
     );
+
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' },
+      { id: 'repetir_correo', title: '✉️ Repetir correo' }
+    ];
+
+    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
     return;
   }
 
