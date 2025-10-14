@@ -923,58 +923,58 @@ const showMainMenu = async (userPhone) => {
   };
 
   // Crear lista interactiva del menú principal
-  const sections = [
-    {
-      title: "Opciones disponibles",
-      rows: [
-        {
-          id: 'menu_cotizar',
-          title: '🔍 Cotizar una Autoparte',
-          description: 'Busca por marca y modelo de vehículo'
-        },
-        {
-          id: 'menu_catalogo',
-          title: '📦 Ver catálogo',
-          description: 'Explora nuestros productos'
-        },
-        {
-          id: 'menu_asesor',
-          title: '💬 Hablar con asesor',
-          description: 'Atención personalizada'
-        },
-        {
-          id: 'menu_horarios',
-          title: '🕒 Ver horarios',
-          description: 'Horarios de atención'
-        },
-        {
-          id: 'menu_garantias',
-          title: '🛡️ Garantías',
-          description: 'Garantías y devoluciones'
-        },
-        {
-          id: 'menu_envios',
-          title: '📮 Envíos y Pagos',
-          description: 'Tiempos y métodos de pago'
-        },
-        {
-          id: 'menu_puntos',
-          title: '📍 Puntos de Entrega',
-          description: 'Recogida local y dirección'
-        },
-        {
-          id: 'menu_promociones',
-          title: '🔥 Promociones',
-          description: 'Descuentos y ofertas del mes'
-        },
-        {
-          id: 'menu_pedidos',
-          title: '📦 Estado de Pedido',
-          description: 'Consulta el estado de tu pedido'
-        }
-      ]
-    }
-  ];
+    const sections = [
+      {
+        title: "Opciones disponibles",
+        rows: [
+          {
+            id: 'menu_cotizar',
+            title: '🔍 Cotizar autoparte',
+            description: 'Busca por marca y modelo de vehículo'
+          },
+          {
+            id: 'menu_catalogo',
+            title: '📦 Ver catálogo',
+            description: 'Explora nuestros productos'
+          },
+          {
+            id: 'menu_pedidos',
+            title: '📦 Estado de pedido',
+            description: 'Consulta el estado de tu pedido'
+          },
+          {
+            id: 'menu_garantias',
+            title: '🛡️ Garantías y devoluc.',
+            description: 'Garantías y devoluciones'
+          },
+          {
+            id: 'menu_promociones',
+            title: '🔥 Promociones',
+            description: 'Descuentos y ofertas del mes'
+          },
+          {
+            id: 'menu_envios',
+            title: '📮 Envío y pagos',
+            description: 'Tiempos, métodos de pago y envíos'
+          },
+          {
+            id: 'menu_puntos',
+            title: '📍 Puntos de entrega',
+            description: 'Recogida local y dirección'
+          },
+          {
+            id: 'menu_asesor',
+            title: '💬 Hablar con asesor',
+            description: 'Atención personalizada'
+          },
+          {
+            id: 'menu_horarios',
+            title: '🕒 Ver horarios',
+            description: 'Horarios de atención'
+          }
+        ]
+      }
+    ];
 
   const bodyText = `👋 ¡Hola! Soy *ZonaBot*, el asistente virtual de Zona Repuestera 🚗💬\n\n` +
     `Estoy aquí para ayudarte con todo lo que necesites sobre *autopartes, cotizaciones, envío y más*.\n\n` +
