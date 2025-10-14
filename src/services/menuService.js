@@ -1,6 +1,15 @@
 const { sendTextMessage, sendInteractiveButtons, sendInteractiveList } = require('./whatsappService');
 const { getCategories, getSubCategories, getProducts } = require('./ecommerceService');
 const { getOrdersByEmail, formatOrdersList, formatOrderDetails, isValidEmail } = require('./orderService');
+const { 
+  getCarBrands, 
+  getCarModels, 
+  getCategories: getProductCategories, 
+  getSubcategories: getProductSubcategories, 
+  searchProducts,
+  formatProduct,
+  formatProductList
+} = require('./quoteService');
 const fs = require('fs');
 const path = require('path');
 
@@ -608,7 +617,11 @@ const handleMenuSelection = async (userPhone, message) => {
   if (messageText.startsWith('menu_')) {
     const menuOption = messageText.replace('menu_', '');
     
-    if (menuOption === 'catalogo') {
+    if (menuOption === 'cotizar') {
+      // Nueva opción: Cotizar una autoparte
+      await startQuoteFlow(userPhone);
+      return;
+    } else if (menuOption === 'catalogo') {
       // Simular selección de opción 1
       await handleMainMenuSelection(userPhone, '1');
       return;
@@ -635,6 +648,10 @@ const handleMenuSelection = async (userPhone, message) => {
     } else if (menuOption === 'promociones') {
       // Simular selección de opción 7
       await handleMainMenuSelection(userPhone, '7');
+      return;
+    } else if (menuOption === 'pedidos') {
+      // Opción 8: Estado de pedido
+      await handleMainMenuSelection(userPhone, '8');
       return;
     }
   }
@@ -792,6 +809,73 @@ const handleMenuSelection = async (userPhone, message) => {
         await handleSubcategorySelection(userPhone, messageText);
         break;
 
+      case 'QUOTE_SELECT_BRAND':
+        // Usuario seleccionó una marca de vehículo
+        if (messageText.startsWith('quote_brand_')) {
+          const brandId = parseInt(messageText.replace('quote_brand_', ''));
+          await showCarModels(userPhone, brandId);
+        } else {
+          await sendTextMessage(userPhone, '❌ Selección inválida. Por favor elige una marca de la lista.');
+        }
+        break;
+      
+      case 'QUOTE_SELECT_MODEL':
+        // Usuario seleccionó un modelo de vehículo
+        if (messageText.startsWith('quote_model_')) {
+          const modelId = parseInt(messageText.replace('quote_model_', ''));
+          userSessions[userPhone].quoteFilters.model = modelId;
+          await showQuoteCategories(userPhone);
+        } else {
+          await sendTextMessage(userPhone, '❌ Selección inválida. Por favor elige un modelo de la lista.');
+        }
+        break;
+      
+      case 'QUOTE_SELECT_CATEGORY':
+        // Usuario seleccionó una categoría de producto
+        if (messageText.startsWith('quote_category_')) {
+          const categoryId = parseInt(messageText.replace('quote_category_', ''));
+          await showQuoteSubcategories(userPhone, categoryId);
+        } else {
+          await sendTextMessage(userPhone, '❌ Selección inválida. Por favor elige una categoría de la lista.');
+        }
+        break;
+      
+      case 'QUOTE_SELECT_SUBCATEGORY':
+        // Usuario seleccionó una subcategoría o decidió omitirla
+        if (messageText === 'quote_skip_subcategory') {
+          await searchQuoteProducts(userPhone);
+        } else if (messageText.startsWith('quote_subcategory_')) {
+          const subcategoryId = parseInt(messageText.replace('quote_subcategory_', ''));
+          userSessions[userPhone].quoteFilters.subcategory = subcategoryId;
+          await searchQuoteProducts(userPhone);
+        } else {
+          await sendTextMessage(userPhone, '❌ Selección inválida. Por favor elige una opción de la lista.');
+        }
+        break;
+      
+      case 'QUOTE_VIEW_RESULTS':
+        // Usuario está viendo resultados y puede seleccionar un producto por número
+        const productIndex = parseInt(messageText);
+        if (!isNaN(productIndex) && productIndex > 0) {
+          await showQuoteProductDetails(userPhone, productIndex);
+        } else if (messageText.toLowerCase().includes('siguiente') || messageText.toLowerCase().includes('mas')) {
+          // Mostrar siguiente página de resultados
+          const currentPage = userSessions[userPhone].quoteResultsPage || 1;
+          const results = userSessions[userPhone].quoteResults || [];
+          const totalPages = Math.ceil(results.length / 5);
+          
+          if (currentPage < totalPages) {
+            userSessions[userPhone].quoteResultsPage = currentPage + 1;
+            const productList = formatProductList(results, currentPage + 1, 5);
+            await sendTextMessage(userPhone, productList);
+          } else {
+            await sendTextMessage(userPhone, '📄 Ya estás en la última página de resultados.');
+          }
+        } else {
+          await sendTextMessage(userPhone, '❌ Por favor ingresa el número del producto que deseas ver o escribe "siguiente" para más resultados.');
+        }
+        break;
+
       default:
         await showMainMenu(userPhone);
     }
@@ -821,6 +905,11 @@ const showMainMenu = async (userPhone) => {
     {
       title: "Opciones disponibles",
       rows: [
+        {
+          id: 'menu_cotizar',
+          title: '🔍 Cotizar una Autoparte',
+          description: 'Busca por marca y modelo de vehículo'
+        },
         {
           id: 'menu_catalogo',
           title: '📦 Ver catálogo',
@@ -971,7 +1060,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     );
   } else {
     const errorMsg = '❌ *Opción no válida.*\n\n' +
-      'Por favor escribe el *número* de la opción que deseas (1-8) o selecciona del menú.';
+      'Por favor selecciona una opción del menú o escribe el número correspondiente (1-9).';
     
     const buttons = [
       { id: 'volver_menu', title: '🏠 Ver menú' }
@@ -1385,6 +1474,287 @@ const handleOrderSelection = async (userPhone, orderIdText) => {
   
   await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
   userSessions[userPhone].state = 'MAIN_MENU';
+};
+
+/**
+ * ========================
+ * FLUJO DE COTIZACIÓN DE AUTOPARTES
+ * ========================
+ */
+
+/**
+ * Inicia el flujo de cotización de autopartes
+ */
+const startQuoteFlow = async (userPhone) => {
+  userSessions[userPhone].state = 'QUOTE_SELECT_BRAND';
+  userSessions[userPhone].quoteFilters = {
+    brand: null,
+    model: null,
+    category: null,
+    subcategory: null
+  };
+  userSessions[userPhone].lastActivity = Date.now();
+
+  await sendTextMessage(
+    userPhone,
+    `🔍 *COTIZAR AUTOPARTE*\n\n` +
+    `Te ayudaré a encontrar la autoparte que necesitas.\n\n` +
+    `Buscaremos por:\n` +
+    `1️⃣ Marca de tu vehículo\n` +
+    `2️⃣ Modelo\n` +
+    `3️⃣ Categoría del repuesto\n` +
+    `4️⃣ Subcategoría (opcional)\n\n` +
+    `⏳ _Cargando marcas disponibles..._`
+  );
+
+  await showCarBrands(userPhone);
+};
+
+/**
+ * Muestra las marcas de vehículos disponibles
+ */
+const showCarBrands = async (userPhone) => {
+  const result = await getCarBrands();
+  
+  if (!result.success || !result.data || result.data.length === 0) {
+    await sendTextMessage(
+      userPhone,
+      `❌ *Error*\n\nNo se pudieron cargar las marcas de vehículos.\n\nIntenta nuevamente más tarde.`
+    );
+    await showMainMenu(userPhone);
+    return;
+  }
+
+  userSessions[userPhone].carBrandsList = result.data;
+  
+  // Crear lista interactiva con las marcas
+  const rows = result.data.slice(0, 10).map((brand, index) => ({
+    id: `quote_brand_${brand.id}`,
+    title: brand.name,
+    description: `Seleccionar ${brand.name}`
+  }));
+
+  const sections = [{
+    title: "Marcas de Vehículos",
+    rows: rows
+  }];
+
+  const bodyText = `🚗 *SELECCIONA LA MARCA DE TU VEHÍCULO*\n\n` +
+    `Tenemos ${result.data.length} marcas disponibles.\n\n` +
+    `_Selecciona una marca de la lista:_`;
+
+  await sendInteractiveList(userPhone, bodyText, '🚗 Ver marcas', sections);
+};
+
+/**
+ * Muestra los modelos de una marca seleccionada
+ */
+const showCarModels = async (userPhone, brandId) => {
+  const result = await getCarModels(brandId);
+  
+  if (!result.success || !result.data || result.data.length === 0) {
+    await sendTextMessage(
+      userPhone,
+      `❌ *Error*\n\nNo se pudieron cargar los modelos para esta marca.\n\nIntenta con otra marca.`
+    );
+    await showCarBrands(userPhone);
+    return;
+  }
+
+  userSessions[userPhone].carModelsList = result.data;
+  userSessions[userPhone].quoteFilters.brand = brandId;
+  
+  // Crear lista interactiva con los modelos
+  const rows = result.data.slice(0, 10).map((model, index) => ({
+    id: `quote_model_${model.id}`,
+    title: model.name,
+    description: `Seleccionar ${model.name}`
+  }));
+
+  const sections = [{
+    title: "Modelos Disponibles",
+    rows: rows
+  }];
+
+  const brandName = userSessions[userPhone].carBrandsList.find(b => b.id === brandId)?.name || '';
+  
+  const bodyText = `🚙 *SELECCIONA EL MODELO DE TU ${brandName.toUpperCase()}*\n\n` +
+    `Tenemos ${result.data.length} modelos disponibles.\n\n` +
+    `_Selecciona un modelo de la lista:_`;
+
+  await sendInteractiveList(userPhone, bodyText, '🚙 Ver modelos', sections);
+  userSessions[userPhone].state = 'QUOTE_SELECT_MODEL';
+};
+
+/**
+ * Muestra las categorías de productos
+ */
+const showQuoteCategories = async (userPhone) => {
+  const result = await getProductCategories();
+  
+  if (!result.success || !result.data || result.data.length === 0) {
+    await sendTextMessage(
+      userPhone,
+      `❌ *Error*\n\nNo se pudieron cargar las categorías de productos.\n\nIntenta nuevamente.`
+    );
+    await showMainMenu(userPhone);
+    return;
+  }
+
+  userSessions[userPhone].quoteCategoriesList = result.data;
+  
+  // Crear lista interactiva con las categorías
+  const rows = result.data.slice(0, 10).map((category, index) => ({
+    id: `quote_category_${category.id}`,
+    title: category.name,
+    description: category.description || `Ver ${category.name}`
+  }));
+
+  const sections = [{
+    title: "Categorías de Repuestos",
+    rows: rows
+  }];
+
+  const bodyText = `📁 *SELECCIONA LA CATEGORÍA DEL REPUESTO*\n\n` +
+    `¿Qué tipo de repuesto necesitas?\n\n` +
+    `_Selecciona una categoría:_`;
+
+  await sendInteractiveList(userPhone, bodyText, '📁 Ver categorías', sections);
+  userSessions[userPhone].state = 'QUOTE_SELECT_CATEGORY';
+};
+
+/**
+ * Muestra las subcategorías de una categoría
+ */
+const showQuoteSubcategories = async (userPhone, categoryId) => {
+  const result = await getProductSubcategories(categoryId);
+  
+  if (!result.success || !result.data || result.data.length === 0) {
+    // Si no hay subcategorías, buscar productos directamente
+    await searchQuoteProducts(userPhone);
+    return;
+  }
+
+  userSessions[userPhone].quoteSubcategoriesList = result.data;
+  userSessions[userPhone].quoteFilters.category = categoryId;
+  
+  // Crear lista interactiva con las subcategorías
+  const rows = result.data.slice(0, 10).map((subcategory, index) => ({
+    id: `quote_subcategory_${subcategory.id}`,
+    title: subcategory.name,
+    description: subcategory.description || `Ver ${subcategory.name}`
+  }));
+
+  // Agregar opción para omitir subcategoría
+  rows.push({
+    id: 'quote_skip_subcategory',
+    title: '⏭️ Omitir subcategoría',
+    description: 'Buscar sin filtro de subcategoría'
+  });
+
+  const sections = [{
+    title: "Subcategorías",
+    rows: rows
+  }];
+
+  const categoryName = userSessions[userPhone].quoteCategoriesList.find(c => c.id === categoryId)?.name || '';
+  
+  const bodyText = `📂 *SELECCIONA LA SUBCATEGORÍA*\n\n` +
+    `Categoría: ${categoryName}\n\n` +
+    `_Selecciona una subcategoría o omite este filtro:_`;
+
+  await sendInteractiveList(userPhone, bodyText, '📂 Ver subcategorías', sections);
+  userSessions[userPhone].state = 'QUOTE_SELECT_SUBCATEGORY';
+};
+
+/**
+ * Busca y muestra los productos según los filtros
+ */
+const searchQuoteProducts = async (userPhone) => {
+  const filters = userSessions[userPhone].quoteFilters;
+  
+  await sendTextMessage(
+    userPhone,
+    `🔍 *Buscando productos...*\n\n` +
+    `Por favor espera un momento.`
+  );
+
+  const result = await searchProducts(filters);
+  
+  if (!result.success) {
+    await sendTextMessage(
+      userPhone,
+      `❌ *Error en la búsqueda*\n\n` +
+      `No se pudieron obtener los productos.\n\nIntenta nuevamente.`
+    );
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    return;
+  }
+
+  if (result.count === 0) {
+    await sendTextMessage(
+      userPhone,
+      `😔 *No se encontraron productos*\n\n` +
+      `No hay productos disponibles con los filtros seleccionados.\n\n` +
+      `Intenta con otros filtros o contáctanos para ayuda personalizada.`
+    );
+    
+    const buttons = [
+      { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
+      { id: 'menu_asesor', title: '💬 Hablar con asesor' },
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    return;
+  }
+
+  // Guardar resultados y mostrar lista paginada
+  userSessions[userPhone].quoteResults = result.data;
+  userSessions[userPhone].quoteResultsPage = 1;
+  userSessions[userPhone].state = 'QUOTE_VIEW_RESULTS';
+
+  const productList = formatProductList(result.data, 1, 5);
+  await sendTextMessage(userPhone, productList);
+  
+  const buttons = [
+    { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
+    { id: 'volver_menu', title: '🏠 Volver al menú' }
+  ];
+  await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+};
+
+/**
+ * Muestra los detalles de un producto específico
+ */
+const showQuoteProductDetails = async (userPhone, productIndex) => {
+  const results = userSessions[userPhone].quoteResults;
+  
+  if (!results || results.length === 0) {
+    await sendTextMessage(userPhone, '❌ No hay productos disponibles.');
+    await showMainMenu(userPhone);
+    return;
+  }
+
+  const product = results[productIndex - 1];
+  
+  if (!product) {
+    await sendTextMessage(userPhone, '❌ Producto no encontrado. Verifica el número.');
+    return;
+  }
+
+  const productDetails = formatProduct(product);
+  await sendTextMessage(userPhone, productDetails);
+  
+  const buttons = [
+    { id: 'menu_asesor', title: '💬 Consultar asesor' },
+    { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
+    { id: 'volver_menu', title: '🏠 Volver al menú' }
+  ];
+  
+  await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
 };
 
 module.exports = {
