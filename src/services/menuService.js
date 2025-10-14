@@ -1664,8 +1664,7 @@ const handleOrderSelection = async (userPhone, orderIdText) => {
     );
 
     const buttons = [
-      { id: 'volver_menu', title: '🏠 Volver al menú' },
-      { id: 'repetir_correo', title: '✉️ Repetir correo' }
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
     await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
@@ -1691,8 +1690,7 @@ const handleOrderSelection = async (userPhone, orderIdText) => {
     );
 
     const buttons = [
-      { id: 'volver_menu', title: '🏠 Volver al menú' },
-      { id: 'repetir_correo', title: '✉️ Repetir correo' }
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
     await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);

@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run dev)"
+      "Bash(npm run dev)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Mejorar UX con mensajes más amigables y personalizados\n\n- Mejorar mensaje de consulta de pedidos con saludo personalizado\n- Añadir contador dinámico de pedidos con formato amigable\n- Mejorar mensaje de conexión con asesor más acogedor\n- Implementar nombres de categoría dinámicos en subcategorías\n- Corregir emoji del botón \"Repetir correo\"\n- Actualizar mensajes de flujo de cotización más atractivos\n- Eliminar referencia a asesor en mensaje de error de pedidos\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git restore:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: Eliminar procesamiento de números como opciones del menú principal\n\n- Eliminar respuesta a números (1-8) en menú principal\n- Solo aceptar botones interactivos del menú\n- Arreglar handlers de botones menu_* para llamar directamente a funciones\n- Añadir estado VIEWING_INFO para rechazar input en pantallas de información\n- Mejorar mensajes de error para guiar al usuario al menú interactivo\n\nEsto soluciona el bug donde escribir números activaba opciones del menú\naunque el menú ahora es 100% interactivo con botones.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
