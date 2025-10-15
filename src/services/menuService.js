@@ -730,7 +730,7 @@ const handleMenuSelection = async (userPhone, message) => {
       userSessions[userPhone].state = 'VIEWING_INFO';
       const mensaje = getPromoMessage();
       await sendTextMessage(userPhone, mensaje);
-      const buttonMessage = '¿Qué deseas hacer ahora?';
+      const buttonMessage = 'Estoy atento si necesitas más información o ayuda 😊';
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
@@ -1247,7 +1247,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     await sendTextMessage(userPhone, mensaje);
 
     // Enviar botones en mensaje separado
-    const buttonMessage = '¿Qué deseas hacer ahora?';
+    const buttonMessage = 'Estoy atento si necesitas más información o ayuda 😊';
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
