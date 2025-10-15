@@ -4,7 +4,6 @@ services:
     env: node
     region: oregon
     plan: starter
-    rootDir: wpp
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /webhook
