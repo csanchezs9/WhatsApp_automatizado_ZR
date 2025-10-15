@@ -1525,14 +1525,14 @@ const showProducts = async (userPhone, subcategoryId) => {
     
     // Enviar el mensaje con los productos (sin botones para evitar límite de 1024 caracteres)
     await sendTextMessage(userPhone, mensaje);
-    
+
     // Enviar botones en un mensaje separado corto
-    const buttonMessage = '¿Qué deseas hacer ahora?';
+    const buttonMessage = 'Estoy atento si necesitas más información o ayuda 😊';
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' },
       { id: 'menu_catalogo', title: '📦 Ver catálogo' }
     ];
-    
+
     await sendInteractiveButtons(userPhone, buttonMessage, buttons);
     userSessions[userPhone].state = 'MAIN_MENU';
     
