@@ -1177,7 +1177,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
-    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
   } else if (messageText.includes('horario')) {
     userSessions[userPhone].state = 'VIEWING_INFO';
     const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
@@ -1268,7 +1268,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
-    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
   } else {
     // Rechazar cualquier otro input (incluyendo números)
     const errorMsg = `❌ *Opción no válida.*\n\n` +
@@ -1978,8 +1978,8 @@ const showQuoteProductDetails = async (userPhone, productIndex) => {
     { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
     { id: 'volver_menu', title: '🏠 Volver al menú' }
   ];
-  
-  await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+
+  await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
 };
 
 module.exports = {
