@@ -204,10 +204,10 @@ function formatProductList(products, page = 1, perPage = 10, filters = {}) {
     if (hasMore) {
         message += `\n📱 *Mostrando primeros ${maxDisplay} de ${products.length} productos*\n\n`;
     }
-    
-    message += `🌐 *Ver todos los productos en el catálogo:*\n`;
+
+    message += `🌐 Puedes hacer clic en el siguiente enlace para ver más detalles del producto y comprarlo en línea de forma segura y rápida, o agregarlo al carrito 👇\n\n`;
     message += `${catalogUrl}`;
-    
+
     return message;
 }
 

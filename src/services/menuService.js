@@ -1511,15 +1511,15 @@ const showProducts = async (userPhone, subcategoryId) => {
     
     if (categoryId && subcategoryId) {
       // Link directo a los productos de esta subcategoría
-      mensaje += `🌐 *Ver más información en la web:*\n`;
+      mensaje += `🌐 Puedes hacer clic en el siguiente enlace para ver más detalles del producto y comprarlo en línea de forma segura y rápida, o agregarlo al carrito 👇\n\n`;
       mensaje += `https://zonarepuestera.com.co/products/?category=${categoryId}&subcategory=${subcategoryId}`;
     } else if (categoryId) {
       // Fallback: mostrar subcategorías de la categoría
-      mensaje += `🌐 *Ver más en la tienda:*\n`;
+      mensaje += `🌐 Puedes hacer clic en el siguiente enlace para ver más detalles del producto y comprarlo en línea de forma segura y rápida, o agregarlo al carrito 👇\n\n`;
       mensaje += `https://zonarepuestera.com.co/sub-categories/?category=${categoryId}`;
     } else {
       // Fallback general: link a productos
-      mensaje += `🌐 *Ver más en la tienda:*\n`;
+      mensaje += `🌐 Puedes hacer clic en el siguiente enlace para ver más detalles del producto y comprarlo en línea de forma segura y rápida, o agregarlo al carrito 👇\n\n`;
       mensaje += `https://zonarepuestera.com.co/products/`;
     }
     
