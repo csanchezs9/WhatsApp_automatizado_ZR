@@ -20,25 +20,41 @@ npm start
 ```
 
 ### Testing
-The bot doesn't have automated tests. Test manually by:
+The bot uses manual testing via simulation scripts and real WhatsApp messages.
+
+**Local webhook simulation:**
+```bash
+# Start the bot
+npm run dev
+
+# In another terminal, run test scripts
+node test-bot.js           # Test basic menu flow
+node test-finalizar.js     # Test advisor finalization
+node test-casos-extremos.js # Test edge cases
+node test-stress.js        # Stress testing
+```
+
+**End-to-end testing with ngrok:**
 1. Running ngrok: `ngrok http 3000`
 2. Configuring the ngrok URL in Meta's webhook settings
 3. Sending messages to the WhatsApp number
 
+See `INICIO-RAPIDO-NGROK.md` for detailed ngrok setup instructions.
+
 ## Architecture
 
 ### Core Service Flow
-1. **Webhook Reception** (`src/routes/whatsapp.js`) → Receives WhatsApp messages
-2. **Message Processing** (`src/controllers/webhookController.js`) → Validates and extracts message data
-3. **Menu Navigation** (`src/services/menuService.js`) → Handles user state machine and menu flow
-4. **API Communication** → Three service layers:
-   - `ecommerceService.js` - Django API for categories/products
+1. **Webhook Reception** (`src/routes/whatsapp.js:14`) → Receives WhatsApp messages
+2. **Message Processing** (`src/controllers/webhookController.js:8`) → Validates and extracts message data
+3. **Menu Navigation** (`src/services/menuService.js:429`) → Handles user state machine and menu flow via `handleMenuSelection()`
+4. **API Communication** → Four service layers:
+   - `ecommerceService.js` - Django API for categories/products/subcategories
    - `quoteService.js` - Quote flow for searching by car brand/model
-   - `orderService.js` - Order status lookup
-   - `whatsappService.js` - WhatsApp Business API sending
+   - `orderService.js` - Order status lookup by email
+   - `whatsappService.js` - WhatsApp Business API message sending
 
 ### State Management
-User sessions are stored in-memory in `menuService.js` using the `userSessions` object. Key states:
+User sessions are stored in-memory in `menuService.js:17` using the `userSessions` object. Key states:
 - `MAIN_MENU` - Main menu selection
 - `CATEGORY_LIST` - Browsing product categories
 - `SUBCATEGORY_LIST` - Browsing subcategories
@@ -47,6 +63,10 @@ User sessions are stored in-memory in `menuService.js` using the `userSessions` 
 - `WAITING_EMAIL_FOR_ORDERS` - Waiting for email to look up orders
 - `QUOTE_SELECT_BRAND/MODEL/CATEGORY/SUBCATEGORY` - Quote flow states
 - `UPDATING_PROMO` - Advisor updating promotional message
+- `VIEWING_INFO` - User viewing static information (rejects text input, only buttons)
+- `VIEWING_ORDER_DETAILS` - User viewing order details, can select order by number
+
+**Important:** State machine logic is in `handleMenuSelection()` switch statement at `menuService.js:842`
 
 ### Advisor Mode
 The bot has a dual-mode system:
@@ -75,6 +95,12 @@ The API automatically filters subcategories to only show those with available pr
 ### Session Cleanup
 Automatic cleanup of old sessions (24h+) runs every 24 hours to prevent memory leaks. This is critical since sessions are in-memory.
 
+**Cleanup mechanism** (`menuService.js:78-98`):
+- `cleanupOldSessions()` runs every 24 hours via `setInterval`
+- Initial cleanup runs 10 seconds after server start
+- Deletes sessions with `lastActivity` older than 24 hours
+- Logs cleanup count and active session count
+
 ### Promotional Messages
 Stored in `src/data/promoMessage.json`. Advisors can update via `/actualizar_promo` command (max 4000 chars).
 
@@ -91,7 +117,17 @@ Required variables in `.env`:
 
 ## Deployment
 
-The bot is deployed to Render.com using the `render.yaml` configuration. Root directory is `wpp/`.
+The bot is deployed to Render.com using the `render.yaml` configuration.
+
+**Render.yaml configuration:**
+- Service type: `web`
+- Runtime: Node.js
+- Region: Oregon
+- Plan: `starter` (required - Free plan sleeps and breaks webhooks)
+- Root directory: `wpp/`
+- Build command: `npm install`
+- Start command: `npm start`
+- Health check: `/webhook`
 
 **Important:** Use the Starter plan ($7/month), not the Free plan, as the Free plan sleeps and breaks WhatsApp webhook delivery.
 
@@ -118,6 +154,34 @@ Test user: +57 317 374 5021
 Advisor: +57 316 4088588
 Test WhatsApp number: +1 555 166 6254
 
+## Key Functions and Locations
+
+**Main entry points:**
+- `handleMenuSelection()` - `menuService.js:429` - Main message router and state machine
+- `showMainMenu()` - `menuService.js:1084` - Display main interactive menu
+- `activateAdvisorMode()` - `menuService.js:204` - Connect user to human advisor
+- `finalizeAdvisorConversation()` - `menuService.js:285` - Advisor closes conversation
+
+**Category/Product navigation:**
+- `showCategories()` - `menuService.js:1288` - Display product categories
+- `showSubCategories()` - `menuService.js:1366` - Display subcategories
+- `showProducts()` - `menuService.js:1456` - Display products in subcategory
+
+**Quote flow (search by car):**
+- `startQuoteFlow()` - `menuService.js:1721` - Initiate quote by brand/model
+- `showCarBrands()` - `menuService.js:1749` - Display car brands
+- `showCarModels()` - `menuService.js:1784` - Display car models
+- `searchQuoteProducts()` - `menuService.js:1898` - Search products by filters
+
+**Orders:**
+- `handleOrdersEmailInput()` - `menuService.js:1550` - Process email for order lookup
+- `handleOrderSelection()` - `menuService.js:1655` - Show order details
+
+**Session management:**
+- `isSessionExpired()` - `menuService.js:106` - Check 7-minute inactivity timeout
+- `updateLastActivity()` - `menuService.js:130` - Update session timestamp
+- `cleanupOldSessions()` - `menuService.js:78` - Remove 24h+ old sessions
+
 ## Menu Structure
 
 Main menu options (via interactive list):
@@ -133,7 +197,10 @@ Main menu options (via interactive list):
 
 ## Common Issues
 
-- **Subcategories returning empty** - This is expected behavior when no products have stock. Do not try to "fix" this.
-- **Session memory leaks** - Automatic cleanup runs every 24h, but monitor `userSessions` size.
-- **Webhook not responding** - Check `WEBHOOK_VERIFY_TOKEN` matches Meta configuration.
-- **Messages not sending** - Verify `WHATSAPP_TOKEN` and `PHONE_NUMBER_ID` are current.
+- **Subcategories returning empty** - This is expected behavior when no products have stock. Do not try to "fix" this. The Django API filters by `stock > 0` and `base_price > 0`.
+- **Session memory leaks** - Automatic cleanup runs every 24h, but monitor `userSessions` size in logs.
+- **Webhook not responding** - Check `WEBHOOK_VERIFY_TOKEN` matches Meta configuration exactly.
+- **Messages not sending** - Verify `WHATSAPP_TOKEN` and `PHONE_NUMBER_ID` are current and valid.
+- **User stuck in a state** - Check session state in `userSessions[userPhone].state`. States like `VIEWING_INFO` reject text input and only accept button presses.
+- **Advisor commands not working** - Verify the sender's phone matches `ADVISOR_PHONE_NUMBER` environment variable exactly.
+- **Timeout not working** - Inactivity timeout (7min) only applies in bot mode, NOT when user is with advisor. Advisor conversations have 24h timeout.

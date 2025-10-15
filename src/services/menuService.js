@@ -640,7 +640,7 @@ const handleMenuSelection = async (userPhone, message) => {
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
-    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
     return;
   }
 
@@ -668,7 +668,7 @@ const handleMenuSelection = async (userPhone, message) => {
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
 
-      await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+      await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
       return;
     } else if (menuOption === 'horarios') {
       userSessions[userPhone].state = 'VIEWING_INFO';
@@ -750,7 +750,7 @@ const handleMenuSelection = async (userPhone, message) => {
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
 
-      await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+      await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
       return;
     }
   }
@@ -922,7 +922,7 @@ const handleMenuSelection = async (userPhone, message) => {
               { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
               { id: 'volver_menu', title: '🏠 Volver al menú' }
             ];
-            await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+            await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
           }
         } else {
           await sendTextMessage(userPhone, '❌ Por favor responde con el número de la marca que deseas.');
@@ -930,7 +930,7 @@ const handleMenuSelection = async (userPhone, message) => {
             { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
             { id: 'volver_menu', title: '🏠 Volver al menú' }
           ];
-          await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+          await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
         }
         break;
       
@@ -948,7 +948,7 @@ const handleMenuSelection = async (userPhone, message) => {
               { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
               { id: 'volver_menu', title: '🏠 Volver al menú' }
             ];
-            await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+            await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
           }
         } else {
           await sendTextMessage(userPhone, '❌ Por favor responde con el número del modelo que deseas.');
@@ -956,10 +956,10 @@ const handleMenuSelection = async (userPhone, message) => {
             { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
             { id: 'volver_menu', title: '🏠 Volver al menú' }
           ];
-          await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+          await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
         }
         break;
-      
+
       case 'QUOTE_SELECT_CATEGORY':
         // Usuario seleccionó una categoría de producto (por número)
         const categoryIndex = parseInt(messageText);
@@ -974,7 +974,7 @@ const handleMenuSelection = async (userPhone, message) => {
               { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
               { id: 'volver_menu', title: '🏠 Volver al menú' }
             ];
-            await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+            await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
           }
         } else {
           await sendTextMessage(userPhone, '❌ Por favor responde con el número de la categoría que necesitas.');
@@ -982,10 +982,10 @@ const handleMenuSelection = async (userPhone, message) => {
             { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
             { id: 'volver_menu', title: '🏠 Volver al menú' }
           ];
-          await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+          await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
         }
         break;
-      
+
       case 'QUOTE_SELECT_SUBCATEGORY':
         // Usuario seleccionó una subcategoría o decidió omitirla (por número)
         const subcategoryIndex = parseInt(messageText);
@@ -1003,7 +1003,7 @@ const handleMenuSelection = async (userPhone, message) => {
               { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
               { id: 'volver_menu', title: '🏠 Volver al menú' }
             ];
-            await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+            await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
           }
         } else {
           await sendTextMessage(userPhone, '❌ Por favor responde con el número de la subcategoría o 0 para omitir.');
@@ -1011,10 +1011,10 @@ const handleMenuSelection = async (userPhone, message) => {
             { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
             { id: 'volver_menu', title: '🏠 Volver al menú' }
           ];
-          await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+          await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
         }
         break;
-      
+
       case 'QUOTE_VIEW_RESULTS':
         // Usuario está viendo resultados y puede seleccionar un producto por número
         const productIndex = parseInt(messageText);
@@ -1036,7 +1036,7 @@ const handleMenuSelection = async (userPhone, message) => {
               { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
               { id: 'volver_menu', title: '🏠 Volver al menú' }
             ];
-            await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+            await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
           }
         } else {
           await sendTextMessage(userPhone, '❌ Por favor ingresa el número del producto que deseas ver o escribe "siguiente" para más resultados.');
@@ -1044,7 +1044,7 @@ const handleMenuSelection = async (userPhone, message) => {
             { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
             { id: 'volver_menu', title: '🏠 Volver al menú' }
           ];
-          await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+          await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
         }
         break;
 
@@ -1565,7 +1565,7 @@ const handleOrdersEmailInput = async (userPhone, email) => {
       { id: 'repetir_correo', title: '✉️ Repetir correo' }
     ];
 
-    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
     return;
   }
 
@@ -1588,8 +1588,8 @@ const handleOrdersEmailInput = async (userPhone, email) => {
         { id: 'volver_menu', title: '🏠 Volver al menú' },
         { id: 'repetir_correo', title: '✉️ Repetir correo' }
       ];
-      
-      await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+
+      await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
       userSessions[userPhone].state = 'MAIN_MENU';
       return;
     }
@@ -1606,8 +1606,8 @@ const handleOrdersEmailInput = async (userPhone, email) => {
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
-      
-      await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+
+      await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
       userSessions[userPhone].state = 'MAIN_MENU';
       return;
     }
@@ -1626,10 +1626,10 @@ const handleOrdersEmailInput = async (userPhone, email) => {
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
-    
-    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
     userSessions[userPhone].state = 'VIEWING_ORDER_DETAILS';
-    
+
   } catch (error) {
     console.error('Error al buscar pedidos:', error);
     await sendTextMessage(
@@ -1638,13 +1638,13 @@ const handleOrdersEmailInput = async (userPhone, email) => {
       `No se pudieron obtener los pedidos en este momento.\n\n` +
       `Por favor intenta más tarde o contacta con un asesor.`
     );
-    
+
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' },
       { id: 'menu_asesor', title: '💬 Hablar con asesor' }
     ];
-    
-    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
     userSessions[userPhone].state = 'MAIN_MENU';
   }
 };
@@ -1667,7 +1667,7 @@ const handleOrderSelection = async (userPhone, orderIdText) => {
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
-    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
     return;
   }
 
@@ -1693,19 +1693,19 @@ const handleOrderSelection = async (userPhone, orderIdText) => {
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
-    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
     return;
   }
 
   // Mostrar detalles del pedido
   const orderDetails = formatOrderDetails(order);
   await sendTextMessage(userPhone, orderDetails);
-  
+
   const buttons = [
     { id: 'volver_menu', title: '🏠 Volver al menú' }
   ];
-  
-  await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+
+  await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
   userSessions[userPhone].state = 'MAIN_MENU';
 };
 
@@ -1915,7 +1915,7 @@ const searchQuoteProducts = async (userPhone) => {
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
-    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
     return;
   }
 
@@ -1926,13 +1926,13 @@ const searchQuoteProducts = async (userPhone) => {
       `No hay productos disponibles con los filtros seleccionados.\n\n` +
       `Intenta con otros filtros o contáctanos para ayuda personalizada.`
     );
-    
+
     const buttons = [
       { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
       { id: 'menu_asesor', title: '💬 Hablar con asesor' },
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
-    await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
     return;
   }
 
@@ -1943,12 +1943,12 @@ const searchQuoteProducts = async (userPhone) => {
 
   const productList = formatProductList(result.data, 1, 10, filters);
   await sendTextMessage(userPhone, productList);
-  
+
   const buttons = [
     { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
     { id: 'volver_menu', title: '🏠 Volver al menú' }
   ];
-  await sendInteractiveButtons(userPhone, '¿Qué deseas hacer?', buttons);
+  await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
 };
 
 /**
