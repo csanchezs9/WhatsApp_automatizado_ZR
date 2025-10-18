@@ -133,24 +133,24 @@ function formatProduct(product) {
     const stock = product.stock || 0;
     const basePrice = product.base_price || 0;
     const savings = product.savings || 0;
-    
+
     let message = `📦 *${product.description || product.name}*\n`;
     message += `🔧 Código: ${product.code}\n`;
     message += `🏷️ Marca: ${product.brand || 'N/A'}\n`;
     message += `📁 Categoría: ${product.category || 'N/A'}`;
-    
+
     if (product.subcategory?.name) {
         message += ` → ${product.subcategory.name}`;
     }
-    
+
     message += `\n💰 Precio: $${Math.round(price).toLocaleString('es-CO')}`;
-    
+
     if (savings > 0) {
         message += ` ~~$${Math.round(basePrice).toLocaleString('es-CO')}~~ (AHORRO: $${Math.round(savings).toLocaleString('es-CO')})`;
     }
-    
+
     message += `\n📊 Stock: ${stock} unidades`;
-    
+
     // Autos compatibles (vienen como array de strings)
     if (product.compatible_cars && product.compatible_cars.length > 0) {
         const cars = product.compatible_cars.slice(0, 3).join(', ');
@@ -159,7 +159,12 @@ function formatProduct(product) {
             message += ` y ${product.compatible_cars.length - 3} más`;
         }
     }
-    
+
+    // Agregar link directo al producto
+    if (product.id) {
+        message += `\n\nhttps://zonarepuestera.com.co/products/${product.id}/`;
+    }
+
     return message;
 }
 
