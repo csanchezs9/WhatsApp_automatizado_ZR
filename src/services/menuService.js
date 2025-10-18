@@ -19,7 +19,7 @@ const userSessions = {};
 // Usuarios que están hablando con un asesor
 const usersWithAdvisor = new Map(); // { userPhone: { startTime: Date, lastAdvisorMessage: Date } }
 
-const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573173745021';
+const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573164088588';
 const ADVISOR_CONVERSATION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
 const INACTIVITY_TIMEOUT = parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '7') * 60 * 1000; // 7 minutos de inactividad
 
@@ -249,7 +249,7 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
 
   // Mensaje al cliente
   const clientMessage = `✅ *Solicitud enviada al asesor*\n\n` +
-    `Hemos recibido tu consulta:\n_"${userQuery}"_\n\n` +
+    `Hemos recibido tu consulta:\n"${userQuery}"\n\n` +
     `⏱️ *Un asesor se contactará contigo pronto.*\n` +
     `Estate pendiente de la respuesta.\n\n` +
     `💡 Si no quieres esperar, puedes volver al menú automático:`;
