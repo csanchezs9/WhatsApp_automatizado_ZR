@@ -202,7 +202,9 @@ const isUserWithAdvisor = (userPhone) => {
  * Activa el modo asesor para un usuario
  */
 const activateAdvisorMode = async (userPhone, userQuery = '') => {
-  // Verificar si estamos dentro del horario de atención
+  // TEMPORALMENTE DESACTIVADO: Verificar si estamos dentro del horario de atención
+  // TODO: Reactivar después de las pruebas
+  /*
   if (!isWithinBusinessHours()) {
     const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
       `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
@@ -220,6 +222,7 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
     console.log(`⏰ Usuario ${userPhone} intentó contactar asesor fuera de horario`);
     return;
   }
+  */
 
   const now = Date.now();
   usersWithAdvisor.set(userPhone, {
@@ -700,8 +703,9 @@ const handleMenuSelection = async (userPhone, message) => {
       // Mostrar menú de opciones de asesor
       userSessions[userPhone].state = 'ADVISOR_MENU';
 
-      const mensaje = `👨‍💼 *¿Para qué deseas hablar con un asesor?*\n\n` +
-        `Selecciona el tipo de atención que necesitas:`;
+      const mensaje = `¡Hola! 👋 Estoy aquí para ayudarte 😊\n\n` +
+        `*¿Cómo te gustaría que te asista hoy?*\n\n` +
+        `Selecciona una opción y con gusto te atenderé:`;
 
       const buttons = [
         { id: 'asesor_cotizar', title: '🔍 Cotizar autoparte' },
@@ -1224,8 +1228,9 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     // Mostrar menú de opciones de asesor
     userSessions[userPhone].state = 'ADVISOR_MENU';
 
-    const mensaje = `👨‍💼 *¿Para qué deseas hablar con un asesor?*\n\n` +
-      `Selecciona el tipo de atención que necesitas:`;
+    const mensaje = `¡Hola! 👋 Estoy aquí para ayudarte 😊\n\n` +
+      `*¿Cómo te gustaría que te asista hoy?*\n\n` +
+      `Selecciona una opción y con gusto te atenderé:`;
 
     const buttons = [
       { id: 'asesor_cotizar', title: '🔍 Cotizar autoparte' },
