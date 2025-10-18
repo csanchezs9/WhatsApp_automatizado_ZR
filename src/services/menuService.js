@@ -146,8 +146,8 @@ const normalizeText = (text) => {
 
 /**
  * Verifica si estamos dentro del horario de atención
- * Lunes a viernes: 7:00 AM - 5:00 PM
- * Sábados: 8:00 AM - 1:00 PM
+ * Lunes a viernes: 8:00 AM - 4:40 PM
+ * Sábados: 8:00 AM - 12:40 PM
  * Domingos: Cerrado
  */
 const isWithinBusinessHours = () => {
@@ -162,14 +162,14 @@ const isWithinBusinessHours = () => {
     return false;
   }
 
-  // Lunes a viernes: 7:00 AM - 5:00 PM
+  // Lunes a viernes: 8:00 AM - 4:40 PM
   if (day >= 1 && day <= 5) {
-    return currentTime >= 7 && currentTime < 17;
+    return currentTime >= 8 && currentTime < 16 + 40/60; // 16:40 = 4:40 PM
   }
 
-  // Sábado: 8:00 AM - 1:00 PM
+  // Sábado: 8:00 AM - 12:40 PM
   if (day === 6) {
-    return currentTime >= 8 && currentTime < 13;
+    return currentTime >= 8 && currentTime < 12 + 40/60; // 12:40 PM
   }
 
   return false;
@@ -207,8 +207,8 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
     const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
       `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
       `📅 *Nuestros horarios son:*\n` +
-      `• Lunes a viernes: 7:00 AM - 5:00 PM\n` +
-      `• Sábados: 8:00 AM - 1:00 PM\n` +
+      `• Lunes a viernes: 8:00 AM - 4:40 PM\n` +
+      `• Sábados: 8:00 AM - 12:40 PM\n` +
       `• Domingos: Cerrado\n\n` +
       `💡 Puedes contactarnos en estos horarios o explorar nuestro catálogo y opciones del menú automático.`;
 
@@ -673,8 +673,8 @@ const handleMenuSelection = async (userPhone, message) => {
     } else if (menuOption === 'horarios') {
       userSessions[userPhone].state = 'VIEWING_INFO';
       const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
-        `Lunes a Viernes: 7:00 AM - 5:00 PM\n` +
-        `Sábados: 8:00 AM - 1:00 PM\n` +
+        `Lunes a Viernes: 8:00 AM - 4:40 PM\n` +
+        `Sábados: 8:00 AM - 12:40 PM\n` +
         `Domingos: Cerrado`;
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' }
@@ -684,15 +684,15 @@ const handleMenuSelection = async (userPhone, message) => {
     } else if (menuOption === 'garantias') {
       userSessions[userPhone].state = 'VIEWING_INFO';
       const mensaje = `🛡️ *GARANTÍAS Y DEVOLUCIONES*\n\n` +
+        `🧾 *Todos nuestros productos cuentan con garantía de 3 meses*, excepto la línea de eléctricos originales.\n\n` +
+        `⚠️ *Importante:* Los productos eléctricos originales tienen garantía *solo si presentan fallas de fábrica en el momento de la instalación*.\n\n` +
+        `Después de instalados y en funcionamiento, no aplica garantía por daños causados por mal uso, voltajes incorrectos u otras manipulaciones.\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `Si presentas algún inconveniente con tu compra, escríbenos con:\n\n` +
         `✔ Número de pedido\n` +
         `✔ Nombre del producto\n` +
         `✔ Breve descripción del caso\n\n` +
-        `Nuestro equipo revisará tu solicitud y te responderá lo antes posible.\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `🧾 *Todos nuestros productos cuentan con garantía de 3 meses*, excepto la línea de eléctricos originales.\n\n` +
-        `⚠️ *Importante:* Los productos eléctricos originales tienen garantía *solo si presentan fallas de fábrica en el momento de la instalación*.\n\n` +
-        `Después de instalados y en funcionamiento, no aplica garantía por daños causados por mal uso, voltajes incorrectos u otras manipulaciones.`;
+        `Nuestro equipo revisará tu solicitud y te responderá lo antes posible.`;
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
@@ -1181,8 +1181,8 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
   } else if (messageText.includes('horario')) {
     userSessions[userPhone].state = 'VIEWING_INFO';
     const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
-      `Lunes a Viernes: 7:00 AM - 5:00 PM\n` +
-      `Sábados: 8:00 AM - 1:00 PM\n` +
+      `Lunes a Viernes: 8:00 AM - 4:40 PM\n` +
+      `Sábados: 8:00 AM - 12:40 PM\n` +
       `Domingos: Cerrado`;
 
     const buttons = [
@@ -1193,15 +1193,15 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
   } else if (messageText.includes('garantía') || messageText.includes('garantia') || messageText.includes('devoluc')) {
     userSessions[userPhone].state = 'VIEWING_INFO';
     const mensaje = `🛡️ *GARANTÍAS Y DEVOLUCIONES*\n\n` +
+      `🧾 *Todos nuestros productos cuentan con garantía de 3 meses*, excepto la línea de eléctricos originales.\n\n` +
+      `⚠️ *Importante:* Los productos eléctricos originales tienen garantía *solo si presentan fallas de fábrica en el momento de la instalación*.\n\n` +
+      `Después de instalados y en funcionamiento, no aplica garantía por daños causados por mal uso, voltajes incorrectos u otras manipulaciones.\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `Si presentas algún inconveniente con tu compra, escríbenos con:\n\n` +
       `✔ Número de pedido\n` +
       `✔ Nombre del producto\n` +
       `✔ Breve descripción del caso\n\n` +
-      `Nuestro equipo revisará tu solicitud y te responderá lo antes posible.\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🧾 *Todos nuestros productos cuentan con garantía de 3 meses*, excepto la línea de eléctricos originales.\n\n` +
-      `⚠️ *Importante:* Los productos eléctricos originales tienen garantía *solo si presentan fallas de fábrica en el momento de la instalación*.\n\n` +
-      `Después de instalados y en funcionamiento, no aplica garantía por daños causados por mal uso, voltajes incorrectos u otras manipulaciones.`;
+      `Nuestro equipo revisará tu solicitud y te responderá lo antes posible.`;
 
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
