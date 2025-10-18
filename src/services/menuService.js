@@ -644,6 +644,48 @@ const handleMenuSelection = async (userPhone, message) => {
     return;
   }
 
+  // Manejar botones del menú de asesor
+  if (messageText === 'asesor_varios') {
+    // Flujo actual: pedir consulta general
+    userSessions[userPhone].state = 'WAITING_ADVISOR_QUERY';
+    await sendTextMessage(
+      userPhone,
+      `¡Perfecto! 👨‍💼\n\n` +
+      `*¿Has elegido hablar con un asesor?*\n\n` +
+      `Cuéntanos aquí tu problema o consulta, y un asesor se contactará contigo *en breve* para ayudarte. 😊\n\n` +
+      `💬 _Escribe tu consulta ahora:_`
+    );
+
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+    return;
+  }
+
+  if (messageText === 'asesor_cotizar') {
+    // Nuevo flujo: pedir datos para cotización
+    userSessions[userPhone].state = 'WAITING_QUOTE_DATA_FOR_ADVISOR';
+    await sendTextMessage(
+      userPhone,
+      `¡Perfecto! 🚗 *Para ayudarte a cotizar, por favor compárteme los siguientes datos:*\n\n` +
+      `✔ Marca del vehículo (Hyundai, Kia, Chevrolet, Renault, etc.)\n` +
+      `✔ Modelo o línea (por ejemplo, Accent, Sail, Logan…)\n` +
+      `✔ Año o cilindraje del vehículo.\n` +
+      `✔ Nombre del repuesto que necesitas (ej: radiador, rótula, correa, etc.)\n` +
+      `✔ Si tienes la referencia original o una foto, ¡envíala aquí! 📸\n\n` +
+      `💬 _Escribe toda la información ahora:_`
+    );
+
+    const buttons = [
+      { id: 'volver_menu', title: '🏠 Volver al menú' }
+    ];
+
+    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+    return;
+  }
+
   // Manejar botones interactivos del menú principal
   if (messageText.startsWith('menu_')) {
     const menuOption = messageText.replace('menu_', '');
@@ -655,20 +697,19 @@ const handleMenuSelection = async (userPhone, message) => {
       await showCategories(userPhone);
       return;
     } else if (menuOption === 'asesor') {
-      userSessions[userPhone].state = 'WAITING_ADVISOR_QUERY';
-      await sendTextMessage(
-        userPhone,
-        `¡Perfecto! 👨‍💼\n\n` +
-        `*¿Has elegido hablar con un asesor?*\n\n` +
-        `Cuéntanos aquí tu problema o consulta, y un asesor se contactará contigo *en breve* para ayudarte. 😊\n\n` +
-        `💬 _Escribe tu consulta ahora:_`
-      );
+      // Mostrar menú de opciones de asesor
+      userSessions[userPhone].state = 'ADVISOR_MENU';
+
+      const mensaje = `👨‍💼 *¿Para qué deseas hablar con un asesor?*\n\n` +
+        `Selecciona el tipo de atención que necesitas:`;
 
       const buttons = [
+        { id: 'asesor_cotizar', title: '🔍 Cotizar autoparte' },
+        { id: 'asesor_varios', title: '💬 Temas varios' },
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
 
-      await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+      await sendInteractiveButtons(userPhone, mensaje, buttons);
       return;
     } else if (menuOption === 'horarios') {
       userSessions[userPhone].state = 'VIEWING_INFO';
@@ -832,12 +873,6 @@ const handleMenuSelection = async (userPhone, message) => {
   const session = userSessions[userPhone];
 
   try {
-    // Comandos globales
-    if (messageText === 'hola' || messageText === 'menu' || messageText === 'menú' || messageText === 'inicio') {
-      await showMainMenu(userPhone);
-      return;
-    }
-
     // Navegación según el estado de la sesión
     switch (session.state) {
       case 'MAIN_MENU':
@@ -848,7 +883,18 @@ const handleMenuSelection = async (userPhone, message) => {
         // El usuario escribió su consulta, ahora activar modo asesor con esa consulta
         await activateAdvisorMode(userPhone, message);
         break;
-      
+
+      case 'WAITING_QUOTE_DATA_FOR_ADVISOR':
+        // El usuario proporcionó los datos de cotización
+        await sendTextMessage(
+          userPhone,
+          `¡Gracias por la información! 🚗\n\n` +
+          `Un asesor estará contigo en breve.`
+        );
+        // Activar modo asesor con los datos de cotización
+        await activateAdvisorMode(userPhone, message);
+        break;
+
       case 'WAITING_EMAIL_FOR_ORDERS':
         // El usuario escribió su email para consultar pedidos
         await handleOrdersEmailInput(userPhone, message);
@@ -1058,6 +1104,18 @@ const handleMenuSelection = async (userPhone, message) => {
         await sendInteractiveButtons(userPhone, errorMsg, buttons);
         break;
 
+      case 'ADVISOR_MENU':
+        // Usuario está en el menú de selección de tipo de asesor
+        // Solo aceptar botones, rechazar cualquier otro input
+        const advisorMenuErrorMsg = '❌ *Opción no válida.*\n\nPor favor selecciona una de las opciones del menú.';
+        const advisorMenuButtons = [
+          { id: 'asesor_cotizar', title: '🔍 Cotizar autoparte' },
+          { id: 'asesor_varios', title: '💬 Temas varios' },
+          { id: 'volver_menu', title: '🏠 Volver al menú' }
+        ];
+        await sendInteractiveButtons(userPhone, advisorMenuErrorMsg, advisorMenuButtons);
+        break;
+
       default:
         await showMainMenu(userPhone);
     }
@@ -1163,21 +1221,19 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
   if (messageText.includes('catálogo') || messageText.includes('catalogo') || messageText.includes('producto')) {
     await showCategories(userPhone);
   } else if (messageText.includes('asesor') || messageText.includes('asesora') || messageText.includes('ayuda')) {
-    // Cambiar estado para esperar la consulta del usuario
-    userSessions[userPhone].state = 'WAITING_ADVISOR_QUERY';
-    await sendTextMessage(
-      userPhone,
-      `¡Perfecto! 👨‍💼\n\n` +
-      `*¿Has elegido hablar con un asesor?*\n\n` +
-      `Cuéntanos aquí tu problema o consulta, y un asesor se contactará contigo *en breve* para ayudarte. 😊\n\n` +
-      `💬 _Escribe tu consulta ahora:_`
-    );
+    // Mostrar menú de opciones de asesor
+    userSessions[userPhone].state = 'ADVISOR_MENU';
+
+    const mensaje = `👨‍💼 *¿Para qué deseas hablar con un asesor?*\n\n` +
+      `Selecciona el tipo de atención que necesitas:`;
 
     const buttons = [
+      { id: 'asesor_cotizar', title: '🔍 Cotizar autoparte' },
+      { id: 'asesor_varios', title: '💬 Temas varios' },
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
-    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
   } else if (messageText.includes('horario')) {
     userSessions[userPhone].state = 'VIEWING_INFO';
     const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
