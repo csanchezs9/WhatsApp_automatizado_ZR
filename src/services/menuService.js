@@ -697,6 +697,25 @@ const handleMenuSelection = async (userPhone, message) => {
       await showCategories(userPhone);
       return;
     } else if (menuOption === 'asesor') {
+      // Verificar horario de atención ANTES de mostrar el menú
+      if (!isWithinBusinessHours()) {
+        const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
+          `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
+          `📅 *Nuestros horarios son:*\n` +
+          `• Lunes a viernes: 8:00 AM - 4:40 PM\n` +
+          `• Sábados: 8:00 AM - 12:40 PM\n` +
+          `• Domingos: Cerrado\n\n` +
+          `💡 Puedes contactarnos en estos horarios o explorar nuestro catálogo y opciones del menú automático.`;
+
+        const buttons = [
+          { id: 'volver_menu', title: '🏠 Volver al menú' }
+        ];
+
+        await sendInteractiveButtons(userPhone, outOfHoursMessage, buttons);
+        console.log(`⏰ Usuario ${userPhone} intentó contactar asesor fuera de horario`);
+        return;
+      }
+
       // Mostrar menú de opciones de asesor
       userSessions[userPhone].state = 'ADVISOR_MENU';
 
@@ -1222,6 +1241,25 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
   if (messageText.includes('catálogo') || messageText.includes('catalogo') || messageText.includes('producto')) {
     await showCategories(userPhone);
   } else if (messageText.includes('asesor') || messageText.includes('asesora') || messageText.includes('ayuda')) {
+    // Verificar horario de atención ANTES de mostrar el menú
+    if (!isWithinBusinessHours()) {
+      const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
+        `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
+        `📅 *Nuestros horarios son:*\n` +
+        `• Lunes a viernes: 8:00 AM - 4:40 PM\n` +
+        `• Sábados: 8:00 AM - 12:40 PM\n` +
+        `• Domingos: Cerrado\n\n` +
+        `💡 Puedes contactarnos en estos horarios o explorar nuestro catálogo y opciones del menú automático.`;
+
+      const buttons = [
+        { id: 'volver_menu', title: '🏠 Volver al menú' }
+      ];
+
+      await sendInteractiveButtons(userPhone, outOfHoursMessage, buttons);
+      console.log(`⏰ Usuario ${userPhone} intentó contactar asesor fuera de horario`);
+      return;
+    }
+
     // Mostrar menú de opciones de asesor
     userSessions[userPhone].state = 'ADVISOR_MENU';
 
