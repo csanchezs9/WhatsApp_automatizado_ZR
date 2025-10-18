@@ -202,9 +202,7 @@ const isUserWithAdvisor = (userPhone) => {
  * Activa el modo asesor para un usuario
  */
 const activateAdvisorMode = async (userPhone, userQuery = '') => {
-  // TEMPORALMENTE DESACTIVADO: Verificar si estamos dentro del horario de atención
-  // TODO: Reactivar después de las pruebas
-  /*
+  // Verificar si estamos dentro del horario de atención
   if (!isWithinBusinessHours()) {
     const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
       `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
@@ -222,7 +220,6 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
     console.log(`⏰ Usuario ${userPhone} intentó contactar asesor fuera de horario`);
     return;
   }
-  */
 
   const now = Date.now();
   usersWithAdvisor.set(userPhone, {
@@ -709,7 +706,7 @@ const handleMenuSelection = async (userPhone, message) => {
 
       const buttons = [
         { id: 'asesor_cotizar', title: '🔍 Cotizar autoparte' },
-        { id: 'asesor_varios', title: '💬 Temas varios' },
+        { id: 'asesor_varios', title: '💬 Atención general' },
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
 
@@ -1114,7 +1111,7 @@ const handleMenuSelection = async (userPhone, message) => {
         const advisorMenuErrorMsg = '❌ *Opción no válida.*\n\nPor favor selecciona una de las opciones del menú.';
         const advisorMenuButtons = [
           { id: 'asesor_cotizar', title: '🔍 Cotizar autoparte' },
-          { id: 'asesor_varios', title: '💬 Temas varios' },
+          { id: 'asesor_varios', title: '💬 Atención general' },
           { id: 'volver_menu', title: '🏠 Volver al menú' }
         ];
         await sendInteractiveButtons(userPhone, advisorMenuErrorMsg, advisorMenuButtons);
@@ -1234,7 +1231,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
 
     const buttons = [
       { id: 'asesor_cotizar', title: '🔍 Cotizar autoparte' },
-      { id: 'asesor_varios', title: '💬 Temas varios' },
+      { id: 'asesor_varios', title: '💬 Atención general' },
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
