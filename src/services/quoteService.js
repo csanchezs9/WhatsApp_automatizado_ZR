@@ -162,7 +162,8 @@ function formatProduct(product) {
 
     // Agregar link directo al producto
     if (product.id) {
-        message += `\n\nhttps://zonarepuestera.com.co/products/${product.id}/`;
+        message += `\n\n🌐 Puedes hacer clic en el siguiente enlace para ver más detalles del producto y comprarlo en línea de forma segura y rápida, o agregarlo al carrito 👇\n`;
+        message += `https://zonarepuestera.com.co/products/${product.id}/`;
     }
 
     return message;
