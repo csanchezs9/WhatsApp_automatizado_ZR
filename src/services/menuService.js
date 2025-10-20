@@ -146,7 +146,7 @@ const normalizeText = (text) => {
 
 /**
  * Verifica si estamos dentro del horario de atención
- * Lunes a viernes: 8:00 AM - 4:40 PM
+ * Lunes a viernes: 8:00 AM - 4:30 PM
  * Sábados: 8:00 AM - 12:40 PM
  * Domingos: Cerrado
  * Zona horaria: Colombia (America/Bogota, UTC-5)
@@ -169,9 +169,9 @@ const isWithinBusinessHours = () => {
     return false;
   }
 
-  // Lunes a viernes: 8:00 AM - 4:40 PM
+  // Lunes a viernes: 8:00 AM - 4:30 PM
   if (day >= 1 && day <= 5) {
-    return currentTime >= 8 && currentTime < 16 + 40/60; // 16:40 = 4:40 PM
+    return currentTime >= 8 && currentTime < 16 + 30/60; // 16:30 = 4:30 PM
   }
 
   // Sábado: 8:00 AM - 12:40 PM
@@ -214,7 +214,7 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
     const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
       `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
       `📅 *Nuestros horarios son:*\n` +
-      `• Lunes a viernes: 8:00 AM - 4:40 PM\n` +
+      `• Lunes a viernes: 8:00 AM - 4:30 PM\n` +
       `• Sábados: 8:00 AM - 12:40 PM\n` +
       `• Domingos: Cerrado\n\n` +
       `💡 Puedes contactarnos en estos horarios o explorar nuestro catálogo y opciones del menú automático.`;
@@ -709,7 +709,7 @@ const handleMenuSelection = async (userPhone, message) => {
         const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
           `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
           `📅 *Nuestros horarios son:*\n` +
-          `• Lunes a viernes: 8:00 AM - 4:40 PM\n` +
+          `• Lunes a viernes: 8:00 AM - 4:30 PM\n` +
           `• Sábados: 8:00 AM - 12:40 PM\n` +
           `• Domingos: Cerrado\n\n` +
           `💡 Puedes contactarnos en estos horarios o explorar nuestro catálogo y opciones del menú automático.`;
@@ -741,7 +741,7 @@ const handleMenuSelection = async (userPhone, message) => {
     } else if (menuOption === 'horarios') {
       userSessions[userPhone].state = 'VIEWING_INFO';
       const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
-        `Lunes a Viernes: 8:00 AM - 4:40 PM\n` +
+        `Lunes a Viernes: 8:00 AM - 4:30 PM\n` +
         `Sábados: 8:00 AM - 12:40 PM\n` +
         `Domingos: Cerrado`;
       const buttons = [
@@ -785,7 +785,7 @@ const handleMenuSelection = async (userPhone, message) => {
         `📍 *Dirección:* CR 50A # 46 – 48, Piso 3. Itagüí (Antioquia)\n\n` +
         `📞 *Teléfono:* 316 483 6166\n\n` +
         `🕓 *Horario:*\n` +
-        `Lunes a viernes 8:00 a.m. – 4:40 p.m.\n` +
+        `Lunes a viernes 8:00 a.m. – 4:30 p.m.\n` +
         `Sábados 8:00 a.m. – 12:40 p.m.\n\n` +
         `📌 Ver en Google Maps:\n` +
         `https://www.google.com/maps/search/?api=1&query=CR+50A+%23+46-48+Itagüí+Antioquia`;
@@ -1253,7 +1253,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
         `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
         `📅 *Nuestros horarios son:*\n` +
-        `• Lunes a viernes: 8:00 AM - 4:40 PM\n` +
+        `• Lunes a viernes: 8:00 AM - 4:30 PM\n` +
         `• Sábados: 8:00 AM - 12:40 PM\n` +
         `• Domingos: Cerrado\n\n` +
         `💡 Puedes contactarnos en estos horarios o explorar nuestro catálogo y opciones del menú automático.`;
@@ -1284,7 +1284,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
   } else if (messageText.includes('horario')) {
     userSessions[userPhone].state = 'VIEWING_INFO';
     const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
-      `Lunes a Viernes: 8:00 AM - 4:40 PM\n` +
+      `Lunes a Viernes: 8:00 AM - 4:30 PM\n` +
       `Sábados: 8:00 AM - 12:40 PM\n` +
       `Domingos: Cerrado`;
 
@@ -1331,7 +1331,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       `📍 *Dirección:* CR 50A # 46 – 48, Piso 3. Itagüí (Antioquia)\n\n` +
       `📞 *Teléfono:* 316 483 6166\n\n` +
       `🕓 *Horario:*\n` +
-      `Lunes a viernes 8:00 a.m. – 4:40 p.m.\n` +
+      `Lunes a viernes 8:00 a.m. – 4:30 p.m.\n` +
       `Sábados 8:00 a.m. – 12:40 p.m.\n\n` +
       `📌 Ver en Google Maps:\n` +
       `https://www.google.com/maps/search/?api=1&query=CR+50A+%23+46-48+Itagüí+Antioquia`;
