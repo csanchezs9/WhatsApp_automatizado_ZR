@@ -149,12 +149,19 @@ const normalizeText = (text) => {
  * Lunes a viernes: 8:00 AM - 4:40 PM
  * Sábados: 8:00 AM - 12:40 PM
  * Domingos: Cerrado
+ * Zona horaria: Colombia (America/Bogota, UTC-5)
  */
 const isWithinBusinessHours = () => {
-  const now = new Date();
-  const day = now.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
-  const hour = now.getHours();
-  const minutes = now.getMinutes();
+  // Obtener fecha y hora en zona horaria de Colombia
+  const nowInColombia = new Date().toLocaleString('en-US', {
+    timeZone: 'America/Bogota',
+    hour12: false
+  });
+
+  const colombiaDate = new Date(nowInColombia);
+  const day = colombiaDate.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
+  const hour = colombiaDate.getHours();
+  const minutes = colombiaDate.getMinutes();
   const currentTime = hour + minutes / 60;
 
   // Domingo = cerrado
@@ -778,8 +785,8 @@ const handleMenuSelection = async (userPhone, message) => {
         `📍 *Dirección:* CR 50A # 46 – 48, Piso 3. Itagüí (Antioquia)\n\n` +
         `📞 *Teléfono:* 316 483 6166\n\n` +
         `🕓 *Horario:*\n` +
-        `Lunes a viernes 8:00 a.m. – 5:00 p.m.\n` +
-        `Sábados 8:00 a.m. – 12:00 p.m.\n\n` +
+        `Lunes a viernes 8:00 a.m. – 4:40 p.m.\n` +
+        `Sábados 8:00 a.m. – 12:40 p.m.\n\n` +
         `📌 Ver en Google Maps:\n` +
         `https://www.google.com/maps/search/?api=1&query=CR+50A+%23+46-48+Itagüí+Antioquia`;
       const buttons = [
@@ -1324,8 +1331,8 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       `📍 *Dirección:* CR 50A # 46 – 48, Piso 3. Itagüí (Antioquia)\n\n` +
       `📞 *Teléfono:* 316 483 6166\n\n` +
       `🕓 *Horario:*\n` +
-      `Lunes a viernes 8:00 a.m. – 5:00 p.m.\n` +
-      `Sábados 8:00 a.m. – 12:00 p.m.\n\n` +
+      `Lunes a viernes 8:00 a.m. – 4:40 p.m.\n` +
+      `Sábados 8:00 a.m. – 12:40 p.m.\n\n` +
       `📌 Ver en Google Maps:\n` +
       `https://www.google.com/maps/search/?api=1&query=CR+50A+%23+46-48+Itagüí+Antioquia`;
 
