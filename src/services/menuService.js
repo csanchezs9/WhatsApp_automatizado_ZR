@@ -21,7 +21,7 @@ const usersWithAdvisor = new Map(); // { userPhone: { startTime: Date, lastAdvis
 
 const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573164088588';
 const ADVISOR_CONVERSATION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
-const INACTIVITY_TIMEOUT = parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '7') * 60 * 1000; // 7 minutos de inactividad
+const INACTIVITY_TIMEOUT = parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '20') * 60 * 1000; // 20 minutos de inactividad
 
 // Configuración de limpieza de sesiones antiguas
 const MAX_SESSION_AGE = 1 * 24 * 60 * 60 * 1000; // 1 día (24 horas)
@@ -212,12 +212,12 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
   // Verificar si estamos dentro del horario de atención
   if (!isWithinBusinessHours()) {
     const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
-      `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
+      `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para brindar asesoría personalizada.\n\n` +
       `📅 *Nuestros horarios son:*\n` +
       `• Lunes a viernes: 8:00 AM - 4:30 PM\n` +
       `• Sábados: 8:00 AM - 12:40 PM\n` +
       `• Domingos: Cerrado\n\n` +
-      `💡 Puedes contactarnos en estos horarios o explorar nuestro catálogo y opciones del menú automático.`;
+      `💡 Puedes contactarnos en nuestros horarios o seguir explorando más opciones en nuestro menú automático.`;
 
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
@@ -707,12 +707,12 @@ const handleMenuSelection = async (userPhone, message) => {
       // Verificar horario de atención ANTES de mostrar el menú
       if (!isWithinBusinessHours()) {
         const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
-          `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
+          `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para brindar asesoría personalizada.\n\n` +
           `📅 *Nuestros horarios son:*\n` +
           `• Lunes a viernes: 8:00 AM - 4:30 PM\n` +
           `• Sábados: 8:00 AM - 12:40 PM\n` +
           `• Domingos: Cerrado\n\n` +
-          `💡 Puedes contactarnos en estos horarios o explorar nuestro catálogo y opciones del menú automático.`;
+          `💡 Puedes contactarnos en nuestros horarios o seguir explorando más opciones en nuestro menú automático.`;
 
         const buttons = [
           { id: 'volver_menu', title: '🏠 Volver al menú' }
@@ -756,7 +756,7 @@ const handleMenuSelection = async (userPhone, message) => {
         `⚠️ *Importante:* Los productos eléctricos originales tienen garantía *solo si presentan fallas de fábrica en el momento de la instalación*.\n\n` +
         `Después de instalados y en funcionamiento, no aplica garantía por daños causados por mal uso, voltajes incorrectos u otras manipulaciones.\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `Si presentas algún inconveniente con tu compra, escríbenos con:\n\n` +
+        `Si presentas algún inconveniente con tu repuesto, escríbenos con:\n\n` +
         `✔ Número de pedido\n` +
         `✔ Nombre del producto\n` +
         `✔ Breve descripción del caso\n\n` +
@@ -1184,12 +1184,12 @@ const showMainMenu = async (userPhone) => {
         rows: [
           {
             id: 'menu_cotizar',
-            title: '🔍 Cotizar autoparte',
+            title: '🔍 Cotizar repuesto',
             description: 'Busca por marca y modelo de vehículo'
           },
           {
             id: 'menu_catalogo',
-            title: '📦 Ver catálogo',
+            title: '📚 Ver catálogo',
             description: 'Explora nuestros productos'
           },
           {
@@ -1234,7 +1234,7 @@ const showMainMenu = async (userPhone) => {
   const bodyText = `👋 ¡Hola! Soy *ZonaBot*, el asistente virtual de Zona Repuestera 🚗💬\n\n` +
     `Estoy aquí para ayudarte con todo lo que necesites sobre *autopartes, cotizaciones, envío y más*.\n\n` +
     `Por favor selecciona una de las siguientes opciones para continuar 👇🏻\n\n` +
-    `_Si estás ausente durante 7 minutos, se terminará la sesión._`;
+    `_Si estás ausente durante 20 minutos, se terminará la sesión._`;
 
   await sendInteractiveList(userPhone, bodyText, '📋 Ver opciones', sections);
 };
@@ -1251,12 +1251,12 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     // Verificar horario de atención ANTES de mostrar el menú
     if (!isWithinBusinessHours()) {
       const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
-        `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para atención personalizada.\n\n` +
+        `Lo sentimos, actualmente estamos fuera de nuestro horario de atención para brindar asesoría personalizada.\n\n` +
         `📅 *Nuestros horarios son:*\n` +
         `• Lunes a viernes: 8:00 AM - 4:30 PM\n` +
         `• Sábados: 8:00 AM - 12:40 PM\n` +
         `• Domingos: Cerrado\n\n` +
-        `💡 Puedes contactarnos en estos horarios o explorar nuestro catálogo y opciones del menú automático.`;
+        `💡 Puedes contactarnos en nuestros horarios o seguir explorando más opciones en nuestro menú automático.`;
 
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' }
