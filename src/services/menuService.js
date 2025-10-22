@@ -981,6 +981,20 @@ const handleMenuSelection = async (userPhone, message) => {
         await handleSubcategorySelection(userPhone, messageText);
         break;
 
+      case 'PRODUCT_LIST':
+        // Usuario está viendo lista de productos y puede seleccionar por número
+        const catalogProductIndex = parseInt(messageText);
+        if (!isNaN(catalogProductIndex) && catalogProductIndex > 0) {
+          await showProductDetails(userPhone, catalogProductIndex);
+        } else {
+          await sendTextMessage(
+            userPhone,
+            `❌ Por favor escribe el número del producto que deseas ver.\n\n` +
+            `Ejemplo: escribe *5* para ver los detalles del producto #5`
+          );
+        }
+        break;
+
       case 'QUOTE_SELECT_BRAND':
         // Usuario seleccionó una marca de vehículo (por número)
         const brandIndex = parseInt(messageText);
@@ -1559,10 +1573,10 @@ const handleSubcategorySelection = async (userPhone, message) => {
 const showProducts = async (userPhone, subcategoryId) => {
   userSessions[userPhone].state = 'PRODUCT_LIST';
   await sendTextMessage(userPhone, '⏳ Cargando productos...');
-  
+
   try {
     const products = await getProducts(subcategoryId);
-    
+
     if (!products || products.length === 0) {
       await sendTextMessage(userPhone, '❌ No hay productos disponibles en esta subcategoría.');
       const categoryId = userSessions[userPhone].selectedCategory;
@@ -1570,13 +1584,16 @@ const showProducts = async (userPhone, subcategoryId) => {
       return;
     }
 
+    // Guardar lista de productos en la sesión para selección posterior
+    userSessions[userPhone].productsList = products;
+
     // Formatear y enviar productos como mensajes de texto
     // WhatsApp limita el mensaje a 4096 caracteres, así que limitamos a 10 productos
     const maxProducts = 10;
     const productsToShow = products.slice(0, maxProducts);
-    
+
     let mensaje = `🛒 *Productos Disponibles* (${products.length})\n\n`;
-    
+
     productsToShow.forEach((prod, index) => {
       // Formatear precio en pesos colombianos
       const price = prod.final_price || prod.price || prod.base_price || 0;
@@ -1585,47 +1602,50 @@ const showProducts = async (userPhone, subcategoryId) => {
         currency: 'COP',
         minimumFractionDigits: 0
       }).format(price);
-      
+
       // Nombre del producto sin asteriscos para evitar negrilla inconsistente
       mensaje += `${index + 1}. ${prod.name}\n`;
       mensaje += `   💰 Precio: ${formattedPrice}\n`;
-      
+
       // Agregar código si existe
       if (prod.code || prod.sku) {
         mensaje += `   🔖 Código: ${prod.code || prod.sku}\n`;
       }
-      
+
       // Agregar stock si existe
       if (prod.stock !== undefined && prod.stock !== null) {
         const stockStatus = prod.stock > 0 ? `✅ ${prod.stock} disponibles` : '❌ Agotado';
         mensaje += `   📦 Stock: ${stockStatus}\n`;
       }
-      
+
       mensaje += '\n';
     });
-    
+
     if (products.length > maxProducts) {
       mensaje += `_Mostrando ${maxProducts} de ${products.length} productos_\n\n`;
     }
-    
+
+    // Agregar instrucción para seleccionar producto por número
+    mensaje += `💬 *Escribe el número del producto para ver sus detalles y el link de compra*\n\n`;
+
     // Obtener datos de la subcategoría para generar el link correcto
     const subcategoryData = userSessions[userPhone].selectedSubcategoryData;
     const categoryId = userSessions[userPhone].selectedCategory;
-    
+
     if (categoryId && subcategoryId) {
       // Link directo a los productos de esta subcategoría
-      mensaje += `🌐 Puedes hacer clic en el siguiente enlace para ver más detalles del producto y comprarlo en línea de forma segura y rápida, o agregarlo al carrito 👇\n`;
+      mensaje += `🌐 También puedes hacer clic aquí para ver todos los productos y comprarlo en línea de forma segura y rápida, o agregarlo al carrito 👇\n`;
       mensaje += `https://zonarepuestera.com.co/products/?category=${categoryId}&subcategory=${subcategoryId}`;
     } else if (categoryId) {
       // Fallback: mostrar subcategorías de la categoría
-      mensaje += `🌐 Puedes hacer clic en el siguiente enlace para ver más detalles del producto y comprarlo en línea de forma segura y rápida, o agregarlo al carrito 👇\n`;
+      mensaje += `🌐 También puedes hacer clic aquí para ver todos los productos y comprarlo en línea de forma segura y rápida, o agregarlo al carrito 👇\n`;
       mensaje += `https://zonarepuestera.com.co/sub-categories/?category=${categoryId}`;
     } else {
       // Fallback general: link a productos
-      mensaje += `🌐 Puedes hacer clic en el siguiente enlace para ver más detalles del producto y comprarlo en línea de forma segura y rápida, o agregarlo al carrito 👇\n`;
+      mensaje += `🌐 También puedes hacer clic aquí para ver todos los productos y comprarlo en línea de forma segura y rápida, o agregarlo al carrito 👇\n`;
       mensaje += `https://zonarepuestera.com.co/products/`;
     }
-    
+
     // Enviar el mensaje con los productos (sin botones para evitar límite de 1024 caracteres)
     await sendTextMessage(userPhone, mensaje);
 
@@ -1633,11 +1653,11 @@ const showProducts = async (userPhone, subcategoryId) => {
     const buttonMessage = 'Estoy atento si necesitas más información o ayuda 😊';
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' },
-      { id: 'menu_catalogo', title: '📦 Ver catálogo' }
+      { id: 'menu_catalogo', title: '📚 Ver catálogo' }
     ];
 
     await sendInteractiveButtons(userPhone, buttonMessage, buttons);
-    userSessions[userPhone].state = 'MAIN_MENU';
+    // Mantener estado PRODUCT_LIST para permitir selección por número
     
   } catch (error) {
     console.error('Error mostrando productos:', error);
@@ -1645,6 +1665,80 @@ const showProducts = async (userPhone, subcategoryId) => {
     const categoryId = userSessions[userPhone].selectedCategory;
     await showSubCategories(userPhone, categoryId);
   }
+};
+
+/**
+ * Muestra los detalles de un producto específico del catálogo
+ */
+const showProductDetails = async (userPhone, productIndex) => {
+  const productsList = userSessions[userPhone].productsList;
+
+  if (!productsList || productsList.length === 0) {
+    await sendTextMessage(userPhone, '❌ No hay productos disponibles.');
+    await showMainMenu(userPhone);
+    return;
+  }
+
+  const product = productsList[productIndex - 1];
+
+  if (!product) {
+    await sendTextMessage(
+      userPhone,
+      `❌ *Producto no encontrado*\n\n` +
+      `Verifica el número del producto. Hay ${productsList.length} productos disponibles.`
+    );
+    return;
+  }
+
+  // Formatear detalles del producto (similar a formatProduct de quoteService)
+  const price = product.final_price || product.price || product.base_price || 0;
+  const formattedPrice = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0
+  }).format(price);
+
+  let mensaje = `📦 *${product.name || product.description}*\n\n`;
+
+  // Código del producto
+  if (product.code || product.sku) {
+    mensaje += `🔖 *Código:* ${product.code || product.sku}\n`;
+  }
+
+  // Marca si existe
+  if (product.brand) {
+    mensaje += `🏷️ *Marca:* ${product.brand}\n`;
+  }
+
+  // Precio
+  mensaje += `💰 *Precio:* ${formattedPrice}\n`;
+
+  // Stock
+  if (product.stock !== undefined && product.stock !== null) {
+    const stockStatus = product.stock > 0 ? `${product.stock} unidades disponibles` : 'Agotado';
+    mensaje += `📊 *Stock:* ${stockStatus}\n`;
+  }
+
+  // Descripción adicional si existe
+  if (product.description && product.description !== product.name) {
+    mensaje += `\n📝 *Descripción:* ${product.description}\n`;
+  }
+
+  // Link directo al producto individual
+  if (product.id) {
+    mensaje += `\n🌐 *Puedes hacer clic aquí para ver más detalles y comprarlo en línea de forma segura y rápida, o agregarlo al carrito* 👇\n`;
+    mensaje += `https://zonarepuestera.com.co/products/${product.id}/`;
+  }
+
+  await sendTextMessage(userPhone, mensaje);
+
+  const buttons = [
+    { id: 'menu_catalogo', title: '📚 Ver catálogo' },
+    { id: 'menu_asesor', title: '💬 Hablar con asesor' },
+    { id: 'volver_menu', title: '🏠 Volver al menú' }
+  ];
+
+  await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
 };
 
 /**
