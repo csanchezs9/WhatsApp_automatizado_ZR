@@ -1734,7 +1734,6 @@ const showProductDetails = async (userPhone, productIndex) => {
 
   const buttons = [
     { id: 'menu_catalogo', title: '📚 Ver catálogo' },
-    { id: 'menu_asesor', title: '💬 Hablar con asesor' },
     { id: 'volver_menu', title: '🏠 Volver al menú' }
   ];
 
@@ -2141,6 +2140,12 @@ const searchQuoteProducts = async (userPhone) => {
   const productList = formatProductList(result.data, 1, 10, filters);
   await sendTextMessage(userPhone, productList);
 
+  // Agregar instrucción para seleccionar producto por número
+  await sendTextMessage(
+    userPhone,
+    `💬 *Escribe el número del producto para ver sus detalles y el link de compra*`
+  );
+
   const buttons = [
     { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
     { id: 'volver_menu', title: '🏠 Volver al menú' }
@@ -2169,9 +2174,8 @@ const showQuoteProductDetails = async (userPhone, productIndex) => {
 
   const productDetails = formatProduct(product);
   await sendTextMessage(userPhone, productDetails);
-  
+
   const buttons = [
-    { id: 'menu_asesor', title: '💬 Consultar asesor' },
     { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
     { id: 'volver_menu', title: '🏠 Volver al menú' }
   ];
