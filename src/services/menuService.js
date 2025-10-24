@@ -1198,7 +1198,7 @@ const showMainMenu = async (userPhone) => {
         rows: [
           {
             id: 'menu_cotizar',
-            title: '🔍 Cotizar repuesto',
+            title: '🔍 Cotizar un repuesto',
             description: 'Busca por marca y modelo de vehículo'
           },
           {
