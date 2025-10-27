@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Read(//c/Users/USER/Documents/AUTwpp/**)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

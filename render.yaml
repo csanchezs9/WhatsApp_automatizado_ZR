@@ -6,7 +6,11 @@ services:
     plan: starter
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /
+    healthCheckPath: /health
+    disk:
+      name: chatbot-data
+      mountPath: /opt/render/project/src/data/persistent
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
