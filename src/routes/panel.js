@@ -118,7 +118,7 @@ router.post('/send-message', authMiddleware, async (req, res) => {
         }
 
         // Enviar mensaje por WhatsApp
-        await whatsappService.sendMessage(phoneNumber, message);
+        await whatsappService.sendTextMessage(phoneNumber, message);
 
         // Agregar mensaje a la conversación
         conversationService.addMessage(phoneNumber, {
