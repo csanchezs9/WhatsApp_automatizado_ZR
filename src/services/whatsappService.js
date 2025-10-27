@@ -1,7 +1,9 @@
 const axios = require('axios');
+const conversationService = require('./conversationService');
 
 const WHATSAPP_API_URL = `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`;
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
+const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573164088588';
 
 // Configuración de reintentos
 const MAX_RETRIES = 3;
@@ -54,6 +56,16 @@ const sendTextMessage = async (to, text) => {
       }
     ));
     console.log('✅ Mensaje enviado:', response.data);
+
+    // Registrar mensaje del bot en el panel (solo si no es para el asesor)
+    if (to !== ADVISOR_PHONE) {
+      conversationService.addMessage(to, {
+        from: 'bot',
+        text: text,
+        type: 'text'
+      });
+    }
+
     return response.data;
   } catch (error) {
     console.error('❌ Error enviando mensaje:', error.response?.data || error.message);
@@ -96,6 +108,17 @@ const sendInteractiveButtons = async (to, bodyText, buttons) => {
       }
     ));
     console.log('✅ Botones enviados');
+
+    // Registrar mensaje con botones en el panel
+    if (to !== ADVISOR_PHONE) {
+      const buttonText = buttons.map(btn => `[${btn.title}]`).join(' ');
+      conversationService.addMessage(to, {
+        from: 'bot',
+        text: `${bodyText}\n\n${buttonText}`,
+        type: 'interactive_buttons'
+      });
+    }
+
     return response.data;
   } catch (error) {
     console.error('❌ Error enviando botones:', error.response?.data || error.message);
@@ -133,6 +156,16 @@ const sendInteractiveList = async (to, bodyText, buttonText, sections) => {
       }
     ));
     console.log('✅ Lista enviada');
+
+    // Registrar mensaje con lista en el panel
+    if (to !== ADVISOR_PHONE) {
+      conversationService.addMessage(to, {
+        from: 'bot',
+        text: `${bodyText}\n\n[Menú: ${buttonText}]`,
+        type: 'interactive_list'
+      });
+    }
+
     return response.data;
   } catch (error) {
     console.error('❌ Error enviando lista:', error.response?.data || error.message);

@@ -8,6 +8,13 @@ This is a WhatsApp Business bot for an auto parts e-commerce platform (Zona Repu
 
 **Critical Rule:** NEVER modify the Django e-commerce backend (`vehicles_parts_store-main/`). The bot MUST adapt to the e-commerce, not the other way around. The e-commerce is in production serving real customers.
 
+### Advisor Web Panel
+
+The bot includes a professional web panel for advisors to manage WhatsApp conversations in real-time without using the WhatsApp Business app. See `PANEL-ASESOR.md` for complete documentation.
+
+**Panel URL:** `https://whatsapp-automatizado-zr-86dx.onrender.com/`
+**Default Credentials:** admin / zonarepuestera2025 (change in production via environment variables)
+
 ## Development Commands
 
 ### Running the bot
@@ -46,12 +53,15 @@ See `INICIO-RAPIDO-NGROK.md` for detailed ngrok setup instructions.
 ### Core Service Flow
 1. **Webhook Reception** (`src/routes/whatsapp.js:14`) → Receives WhatsApp messages
 2. **Message Processing** (`src/controllers/webhookController.js:8`) → Validates and extracts message data
-3. **Menu Navigation** (`src/services/menuService.js:429`) → Handles user state machine and menu flow via `handleMenuSelection()`
-4. **API Communication** → Four service layers:
+3. **Menu Navigation** (`src/services/menuService.js:437`) → Handles user state machine and menu flow via `handleMenuSelection()`
+4. **Conversation Logging** (`src/services/conversationService.js`) → Records all messages to SQLite for advisor panel
+5. **Real-time Updates** → WebSocket (Socket.io) notifies advisor panel of new messages
+6. **API Communication** → Five service layers:
    - `ecommerceService.js` - Django API for categories/products/subcategories
    - `quoteService.js` - Quote flow for searching by car brand/model
    - `orderService.js` - Order status lookup by email
    - `whatsappService.js` - WhatsApp Business API message sending
+   - `conversationService.js` - Conversation storage and retrieval for advisor panel
 
 ### State Management
 User sessions are stored in-memory in `menuService.js:17` using the `userSessions` object. Key states:
@@ -68,12 +78,36 @@ User sessions are stored in-memory in `menuService.js:17` using the `userSession
 
 **Important:** State machine logic is in `handleMenuSelection()` switch statement at `menuService.js:842`
 
-### Advisor Mode
+### Advisor Mode & Web Panel
+
 The bot has a dual-mode system:
-- **Bot mode** (default): Automated menu navigation with 7-minute inactivity timeout
+- **Bot mode** (default): Automated menu navigation with 20-minute inactivity timeout
 - **Advisor mode**: User connected to human advisor with 24-hour session timeout
 
-When in advisor mode, the bot forwards messages to `ADVISOR_PHONE_NUMBER` and doesn't auto-respond. Users can exit by typing "menú" or "menu". Advisors can finalize conversations with `/finalizar` command.
+**IMPORTANT:** Advisors now use a web panel instead of WhatsApp. The same WhatsApp number cannot be used simultaneously with the WhatsApp Business API and the WhatsApp Business app.
+
+**Advisor Web Panel Features:**
+- Real-time conversation management via browser
+- View all active conversations
+- Respond to messages directly from panel
+- Access 90-day conversation history
+- Archive conversations with notes
+- WebSocket-based live updates
+- Basic Auth security (username/password)
+
+**Panel Access:**
+- URL: `https://whatsapp-automatizado-zr-86dx.onrender.com/`
+- Credentials: Set via `PANEL_USERNAME` and `PANEL_PASSWORD` environment variables
+- Default: admin / zonarepuestera2025
+
+**Panel Architecture:**
+- Frontend: HTML/CSS/JS vanilla (served from `src/public/`)
+- Backend API: Express routes in `src/routes/panel.js`
+- Real-time: Socket.io WebSocket
+- Storage: SQLite on Render Disk (1GB at `/opt/render/project/src/data/persistent/`)
+- History: 90 days, auto-rotation every 24 hours
+
+See `PANEL-ASESOR.md` for complete panel documentation.
 
 Business hours for advisor connections (Colombia time):
 - Monday-Friday: 7:00 AM - 5:00 PM
@@ -111,9 +145,12 @@ Required variables in `.env`:
 - `PHONE_NUMBER_ID` - WhatsApp Business phone number ID
 - `WEBHOOK_VERIFY_TOKEN` - Webhook verification token (must match Meta config)
 - `ECOMMERCE_API_URL` - Django backend URL (default: `http://localhost:8000/api/v1`)
-- `ADVISOR_PHONE_NUMBER` - Phone number for advisor notifications (format: 573XXXXXXXXX)
-- `INACTIVITY_TIMEOUT_MINUTES` - Session timeout in minutes (default: 7)
+- `ADVISOR_PHONE_NUMBER` - Phone number for advisor notifications (format: 573XXXXXXXXX) - NO longer used for direct WhatsApp messaging, kept for reference only
+- `INACTIVITY_TIMEOUT_MINUTES` - Session timeout in minutes (default: 20)
 - `PORT` - Server port (default: 3000)
+- `PANEL_USERNAME` - Username for advisor web panel (default: admin)
+- `PANEL_PASSWORD` - Password for advisor web panel (default: zonarepuestera2025)
+- `NODE_ENV` - Environment (development/production)
 
 ## Deployment
 

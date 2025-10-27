@@ -1,15 +1,16 @@
 const { sendTextMessage, sendInteractiveButtons, sendInteractiveList } = require('./whatsappService');
 const { getCategories, getSubCategories, getProducts } = require('./ecommerceService');
 const { getOrdersByEmail, formatOrdersList, formatOrderDetails, isValidEmail } = require('./orderService');
-const { 
-  getCarBrands, 
-  getCarModels, 
-  getCategories: getProductCategories, 
-  getSubcategories: getProductSubcategories, 
+const {
+  getCarBrands,
+  getCarModels,
+  getCategories: getProductCategories,
+  getSubcategories: getProductSubcategories,
   searchProducts,
   formatProduct,
   formatProductList
 } = require('./quoteService');
+const conversationService = require('./conversationService');
 const fs = require('fs');
 const path = require('path');
 
@@ -459,6 +460,28 @@ const handleMenuSelection = async (userPhone, message) => {
     }
 
     const messageText = message.toLowerCase().trim();
+
+    // Registrar mensaje del cliente en el panel (solo si no es el asesor)
+    if (userPhone !== ADVISOR_PHONE) {
+      conversationService.addMessage(userPhone, {
+        from: 'client',
+        text: message,
+        type: 'text'
+      });
+
+      // Notificar al panel mediante WebSocket (si está disponible)
+      const io = global.io;
+      if (io) {
+        io.emit('new_message', {
+          phoneNumber: userPhone,
+          message: {
+            from: 'client',
+            text: message,
+            timestamp: new Date()
+          }
+        });
+      }
+    }
 
   // COMANDO /FINALIZAR DESDE EL ASESOR
   if (messageText === '/finalizar' && userPhone === ADVISOR_PHONE) {

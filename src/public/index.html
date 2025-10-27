@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Asesor - Zona Repuestera</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <h1>🔐 Panel de Asesor</h1>
+            <p>Zona Repuestera</p>
+            <form id="login-form">
+                <input type="text" id="username" placeholder="Usuario" required>
+                <input type="password" id="password" placeholder="Contraseña" required>
+                <button type="submit">Iniciar Sesión</button>
+            </form>
+            <div id="login-error" class="error-message"></div>
+        </div>
+    </div>
+
+    <div id="main-app" class="app-container" style="display: none;">
+        <div class="header">
+            <div class="header-left">
+                <h1>💬 Panel de Conversaciones</h1>
+                <div class="status-indicator">
+                    <span id="connection-status" class="status-dot offline"></span>
+                    <span id="connection-text">Desconectado</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Activas:</span>
+                        <span id="active-count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total DB:</span>
+                        <span id="db-count" class="stat-value">-</span>
+                    </div>
+                </div>
+                <button id="logout-btn" class="logout-btn">Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="🔍 Buscar por número...">
+                </div>
+
+                <div class="conversation-list" id="conversation-list">
+                    <div class="empty-state">
+                        <p>📭 No hay conversaciones activas</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-area">
+                <div id="no-conversation-selected" class="no-selection">
+                    <h2>📱 Selecciona una conversación</h2>
+                    <p>Elige una conversación de la lista para ver los mensajes</p>
+                </div>
+
+                <div id="chat-container" style="display: none;">
+                    <div class="chat-header">
+                        <div class="chat-info">
+                            <h2 id="chat-phone-number">-</h2>
+                            <span id="chat-status" class="chat-status-badge">Activa</span>
+                        </div>
+                        <div class="chat-actions">
+                            <button id="view-history-btn" class="action-btn">📚 Ver Historial</button>
+                            <button id="archive-btn" class="action-btn danger">🗄️ Archivar</button>
+                        </div>
+                    </div>
+
+                    <div class="messages-container" id="messages-container">
+                        <!-- Mensajes se cargan aquí -->
+                    </div>
+
+                    <div class="message-input-container">
+                        <textarea
+                            id="message-input"
+                            placeholder="Escribe tu mensaje aquí..."
+                            rows="3"
+                        ></textarea>
+                        <button id="send-btn" class="send-btn">Enviar ➤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de historial -->
+        <div id="history-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>📚 Historial de Conversaciones</h2>
+                    <button class="close-modal" onclick="closeHistoryModal()">✕</button>
+                </div>
+                <div class="modal-body" id="history-content">
+                    <p class="loading">Cargando historial...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
