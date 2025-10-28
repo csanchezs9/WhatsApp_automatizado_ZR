@@ -286,6 +286,18 @@ function showConversation(conversation) {
         addMessageToChat(msg);
     });
 
+    // Habilitar/deshabilitar input según si el cliente está con asesor
+    const isWithAdvisor = conversation.isWithAdvisor !== false; // Por defecto true si no viene
+    messageInput.disabled = !isWithAdvisor;
+    sendBtn.disabled = !isWithAdvisor;
+
+    if (!isWithAdvisor) {
+        messageInput.placeholder = '⚠️ El cliente no está en modo asesor. No puedes enviar mensajes.';
+        messageInput.value = '';
+    } else {
+        messageInput.placeholder = 'Escribe un mensaje...';
+    }
+
     scrollToBottom();
 }
 
@@ -397,6 +409,13 @@ finalizeBtn.addEventListener('click', async () => {
             }
 
             alert('Conversación finalizada correctamente.\n\nEl cliente puede usar el bot nuevamente.');
+
+            // Deshabilitar input inmediatamente después de finalizar
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+            messageInput.placeholder = '⚠️ El cliente no está en modo asesor. No puedes enviar mensajes.';
+            messageInput.value = '';
+
             loadConversations();
         } catch (error) {
             console.error('Error al finalizar:', error);

@@ -70,6 +70,9 @@ router.get('/conversations/:phoneNumber', authMiddleware, (req, res) => {
             return res.status(404).json({ error: 'Conversación no encontrada' });
         }
 
+        // Verificar si el usuario está con asesor
+        const isWithAdvisor = menuService.isUserWithAdvisor(phoneNumber);
+
         res.json({
             success: true,
             conversation: {
@@ -77,7 +80,8 @@ router.get('/conversations/:phoneNumber', authMiddleware, (req, res) => {
                 messages: conversation.messages,
                 startedAt: conversation.startedAt,
                 lastActivity: conversation.lastActivity,
-                status: conversation.status
+                status: conversation.status,
+                isWithAdvisor: isWithAdvisor // Agregar estado para el frontend
             }
         });
     } catch (error) {
