@@ -16,7 +16,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
     overflow: hidden;
     position: relative;
 }
@@ -52,7 +52,7 @@ body {
 
 .login-left {
     flex: 1;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
     padding: 60px;
     display: flex;
     align-items: center;
@@ -166,15 +166,15 @@ body {
 
 .input-group input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #ff6b35;
     background: white;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
 .btn-login {
     width: 100%;
     padding: 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
     color: white;
     border: none;
     border-radius: 10px;
@@ -191,7 +191,7 @@ body {
 
 .btn-login:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 12px 24px rgba(255, 107, 53, 0.4);
 }
 
 .btn-login:active {
@@ -436,6 +436,8 @@ body {
     flex-direction: column;
     background: #e5ddd5;
     position: relative;
+    overflow: hidden;
+    height: 100%;
 }
 
 .chat-area::before {
@@ -470,6 +472,8 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    height: 100%;
+    overflow: hidden;
 }
 
 .chat-header {
@@ -535,6 +539,7 @@ body {
 .messages-container {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -542,8 +547,7 @@ body {
     background: transparent;
     position: relative;
     z-index: 1;
-    max-height: calc(100vh - 250px);
-    min-height: 400px;
+    height: 0;
 }
 
 .messages-container::-webkit-scrollbar {
@@ -645,7 +649,7 @@ body {
 
 #message-input:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
 }
 
 .send-btn {
