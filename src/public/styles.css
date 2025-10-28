@@ -353,6 +353,7 @@ body {
     display: flex;
     flex: 1;
     overflow: hidden;
+    min-height: 0;
 }
 
 /* Sidebar */
@@ -362,6 +363,7 @@ body {
     border-right: 1px solid #e0e0e0;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
 .search-box {
@@ -439,7 +441,7 @@ body {
     background: #e5ddd5;
     position: relative;
     overflow: hidden;
-    height: 100%;
+    min-height: 0;
 }
 
 .chat-area::before {
@@ -466,8 +468,6 @@ body {
     color: #999;
     position: relative;
     z-index: 1;
-    height: 100%;
-    width: 100%;
 }
 
 .no-selection h2 {
@@ -478,8 +478,8 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100%;
     overflow: hidden;
+    min-height: 0;
 }
 
 .chat-header {
@@ -543,7 +543,7 @@ body {
 
 /* Messages */
 .messages-container {
-    flex: 1;
+    flex: 1 1 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 20px;
@@ -553,7 +553,7 @@ body {
     background: transparent;
     position: relative;
     z-index: 1;
-    height: 0;
+    min-height: 0;
 }
 
 .messages-container::-webkit-scrollbar {
