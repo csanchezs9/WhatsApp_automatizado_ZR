@@ -8,15 +8,47 @@
 </head>
 <body>
     <div id="login-screen" class="login-container">
-        <div class="login-box">
-            <h1>🔐 Panel de Asesor</h1>
-            <p>Zona Repuestera</p>
-            <form id="login-form">
-                <input type="text" id="username" placeholder="Usuario" required>
-                <input type="password" id="password" placeholder="Contraseña" required>
-                <button type="submit">Iniciar Sesión</button>
-            </form>
-            <div id="login-error" class="error-message"></div>
+        <div class="login-content">
+            <div class="login-left">
+                <div class="login-branding">
+                    <div class="logo-circle">
+                        <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M30 55C43.8071 55 55 43.8071 55 30C55 16.1929 43.8071 5 30 5C16.1929 5 5 16.1929 5 30C5 43.8071 16.1929 55 30 55Z" fill="white" fill-opacity="0.1"/>
+                            <path d="M30 15V30L40 35" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                            <circle cx="30" cy="30" r="3" fill="white"/>
+                        </svg>
+                    </div>
+                    <h1>Panel de Asesor</h1>
+                    <p class="subtitle">Zona Repuestera</p>
+                    <p class="description">Gestiona conversaciones de WhatsApp en tiempo real desde una interfaz profesional.</p>
+                </div>
+            </div>
+            <div class="login-right">
+                <div class="login-box">
+                    <h2>Iniciar Sesión</h2>
+                    <p class="login-subtitle">Ingresa tus credenciales para continuar</p>
+                    <form id="login-form">
+                        <div class="input-group">
+                            <label for="username">Usuario</label>
+                            <input type="text" id="username" placeholder="Ingresa tu usuario" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="password">Contraseña</label>
+                            <input type="password" id="password" placeholder="Ingresa tu contraseña" required>
+                        </div>
+                        <button type="submit" class="btn-login">
+                            <span>Acceder al Panel</span>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </form>
+                    <div id="login-error" class="error-message"></div>
+                </div>
+                <footer class="login-footer">
+                    <p>&copy; 2025 Camilo Sánchez. Todos los derechos reservados.</p>
+                </footer>
+            </div>
         </div>
     </div>
 
@@ -83,10 +115,14 @@
                     <div class="message-input-container">
                         <textarea
                             id="message-input"
-                            placeholder="Escribe tu mensaje aquí..."
-                            rows="3"
+                            placeholder="Escribe un mensaje..."
+                            rows="1"
                         ></textarea>
-                        <button id="send-btn" class="send-btn">Enviar ➤</button>
+                        <button id="send-btn" class="send-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>
