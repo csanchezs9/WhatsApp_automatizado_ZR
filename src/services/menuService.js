@@ -490,10 +490,14 @@ const handleMenuSelection = async (userPhone, message) => {
       const io = global.io;
       if (io) {
         const userState = userSessions[userPhone]?.state || 'UNKNOWN';
-        const withAdvisorFlag = userSessions[userPhone]?.withAdvisor || false;
 
-        // Considerar "con asesor" si está en WAITING_ADVISOR_QUERY o WITH_ADVISOR
-        const isWithAdvisor = withAdvisorFlag || userState === 'WAITING_ADVISOR_QUERY';
+        // Verificar si está con asesor usando la función correcta que chequea el Map usersWithAdvisor
+        // O si está en estado WAITING_ADVISOR_QUERY (escribiendo consulta inicial)
+        // O si está en estado WITH_ADVISOR (ya conectado con asesor)
+        const isWithAdvisorMap = isUserWithAdvisor(userPhone);
+        const isInAdvisorMode = isWithAdvisorMap ||
+                               userState === 'WAITING_ADVISOR_QUERY' ||
+                               userState === 'WITH_ADVISOR';
 
         io.emit('new_message', {
           phoneNumber: userPhone,
@@ -504,7 +508,7 @@ const handleMenuSelection = async (userPhone, message) => {
           },
           userState: userState, // Enviar estado del usuario para notificaciones
           messageId: message, // ID del mensaje/botón para filtrar "volver_menu"
-          isWithAdvisor: isWithAdvisor // Estado del modo asesor para habilitar/deshabilitar textarea
+          isWithAdvisor: isInAdvisorMode // Estado del modo asesor para habilitar/deshabilitar textarea
         });
       }
     }
