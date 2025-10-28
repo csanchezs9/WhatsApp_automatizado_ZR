@@ -25,6 +25,11 @@ const archiveBtn = document.getElementById('archive-btn');
 const finalizeBtn = document.getElementById('finalize-btn');
 const viewHistoryBtn = document.getElementById('view-history-btn');
 const searchInput = document.getElementById('search-input');
+const menuToggleBtn = document.getElementById('menu-toggle-btn');
+const dropdownMenu = document.getElementById('dropdown-menu');
+const promotionsModal = document.getElementById('promotions-modal');
+const promoMessage = document.getElementById('promo-message');
+const charCount = document.getElementById('char-count');
 
 // Login
 loginForm.addEventListener('submit', async (e) => {
@@ -61,7 +66,7 @@ loginForm.addEventListener('submit', async (e) => {
 });
 
 // Logout
-logoutBtn.addEventListener('click', () => {
+function doLogout() {
     localStorage.removeItem('panelAuth');
     currentAuth = null;
     if (socket) {
@@ -69,6 +74,19 @@ logoutBtn.addEventListener('click', () => {
     }
     clearInterval(autoRefreshInterval);
     showLoginScreen();
+}
+
+// Dropdown menu toggle
+menuToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdownMenu.classList.toggle('show');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!menuToggleBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+        dropdownMenu.classList.remove('show');
+    }
 });
 
 // Mostrar/ocultar pantallas
@@ -195,7 +213,7 @@ async function loadConversations() {
 // Renderizar lista de conversaciones
 function renderConversations(convs) {
     if (convs.length === 0) {
-        conversationList.innerHTML = '<div class="empty-state"><p>📭 No hay conversaciones activas</p></div>';
+        conversationList.innerHTML = '<div class="empty-state"><p>No hay conversaciones activas</p></div>';
         return;
     }
 
@@ -453,6 +471,87 @@ viewHistoryBtn.addEventListener('click', async () => {
 
 window.closeHistoryModal = function() {
     document.getElementById('history-modal').classList.remove('show');
+};
+
+// Promotions modal
+window.openPromotionsModal = async function() {
+    dropdownMenu.classList.remove('show');
+    promotionsModal.classList.add('show');
+
+    // Load current promotion
+    try {
+        const response = await fetch('/api/promotions', {
+            headers: {
+                'Authorization': `Basic ${currentAuth}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            promoMessage.value = data.promotion.message || '';
+            charCount.textContent = promoMessage.value.length;
+
+            // Update info
+            document.getElementById('promo-last-update').textContent =
+                data.promotion.lastUpdated ? formatDate(new Date(data.promotion.lastUpdated)) : 'Nunca';
+            document.getElementById('promo-updated-by').textContent =
+                data.promotion.updatedBy || '-';
+        }
+    } catch (error) {
+        console.error('Error al cargar promoción:', error);
+    }
+};
+
+window.closePromotionsModal = function() {
+    promotionsModal.classList.remove('show');
+};
+
+window.savePromotion = async function() {
+    const message = promoMessage.value.trim();
+
+    if (!message) {
+        alert('Por favor ingresa un mensaje de promoción');
+        return;
+    }
+
+    if (message.length > 4000) {
+        alert(`Mensaje demasiado largo (${message.length} caracteres). Máximo 4000 caracteres.`);
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/promotions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${currentAuth}`
+            },
+            body: JSON.stringify({ message })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Error al guardar');
+        }
+
+        alert('✅ Promoción actualizada correctamente');
+        closePromotionsModal();
+    } catch (error) {
+        console.error('Error al guardar promoción:', error);
+        alert('Error al guardar promoción: ' + error.message);
+    }
+};
+
+// Character counter for promotion textarea
+promoMessage.addEventListener('input', () => {
+    charCount.textContent = promoMessage.value.length;
+});
+
+// Show all history (general history view)
+window.showAllHistory = function() {
+    dropdownMenu.classList.remove('show');
+    alert('Función de historial general en desarrollo');
+    // TODO: Implement general history view showing all conversations history
 };
 
 // Búsqueda

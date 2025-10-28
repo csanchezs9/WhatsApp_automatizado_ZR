@@ -55,7 +55,7 @@
     <div id="main-app" class="app-container" style="display: none;">
         <div class="header">
             <div class="header-left">
-                <h1>💬 Panel de Conversaciones</h1>
+                <h1>Panel de Conversaciones</h1>
                 <div class="status-indicator">
                     <span id="connection-status" class="status-dot offline"></span>
                     <span id="connection-text">Desconectado</span>
@@ -72,19 +72,38 @@
                         <span id="db-count" class="stat-value">-</span>
                     </div>
                 </div>
-                <button id="logout-btn" class="logout-btn">Cerrar Sesión</button>
+                <div class="dropdown-menu-container">
+                    <button id="menu-toggle-btn" class="menu-toggle-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="2" fill="white"/>
+                            <circle cx="12" cy="5" r="2" fill="white"/>
+                            <circle cx="12" cy="19" r="2" fill="white"/>
+                        </svg>
+                    </button>
+                    <div id="dropdown-menu" class="dropdown-menu">
+                        <button class="dropdown-item" onclick="openPromotionsModal()">
+                            <span>🔥</span> Actualizar Promociones
+                        </button>
+                        <button class="dropdown-item" onclick="showAllHistory()">
+                            <span>📚</span> Historial General
+                        </button>
+                        <button class="dropdown-item" onclick="doLogout()">
+                            <span>🚪</span> Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="main-content">
             <div class="sidebar">
                 <div class="search-box">
-                    <input type="text" id="search-input" placeholder="🔍 Buscar por número...">
+                    <input type="text" id="search-input" placeholder="Buscar por número...">
                 </div>
 
                 <div class="conversation-list" id="conversation-list">
                     <div class="empty-state">
-                        <p>📭 No hay conversaciones activas</p>
+                        <p>No hay conversaciones activas</p>
                     </div>
                 </div>
             </div>
@@ -137,6 +156,36 @@
                 </div>
                 <div class="modal-body" id="history-content">
                     <p class="loading">Cargando historial...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de promociones -->
+        <div id="promotions-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🔥 Actualizar Promociones</h2>
+                    <button class="close-modal" onclick="closePromotionsModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-description">
+                        Actualiza el mensaje que los clientes ven al seleccionar "Promociones y Descuentos"
+                    </p>
+                    <div class="promo-info" id="promo-info">
+                        <p><strong>Última actualización:</strong> <span id="promo-last-update">-</span></p>
+                        <p><strong>Por:</strong> <span id="promo-updated-by">-</span></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="promo-message">Mensaje de Promoción:</label>
+                        <textarea id="promo-message" rows="10" maxlength="4000" placeholder="Escribe el mensaje de promoción aquí..."></textarea>
+                        <div class="char-counter">
+                            <span id="char-count">0</span> / 4000 caracteres
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn-secondary" onclick="closePromotionsModal()">Cancelar</button>
+                        <button class="btn-primary" onclick="savePromotion()">💾 Guardar</button>
+                    </div>
                 </div>
             </div>
         </div>

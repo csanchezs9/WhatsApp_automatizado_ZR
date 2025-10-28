@@ -3,6 +3,8 @@ const router = express.Router();
 const conversationService = require('../services/conversationService');
 const whatsappService = require('../services/whatsappService');
 const menuService = require('../services/menuService');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Middleware de autenticación básica
@@ -281,6 +283,81 @@ router.get('/statistics', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Error al obtener estadísticas:', error);
         res.status(500).json({ error: 'Error al obtener estadísticas' });
+    }
+});
+
+/**
+ * GET /api/promotions
+ * Obtener el mensaje actual de promociones
+ */
+router.get('/promotions', authMiddleware, (req, res) => {
+    try {
+        const PROMO_FILE_PATH = path.join(__dirname, '../data/promoMessage.json');
+
+        if (fs.existsSync(PROMO_FILE_PATH)) {
+            const data = fs.readFileSync(PROMO_FILE_PATH, 'utf8');
+            const promoData = JSON.parse(data);
+            res.json({
+                success: true,
+                promotion: promoData
+            });
+        } else {
+            res.json({
+                success: true,
+                promotion: {
+                    message: '🔥 PROMOCIONES Y DESCUENTOS\n\nActualmente no hay promociones activas.',
+                    lastUpdated: null,
+                    updatedBy: null
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error al obtener promociones:', error);
+        res.status(500).json({ error: 'Error al obtener promociones' });
+    }
+});
+
+/**
+ * POST /api/promotions
+ * Actualizar el mensaje de promociones
+ */
+router.post('/promotions', authMiddleware, async (req, res) => {
+    try {
+        const { message } = req.body;
+
+        if (!message) {
+            return res.status(400).json({ error: 'El mensaje es requerido' });
+        }
+
+        if (message.length > 4000) {
+            return res.status(400).json({
+                error: `Mensaje demasiado largo (${message.length} caracteres). Máximo 4000 caracteres.`
+            });
+        }
+
+        const PROMO_FILE_PATH = path.join(__dirname, '../data/promoMessage.json');
+        const promoData = {
+            message: message,
+            lastUpdated: new Date().toISOString(),
+            updatedBy: 'Panel Web'
+        };
+
+        // Crear directorio si no existe
+        const dir = path.dirname(PROMO_FILE_PATH);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+
+        fs.writeFileSync(PROMO_FILE_PATH, JSON.stringify(promoData, null, 2), 'utf8');
+
+        res.json({
+            success: true,
+            message: 'Promoción actualizada correctamente',
+            promotion: promoData
+        });
+    } catch (error) {
+        console.error('Error al actualizar promociones:', error);
+        res.status(500).json({ error: 'Error al actualizar promociones' });
     }
 });
 
