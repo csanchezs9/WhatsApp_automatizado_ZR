@@ -429,12 +429,12 @@ const closeClientConversation = async (clientPhone, advisorPhone) => {
   // Notificar al cliente que la conversación finalizó
   const mensaje = `✅ *Conversación finalizada*\n\n` +
     `El asesor ha finalizado la atención.\n\n` +
-    `Gracias por contactarnos. Si necesitas más ayuda, puedes volver al menú principal.`;
-  
+    `Gracias por contactarnos. Si necesitas más ayuda:`;
+
   const buttons = [
     { id: 'volver_menu', title: '🏠 Volver al menú' }
   ];
-  
+
   await sendInteractiveButtons(clientPhone, mensaje, buttons);
   
   // NO mostramos el menú automáticamente, esperamos a que el cliente presione el botón
@@ -489,13 +489,15 @@ const handleMenuSelection = async (userPhone, message) => {
       // Notificar al panel mediante WebSocket (si está disponible)
       const io = global.io;
       if (io) {
+        const userState = userSessions[userPhone]?.state || 'UNKNOWN';
         io.emit('new_message', {
           phoneNumber: userPhone,
           message: {
             from: 'client',
             text: message,
             timestamp: new Date()
-          }
+          },
+          userState: userState // Enviar estado del usuario para notificaciones
         });
       }
     }

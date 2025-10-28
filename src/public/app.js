@@ -152,16 +152,22 @@ function connectWebSocket() {
     socket.on('new_message', (data) => {
         console.log('📨 Nuevo mensaje recibido:', data);
 
-        // Reproducir sonido de notificación
-        playNotificationSound();
+        // Solo notificar si el mensaje es del cliente Y está en modo WITH_ADVISOR
+        const shouldNotify = data.message.from === 'client' &&
+                           (data.userState === 'WITH_ADVISOR' || data.userState === 'WAITING_ADVISOR_QUERY');
 
-        // Mostrar notificación del navegador si está permitido
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('💬 Nuevo mensaje', {
-                body: `Mensaje de ${data.phoneNumber}`,
-                icon: '/favicon.ico',
-                badge: '/favicon.ico'
-            });
+        if (shouldNotify) {
+            // Reproducir sonido de notificación
+            playNotificationSound();
+
+            // Mostrar notificación del navegador si está permitido
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('💬 Nuevo mensaje de cliente', {
+                    body: `Consulta de ${data.phoneNumber}`,
+                    icon: '/favicon.ico',
+                    badge: '/favicon.ico'
+                });
+            }
         }
 
         loadConversations();

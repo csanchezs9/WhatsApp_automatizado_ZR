@@ -172,9 +172,13 @@ router.post('/conversations/:phoneNumber/archive', authMiddleware, async (req, r
             // Enviar mensaje al cliente informando que la conversación finalizó
             const finalMessage = `✅ *Conversación finalizada*\n\n` +
                 `El asesor ha finalizado la conversación.\n\n` +
-                `Si necesitas más ayuda, puedes volver al menú principal escribiendo *menú*.`;
+                `Si necesitas más ayuda:`;
 
-            await whatsappService.sendTextMessage(phoneNumber, finalMessage);
+            const buttons = [
+                { id: 'volver_menu', title: '🏠 Volver al menú' }
+            ];
+
+            await whatsappService.sendInteractiveButtons(phoneNumber, finalMessage, buttons);
 
             console.log(`🔚 Conversación con asesor finalizada desde el panel para ${phoneNumber}`);
         }
@@ -218,9 +222,13 @@ router.post('/conversations/:phoneNumber/finalize', authMiddleware, async (req, 
         // Enviar mensaje al cliente
         const finalMessage = `✅ *Conversación finalizada*\n\n` +
             `El asesor ha finalizado la conversación.\n\n` +
-            `Si necesitas más ayuda, puedes volver al menú principal escribiendo *menú*.`;
+            `Si necesitas más ayuda:`;
 
-        await whatsappService.sendTextMessage(phoneNumber, finalMessage);
+        const buttons = [
+            { id: 'volver_menu', title: '🏠 Volver al menú' }
+        ];
+
+        await whatsappService.sendInteractiveButtons(phoneNumber, finalMessage, buttons);
 
         console.log(`🔚 Conversación finalizada desde el panel para ${phoneNumber}`);
 
