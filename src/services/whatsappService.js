@@ -59,11 +59,23 @@ const sendTextMessage = async (to, text) => {
 
     // Registrar mensaje del bot en el panel (solo si no es para el asesor)
     if (to !== ADVISOR_PHONE) {
-      conversationService.addMessage(to, {
+      const botMessage = {
         from: 'bot',
         text: text,
-        type: 'text'
-      });
+        type: 'text',
+        timestamp: new Date()
+      };
+
+      conversationService.addMessage(to, botMessage);
+
+      // Notificar al panel mediante WebSocket (si está disponible)
+      const io = global.io;
+      if (io) {
+        io.emit('new_message', {
+          phoneNumber: to,
+          message: botMessage
+        });
+      }
     }
 
     return response.data;
@@ -112,11 +124,23 @@ const sendInteractiveButtons = async (to, bodyText, buttons) => {
     // Registrar mensaje con botones en el panel
     if (to !== ADVISOR_PHONE) {
       const buttonText = buttons.map(btn => `[${btn.title}]`).join(' ');
-      conversationService.addMessage(to, {
+      const botMessage = {
         from: 'bot',
         text: `${bodyText}\n\n${buttonText}`,
-        type: 'interactive_buttons'
-      });
+        type: 'interactive_buttons',
+        timestamp: new Date()
+      };
+
+      conversationService.addMessage(to, botMessage);
+
+      // Notificar al panel mediante WebSocket (si está disponible)
+      const io = global.io;
+      if (io) {
+        io.emit('new_message', {
+          phoneNumber: to,
+          message: botMessage
+        });
+      }
     }
 
     return response.data;
@@ -159,11 +183,23 @@ const sendInteractiveList = async (to, bodyText, buttonText, sections) => {
 
     // Registrar mensaje con lista en el panel
     if (to !== ADVISOR_PHONE) {
-      conversationService.addMessage(to, {
+      const botMessage = {
         from: 'bot',
         text: `${bodyText}\n\n[Menú: ${buttonText}]`,
-        type: 'interactive_list'
-      });
+        type: 'interactive_list',
+        timestamp: new Date()
+      };
+
+      conversationService.addMessage(to, botMessage);
+
+      // Notificar al panel mediante WebSocket (si está disponible)
+      const io = global.io;
+      if (io) {
+        io.emit('new_message', {
+          phoneNumber: to,
+          message: botMessage
+        });
+      }
     }
 
     return response.data;

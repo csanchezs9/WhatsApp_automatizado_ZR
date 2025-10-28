@@ -170,12 +170,11 @@ router.post('/conversations/:phoneNumber/archive', authMiddleware, async (req, r
             menuService.deactivateAdvisorMode(phoneNumber);
 
             // Enviar mensaje al cliente informando que la conversación finalizó
-            await whatsappService.sendTextMessage(
-                phoneNumber,
-                `✅ *Conversación finalizada*\n\n` +
+            const finalMessage = `✅ *Conversación finalizada*\n\n` +
                 `El asesor ha finalizado la conversación.\n\n` +
-                `Si necesitas más ayuda, puedes volver al menú principal escribiendo *menú*.`
-            );
+                `Si necesitas más ayuda, puedes volver al menú principal escribiendo *menú*.`;
+
+            await whatsappService.sendTextMessage(phoneNumber, finalMessage);
 
             console.log(`🔚 Conversación con asesor finalizada desde el panel para ${phoneNumber}`);
         }
@@ -217,12 +216,11 @@ router.post('/conversations/:phoneNumber/finalize', authMiddleware, async (req, 
         menuService.deactivateAdvisorMode(phoneNumber);
 
         // Enviar mensaje al cliente
-        await whatsappService.sendTextMessage(
-            phoneNumber,
-            `✅ *Conversación finalizada*\n\n` +
+        const finalMessage = `✅ *Conversación finalizada*\n\n` +
             `El asesor ha finalizado la conversación.\n\n` +
-            `Si necesitas más ayuda, puedes volver al menú principal escribiendo *menú*.`
-        );
+            `Si necesitas más ayuda, puedes volver al menú principal escribiendo *menú*.`;
+
+        await whatsappService.sendTextMessage(phoneNumber, finalMessage);
 
         console.log(`🔚 Conversación finalizada desde el panel para ${phoneNumber}`);
 
