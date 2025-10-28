@@ -178,8 +178,30 @@ router.post('/conversations/:phoneNumber/archive', authMiddleware, async (req, r
                 { id: 'volver_menu', title: '🏠 Volver al menú' }
             ];
 
-            // Usar RAW para evitar registro duplicado (ya se registra como bot automáticamente)
+            // Enviar por WhatsApp (sin registro automático)
             await whatsappService.sendRawInteractiveButtons(phoneNumber, finalMessage, buttons);
+
+            // Registrar mensaje en el panel para que el asesor lo vea
+            const buttonText = buttons.map(btn => `[${btn.title}]`).join(' ');
+            conversationService.addMessage(phoneNumber, {
+                from: 'bot',
+                text: `${finalMessage}\n\n${buttonText}`,
+                type: 'interactive_buttons',
+                timestamp: new Date()
+            });
+
+            // Emitir evento WebSocket para que aparezca en tiempo real
+            if (req.app.get('io')) {
+                req.app.get('io').emit('new_message', {
+                    phoneNumber,
+                    message: {
+                        from: 'bot',
+                        text: `${finalMessage}\n\n${buttonText}`,
+                        type: 'interactive_buttons',
+                        timestamp: new Date()
+                    }
+                });
+            }
 
             console.log(`🔚 Conversación con asesor finalizada desde el panel para ${phoneNumber}`);
         }
@@ -229,8 +251,30 @@ router.post('/conversations/:phoneNumber/finalize', authMiddleware, async (req, 
             { id: 'volver_menu', title: '🏠 Volver al menú' }
         ];
 
-        // Usar RAW para evitar registro duplicado (ya se registra como bot automáticamente)
+        // Enviar por WhatsApp (sin registro automático)
         await whatsappService.sendRawInteractiveButtons(phoneNumber, finalMessage, buttons);
+
+        // Registrar mensaje en el panel para que el asesor lo vea
+        const buttonText = buttons.map(btn => `[${btn.title}]`).join(' ');
+        conversationService.addMessage(phoneNumber, {
+            from: 'bot',
+            text: `${finalMessage}\n\n${buttonText}`,
+            type: 'interactive_buttons',
+            timestamp: new Date()
+        });
+
+        // Emitir evento WebSocket para que aparezca en tiempo real
+        if (req.app.get('io')) {
+            req.app.get('io').emit('new_message', {
+                phoneNumber,
+                message: {
+                    from: 'bot',
+                    text: `${finalMessage}\n\n${buttonText}`,
+                    type: 'interactive_buttons',
+                    timestamp: new Date()
+                }
+            });
+        }
 
         console.log(`🔚 Conversación finalizada desde el panel para ${phoneNumber}`);
 
