@@ -120,10 +120,10 @@ router.post('/send-message', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'phoneNumber y message son requeridos' });
         }
 
-        // Enviar mensaje por WhatsApp
-        await whatsappService.sendTextMessage(phoneNumber, message);
+        // Enviar mensaje por WhatsApp (SIN registrar - usamos RAW)
+        await whatsappService.sendRawTextMessage(phoneNumber, message);
 
-        // Agregar mensaje a la conversación
+        // Agregar mensaje a la conversación (SOLO UNA VEZ, aquí)
         conversationService.addMessage(phoneNumber, {
             from: 'advisor',
             text: message,
@@ -178,7 +178,8 @@ router.post('/conversations/:phoneNumber/archive', authMiddleware, async (req, r
                 { id: 'volver_menu', title: '🏠 Volver al menú' }
             ];
 
-            await whatsappService.sendInteractiveButtons(phoneNumber, finalMessage, buttons);
+            // Usar RAW para evitar registro duplicado (ya se registra como bot automáticamente)
+            await whatsappService.sendRawInteractiveButtons(phoneNumber, finalMessage, buttons);
 
             console.log(`🔚 Conversación con asesor finalizada desde el panel para ${phoneNumber}`);
         }
@@ -228,7 +229,8 @@ router.post('/conversations/:phoneNumber/finalize', authMiddleware, async (req, 
             { id: 'volver_menu', title: '🏠 Volver al menú' }
         ];
 
-        await whatsappService.sendInteractiveButtons(phoneNumber, finalMessage, buttons);
+        // Usar RAW para evitar registro duplicado (ya se registra como bot automáticamente)
+        await whatsappService.sendRawInteractiveButtons(phoneNumber, finalMessage, buttons);
 
         console.log(`🔚 Conversación finalizada desde el panel para ${phoneNumber}`);
 
