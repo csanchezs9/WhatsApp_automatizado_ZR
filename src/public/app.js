@@ -152,9 +152,13 @@ function connectWebSocket() {
     socket.on('new_message', (data) => {
         console.log('📨 Nuevo mensaje recibido:', data);
 
-        // Solo notificar si el mensaje es del cliente Y está en modo WITH_ADVISOR
+        // NO notificar si es el botón "volver_menu" (después de finalizar conversación)
+        const isVolverMenu = data.messageId === 'volver_menu';
+
+        // Solo notificar si el mensaje es del cliente Y está en modo WITH_ADVISOR Y NO es volver_menu
         const shouldNotify = data.message.from === 'client' &&
-                           (data.userState === 'WITH_ADVISOR' || data.userState === 'WAITING_ADVISOR_QUERY');
+                           (data.userState === 'WITH_ADVISOR' || data.userState === 'WAITING_ADVISOR_QUERY') &&
+                           !isVolverMenu;
 
         if (shouldNotify) {
             // Reproducir sonido de notificación

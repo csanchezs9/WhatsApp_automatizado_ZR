@@ -497,7 +497,8 @@ const handleMenuSelection = async (userPhone, message) => {
             text: message,
             timestamp: new Date()
           },
-          userState: userState // Enviar estado del usuario para notificaciones
+          userState: userState, // Enviar estado del usuario para notificaciones
+          messageId: message // ID del mensaje/botón para filtrar "volver_menu"
         });
       }
     }
