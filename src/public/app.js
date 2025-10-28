@@ -165,8 +165,9 @@ function connectWebSocket() {
         }
 
         loadConversations();
+        // Si estamos viendo esta conversación, agregar solo el mensaje nuevo
         if (currentConversation === data.phoneNumber) {
-            loadConversation(data.phoneNumber);
+            addMessageToChat(data.message);
         }
     });
 
@@ -340,12 +341,8 @@ async function sendMessage() {
 
         messageInput.value = '';
 
-        // Agregar mensaje localmente (se actualizará con WebSocket)
-        addMessageToChat({
-            from: 'advisor',
-            text: text,
-            timestamp: new Date()
-        });
+        // NO agregar mensaje localmente - esperar evento WebSocket message_sent
+        // para evitar duplicación
 
     } catch (error) {
         console.error('Error al enviar mensaje:', error);
