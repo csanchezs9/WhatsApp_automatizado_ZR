@@ -305,6 +305,9 @@ function showNoConversation() {
     chatContainer.style.display = 'none';
 }
 
+// Variable para prevenir envíos múltiples
+let isSending = false;
+
 // Enviar mensaje
 sendBtn.addEventListener('click', sendMessage);
 messageInput.addEventListener('keydown', (e) => {
@@ -316,11 +319,20 @@ messageInput.addEventListener('keydown', (e) => {
 
 async function sendMessage() {
     const text = messageInput.value.trim();
-    if (!text || !currentConversation) {
+
+    // Prevenir envíos múltiples
+    if (!text || !currentConversation || isSending) {
         return;
     }
 
+    // Marcar como enviando y deshabilitar controles
+    isSending = true;
     sendBtn.disabled = true;
+    messageInput.disabled = true;
+
+    // Limpiar input ANTES de enviar para evitar re-envíos
+    const messageToSend = text;
+    messageInput.value = '';
 
     try {
         const response = await fetch('/api/send-message', {
@@ -331,7 +343,7 @@ async function sendMessage() {
             },
             body: JSON.stringify({
                 phoneNumber: currentConversation,
-                message: text
+                message: messageToSend
             })
         });
 
@@ -339,16 +351,18 @@ async function sendMessage() {
             throw new Error('Error al enviar mensaje');
         }
 
-        messageInput.value = '';
-
         // NO agregar mensaje localmente - esperar evento WebSocket message_sent
         // para evitar duplicación
 
     } catch (error) {
         console.error('Error al enviar mensaje:', error);
         alert('Error al enviar mensaje');
+        // Si hay error, restaurar el mensaje en el input
+        messageInput.value = messageToSend;
     } finally {
+        isSending = false;
         sendBtn.disabled = false;
+        messageInput.disabled = false;
         messageInput.focus();
     }
 }
