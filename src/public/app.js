@@ -174,11 +174,13 @@ function connectWebSocket() {
             }
         }
 
-        loadConversations();
-        // Si estamos viendo esta conversación, agregar solo el mensaje nuevo
+        // Actualizar estado del textarea si estamos viendo esta conversación
         if (currentConversation === data.phoneNumber) {
+            updateTextareaState(data.isWithAdvisor);
             addMessageToChat(data.message);
         }
+
+        loadConversations();
     });
 
     socket.on('message_sent', (data) => {
@@ -274,6 +276,20 @@ async function loadConversation(phoneNumber) {
     }
 }
 
+// Actualizar estado del textarea (función separada para reutilizar)
+function updateTextareaState(isWithAdvisor) {
+    const enabled = isWithAdvisor !== false; // Por defecto true si no viene
+    messageInput.disabled = !enabled;
+    sendBtn.disabled = !enabled;
+
+    if (!enabled) {
+        messageInput.placeholder = '⚠️ El cliente no está en modo asesor. No puedes enviar mensajes.';
+        messageInput.value = '';
+    } else {
+        messageInput.placeholder = 'Escribe un mensaje...';
+    }
+}
+
 // Mostrar conversación
 function showConversation(conversation) {
     noConversationSelected.style.display = 'none';
@@ -287,16 +303,7 @@ function showConversation(conversation) {
     });
 
     // Habilitar/deshabilitar input según si el cliente está con asesor
-    const isWithAdvisor = conversation.isWithAdvisor !== false; // Por defecto true si no viene
-    messageInput.disabled = !isWithAdvisor;
-    sendBtn.disabled = !isWithAdvisor;
-
-    if (!isWithAdvisor) {
-        messageInput.placeholder = '⚠️ El cliente no está en modo asesor. No puedes enviar mensajes.';
-        messageInput.value = '';
-    } else {
-        messageInput.placeholder = 'Escribe un mensaje...';
-    }
+    updateTextareaState(conversation.isWithAdvisor);
 
     scrollToBottom();
 }
@@ -411,10 +418,7 @@ finalizeBtn.addEventListener('click', async () => {
             alert('Conversación finalizada correctamente.\n\nEl cliente puede usar el bot nuevamente.');
 
             // Deshabilitar input inmediatamente después de finalizar
-            messageInput.disabled = true;
-            sendBtn.disabled = true;
-            messageInput.placeholder = '⚠️ El cliente no está en modo asesor. No puedes enviar mensajes.';
-            messageInput.value = '';
+            updateTextareaState(false);
 
             loadConversations();
         } catch (error) {

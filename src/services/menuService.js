@@ -490,6 +490,8 @@ const handleMenuSelection = async (userPhone, message) => {
       const io = global.io;
       if (io) {
         const userState = userSessions[userPhone]?.state || 'UNKNOWN';
+        const isWithAdvisor = userSessions[userPhone]?.withAdvisor || false;
+
         io.emit('new_message', {
           phoneNumber: userPhone,
           message: {
@@ -498,7 +500,8 @@ const handleMenuSelection = async (userPhone, message) => {
             timestamp: new Date()
           },
           userState: userState, // Enviar estado del usuario para notificaciones
-          messageId: message // ID del mensaje/botón para filtrar "volver_menu"
+          messageId: message, // ID del mensaje/botón para filtrar "volver_menu"
+          isWithAdvisor: isWithAdvisor // Estado del modo asesor para habilitar/deshabilitar textarea
         });
       }
     }
