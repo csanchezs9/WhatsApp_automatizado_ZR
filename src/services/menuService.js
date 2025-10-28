@@ -490,7 +490,10 @@ const handleMenuSelection = async (userPhone, message) => {
       const io = global.io;
       if (io) {
         const userState = userSessions[userPhone]?.state || 'UNKNOWN';
-        const isWithAdvisor = userSessions[userPhone]?.withAdvisor || false;
+        const withAdvisorFlag = userSessions[userPhone]?.withAdvisor || false;
+
+        // Considerar "con asesor" si está en WAITING_ADVISOR_QUERY o WITH_ADVISOR
+        const isWithAdvisor = withAdvisorFlag || userState === 'WAITING_ADVISOR_QUERY';
 
         io.emit('new_message', {
           phoneNumber: userPhone,

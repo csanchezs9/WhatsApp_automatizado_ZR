@@ -70,8 +70,10 @@ router.get('/conversations/:phoneNumber', authMiddleware, (req, res) => {
             return res.status(404).json({ error: 'Conversación no encontrada' });
         }
 
-        // Verificar si el usuario está con asesor
-        const isWithAdvisor = menuService.isUserWithAdvisor(phoneNumber);
+        // Verificar si el usuario está con asesor o esperando escribir consulta
+        const userSession = menuService.getUserSession(phoneNumber);
+        const isWithAdvisor = menuService.isUserWithAdvisor(phoneNumber) ||
+                            userSession?.state === 'WAITING_ADVISOR_QUERY';
 
         res.json({
             success: true,
