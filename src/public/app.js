@@ -46,6 +46,11 @@ loginForm.addEventListener('submit', async (e) => {
             showMainApp();
             initializeApp();
             loginError.textContent = '';
+
+            // Solicitar permisos de notificación
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
         } else {
             loginError.textContent = 'Usuario o contraseña incorrectos';
         }
@@ -90,6 +95,26 @@ function initializeApp() {
     }, 10000);
 }
 
+// Función para reproducir sonido de notificación
+function playNotificationSound() {
+    // Crear un sonido usando Web Audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+}
+
 // WebSocket
 function connectWebSocket() {
     socket = io();
@@ -108,6 +133,19 @@ function connectWebSocket() {
 
     socket.on('new_message', (data) => {
         console.log('📨 Nuevo mensaje recibido:', data);
+
+        // Reproducir sonido de notificación
+        playNotificationSound();
+
+        // Mostrar notificación del navegador si está permitido
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('💬 Nuevo mensaje', {
+                body: `Mensaje de ${data.phoneNumber}`,
+                icon: '/favicon.ico',
+                badge: '/favicon.ico'
+            });
+        }
+
         loadConversations();
         if (currentConversation === data.phoneNumber) {
             loadConversation(data.phoneNumber);
