@@ -278,7 +278,9 @@ async function loadConversation(phoneNumber) {
 
 // Actualizar estado del textarea (función separada para reutilizar)
 function updateTextareaState(isWithAdvisor) {
-    const enabled = isWithAdvisor !== false; // Por defecto true si no viene
+    // Solo habilitar si explícitamente es true
+    // undefined o false = disabled
+    const enabled = isWithAdvisor === true;
     messageInput.disabled = !enabled;
     sendBtn.disabled = !enabled;
 
