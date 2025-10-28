@@ -198,6 +198,15 @@ function connectWebSocket() {
             showNoConversation();
         }
     });
+
+    socket.on('advisor_mode_activated', (data) => {
+        console.log('✅ Modo asesor activado:', data);
+        // Habilitar textarea inmediatamente cuando se activa modo asesor
+        if (currentConversation === data.phoneNumber && data.isWithAdvisor === true) {
+            updateTextareaState(true);
+        }
+        loadConversations();
+    });
 }
 
 // Cargar conversaciones

@@ -266,10 +266,20 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
 
   await sendInteractiveButtons(userPhone, clientMessage, buttons);
   console.log(`👤 Usuario ${userPhone} ahora está en modo asesor con consulta: "${userQuery}"`);
-  
+
   // Cambiar estado de la sesión para que no procese más mensajes como nueva consulta
   if (userSessions[userPhone]) {
     userSessions[userPhone].state = 'WITH_ADVISOR';
+  }
+
+  // IMPORTANTE: Emitir evento WebSocket adicional para habilitar textarea en el panel
+  // El mensaje de confirmación anterior no incluye isWithAdvisor, así que lo enviamos ahora
+  const io = global.io;
+  if (io) {
+    io.emit('advisor_mode_activated', {
+      phoneNumber: userPhone,
+      isWithAdvisor: true
+    });
   }
 };
 
