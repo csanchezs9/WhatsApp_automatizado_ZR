@@ -22,6 +22,7 @@ const connectionStatus = document.getElementById('connection-status');
 const connectionText = document.getElementById('connection-text');
 const logoutBtn = document.getElementById('logout-btn');
 const archiveBtn = document.getElementById('archive-btn');
+const finalizeBtn = document.getElementById('finalize-btn');
 const viewHistoryBtn = document.getElementById('view-history-btn');
 const searchInput = document.getElementById('search-input');
 
@@ -299,13 +300,41 @@ async function sendMessage() {
     }
 }
 
+// Finalizar conversación (sin archivar)
+finalizeBtn.addEventListener('click', async () => {
+    if (!currentConversation) return;
+
+    if (confirm(`¿Finalizar conversación con ${currentConversation}?\n\nEsto desconectará al cliente del modo asesor y le permitirá usar el bot nuevamente.`)) {
+        try {
+            const response = await fetch(`/api/conversations/${currentConversation}/finalize`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Basic ${currentAuth}`
+                }
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Error al finalizar');
+            }
+
+            alert('Conversación finalizada correctamente.\n\nEl cliente puede usar el bot nuevamente.');
+            loadConversations();
+        } catch (error) {
+            console.error('Error al finalizar:', error);
+            alert(error.message || 'Error al finalizar conversación');
+        }
+    }
+});
+
 // Archivar conversación
 archiveBtn.addEventListener('click', async () => {
     if (!currentConversation) return;
 
     const notes = prompt('Notas del asesor (opcional):');
 
-    if (confirm(`¿Archivar conversación con ${currentConversation}?`)) {
+    if (confirm(`¿Archivar conversación con ${currentConversation}?\n\nEsto finalizará y archivará la conversación.`)) {
         try {
             const response = await fetch(`/api/conversations/${currentConversation}/archive`, {
                 method: 'POST',
@@ -320,7 +349,7 @@ archiveBtn.addEventListener('click', async () => {
                 throw new Error('Error al archivar');
             }
 
-            alert('Conversación archivada correctamente');
+            alert('Conversación archivada y finalizada correctamente');
             currentConversation = null;
             showNoConversation();
             loadConversations();

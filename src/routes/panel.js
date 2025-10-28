@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const conversationService = require('../services/conversationService');
 const whatsappService = require('../services/whatsappService');
+const menuService = require('../services/menuService');
 
 /**
  * Middleware de autenticación básica
@@ -127,6 +128,9 @@ router.post('/send-message', authMiddleware, async (req, res) => {
             type: 'text'
         });
 
+        // Marcar que el asesor ha respondido (para evitar mensajes recordatorios innecesarios)
+        menuService.markAdvisorResponse(phoneNumber);
+
         res.json({
             success: true,
             message: 'Mensaje enviado correctamente'
@@ -152,17 +156,34 @@ router.post('/send-message', authMiddleware, async (req, res) => {
 /**
  * POST /api/conversations/:phoneNumber/archive
  * Archivar conversación y eliminarla de activas
+ * También finaliza la sesión con el asesor si está activa
  */
 router.post('/conversations/:phoneNumber/archive', authMiddleware, async (req, res) => {
     try {
         const { phoneNumber } = req.params;
         const { advisorNotes } = req.body;
 
+        // Finalizar la conversación con el asesor (si está activa)
+        if (menuService.isUserWithAdvisor(phoneNumber)) {
+            menuService.deactivateAdvisorMode(phoneNumber);
+
+            // Enviar mensaje al cliente informando que la conversación finalizó
+            await whatsappService.sendTextMessage(
+                phoneNumber,
+                `✅ *Conversación finalizada*\n\n` +
+                `El asesor ha finalizado la conversación.\n\n` +
+                `Si necesitas más ayuda, puedes volver al menú principal escribiendo *menú*.`
+            );
+
+            console.log(`🔚 Conversación con asesor finalizada desde el panel para ${phoneNumber}`);
+        }
+
+        // Archivar la conversación
         await conversationService.archiveConversation(phoneNumber, advisorNotes);
 
         res.json({
             success: true,
-            message: 'Conversación archivada correctamente'
+            message: 'Conversación archivada y finalizada correctamente'
         });
 
         // Emitir evento de WebSocket
@@ -172,6 +193,49 @@ router.post('/conversations/:phoneNumber/archive', authMiddleware, async (req, r
     } catch (error) {
         console.error('Error al archivar conversación:', error);
         res.status(500).json({ error: 'Error al archivar conversación' });
+    }
+});
+
+/**
+ * POST /api/conversations/:phoneNumber/finalize
+ * Finaliza la conversación con el asesor sin archivarla
+ */
+router.post('/conversations/:phoneNumber/finalize', authMiddleware, async (req, res) => {
+    try {
+        const { phoneNumber } = req.params;
+
+        // Verificar si el usuario está con asesor
+        if (!menuService.isUserWithAdvisor(phoneNumber)) {
+            return res.status(400).json({
+                error: 'El usuario no está en conversación con asesor'
+            });
+        }
+
+        // Desactivar modo asesor
+        menuService.deactivateAdvisorMode(phoneNumber);
+
+        // Enviar mensaje al cliente
+        await whatsappService.sendTextMessage(
+            phoneNumber,
+            `✅ *Conversación finalizada*\n\n` +
+            `El asesor ha finalizado la conversación.\n\n` +
+            `Si necesitas más ayuda, puedes volver al menú principal escribiendo *menú*.`
+        );
+
+        console.log(`🔚 Conversación finalizada desde el panel para ${phoneNumber}`);
+
+        res.json({
+            success: true,
+            message: 'Conversación finalizada correctamente'
+        });
+
+        // Emitir evento de WebSocket
+        if (req.app.get('io')) {
+            req.app.get('io').emit('conversation_finalized', { phoneNumber });
+        }
+    } catch (error) {
+        console.error('Error al finalizar conversación:', error);
+        res.status(500).json({ error: 'Error al finalizar conversación' });
     }
 });
 

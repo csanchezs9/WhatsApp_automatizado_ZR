@@ -335,6 +335,14 @@ body {
     background: #5568d3;
 }
 
+.action-btn.warning {
+    background: #f59e0b;
+}
+
+.action-btn.warning:hover {
+    background: #d97706;
+}
+
 .action-btn.danger {
     background: #ef4444;
 }

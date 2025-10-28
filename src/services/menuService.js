@@ -233,7 +233,8 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
   usersWithAdvisor.set(userPhone, {
     startTime: now,
     lastAdvisorMessage: now,
-    userQuery: userQuery
+    userQuery: userQuery,
+    advisorHasResponded: false  // Inicialmente el asesor no ha respondido
   });
 
   // Notificar al asesor con la consulta del usuario
@@ -279,6 +280,22 @@ const deactivateAdvisorMode = (userPhone) => {
   if (usersWithAdvisor.has(userPhone)) {
     usersWithAdvisor.delete(userPhone);
     console.log(`🤖 Bot reactivado para ${userPhone}`);
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Marca que el asesor ha respondido a un usuario
+ * Se llama desde el panel cuando el asesor envía un mensaje
+ */
+const markAdvisorResponse = (userPhone) => {
+  if (usersWithAdvisor.has(userPhone)) {
+    const session = usersWithAdvisor.get(userPhone);
+    session.advisorHasResponded = true;
+    session.lastAdvisorMessage = Date.now();
+    usersWithAdvisor.set(userPhone, session);
+    console.log(`✅ Marcado que asesor respondió a ${userPhone}`);
     return true;
   }
   return false;
@@ -872,19 +889,27 @@ const handleMenuSelection = async (userPhone, message) => {
       return;
     }
     
-    // Actualizar actividad y enviar recordatorio
+    // Actualizar actividad
     updateLastActivity(userPhone);
-    
-    // Enviar mensaje recordatorio al usuario
-    await sendTextMessage(
-      userPhone,
-      `⏳ *En conversación con asesor*\n\n` +
-      `Tu consulta fue enviada. El asesor te responderá pronto.\n\n` +
-      `💬 Puedes seguir escribiendo y el asesor verá tus mensajes.\n\n` +
-      `_No finalices la sesión, pero si deseas volver al menú automático, escribe *menú*_`
-    );
-    
-    console.log(`👤 Mensaje de ${userPhone} recibido - está en conversación con asesor`);
+
+    // Obtener sesión del asesor para verificar si ya respondió
+    const advisorSession = usersWithAdvisor.get(userPhone);
+
+    // Solo enviar recordatorio si el asesor NO ha respondido aún
+    if (!advisorSession.advisorHasResponded) {
+      await sendTextMessage(
+        userPhone,
+        `⏳ *En conversación con asesor*\n\n` +
+        `Tu consulta fue enviada. El asesor te responderá pronto.\n\n` +
+        `💬 Puedes seguir escribiendo y el asesor verá tus mensajes.\n\n` +
+        `_No finalices la sesión, pero si deseas volver al menú automático, escribe *menú*_`
+      );
+      console.log(`👤 Mensaje de ${userPhone} recibido - esperando respuesta del asesor`);
+    } else {
+      // El asesor ya respondió, solo registrar el mensaje sin enviar recordatorio
+      console.log(`👤 Mensaje de ${userPhone} recibido - conversación activa con asesor`);
+    }
+
     return;
   }
 
@@ -2211,6 +2236,7 @@ module.exports = {
   showMainMenu,
   isUserWithAdvisor,
   deactivateAdvisorMode,
+  markAdvisorResponse,  // Exportar para que el panel la pueda usar
   finalizeAdvisorConversation,
   updateLastActivity,  // Exportar para que el webhook la pueda usar
   getUserSession: (userPhone) => userSessions[userPhone]  // Exportar para verificar estado
