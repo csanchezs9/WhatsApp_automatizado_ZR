@@ -52,7 +52,7 @@ body {
 
 .login-left {
     flex: 1;
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    background: linear-gradient(135deg, #f47a20 0%, #d85a0a 100%);
     padding: 60px;
     display: flex;
     align-items: center;
@@ -166,15 +166,15 @@ body {
 
 .input-group input:focus {
     outline: none;
-    border-color: #ff6b35;
+    border-color: #f47a20;
     background: white;
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    box-shadow: 0 0 0 3px rgba(244, 122, 32, 0.1);
 }
 
 .btn-login {
     width: 100%;
     padding: 16px;
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    background: linear-gradient(135deg, #f47a20 0%, #d85a0a 100%);
     color: white;
     border: none;
     border-radius: 10px;
@@ -191,7 +191,7 @@ body {
 
 .btn-login:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 24px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 12px 24px rgba(244, 122, 32, 0.4);
 }
 
 .btn-login:active {
@@ -246,6 +246,8 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    min-height: 100vh;
+    overflow: hidden;
 }
 
 .header {
@@ -462,6 +464,10 @@ body {
     justify-content: center;
     align-items: center;
     color: #999;
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    width: 100%;
 }
 
 .no-selection h2 {
@@ -506,7 +512,7 @@ body {
 
 .action-btn {
     padding: 8px 12px;
-    background: #667eea;
+    background: #f47a20;
     color: white;
     border: none;
     border-radius: 6px;
@@ -516,15 +522,15 @@ body {
 }
 
 .action-btn:hover {
-    background: #5568d3;
+    background: #d85a0a;
 }
 
 .action-btn.warning {
-    background: #f59e0b;
+    background: #f47a20;
 }
 
 .action-btn.warning:hover {
-    background: #d97706;
+    background: #d85a0a;
 }
 
 .action-btn.danger {
@@ -649,7 +655,7 @@ body {
 
 #message-input:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
+    box-shadow: 0 0 0 2px rgba(244, 122, 32, 0.2);
 }
 
 .send-btn {
