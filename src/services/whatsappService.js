@@ -7,6 +7,16 @@ const WHATSAPP_API_URL = `https://graph.facebook.com/v18.0/${process.env.WHATSAP
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573164088588';
 
+// Importar función para verificar si usuario está con asesor
+let isUserWithAdvisor;
+// Carga lazy para evitar dependencia circular
+const getIsUserWithAdvisor = () => {
+  if (!isUserWithAdvisor) {
+    isUserWithAdvisor = require('./menuService').isUserWithAdvisor;
+  }
+  return isUserWithAdvisor;
+};
+
 // Configuración de reintentos
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000; // 2 segundos
@@ -66,8 +76,11 @@ const sendTextMessage = async (to, text) => {
     ));
     console.log('✅ Mensaje enviado:', response.data);
 
-    // Registrar mensaje del bot en el panel (solo si no es para el asesor)
-    if (to !== ADVISOR_PHONE) {
+    // SOLO registrar mensaje del bot en el panel SI:
+    // 1. No es para el asesor
+    // 2. El usuario está con asesor (modo asesor activo)
+    const isWithAdvisor = getIsUserWithAdvisor()(to);
+    if (to !== ADVISOR_PHONE && isWithAdvisor) {
       const botMessage = {
         from: 'bot',
         text: text,
@@ -137,8 +150,9 @@ const sendInteractiveButtons = async (to, bodyText, buttons) => {
     ));
     console.log('✅ Botones enviados');
 
-    // Registrar mensaje con botones en el panel
-    if (to !== ADVISOR_PHONE) {
+    // SOLO registrar mensaje con botones en el panel SI el usuario está con asesor
+    const isWithAdvisor = getIsUserWithAdvisor()(to);
+    if (to !== ADVISOR_PHONE && isWithAdvisor) {
       const buttonText = buttons.map(btn => `[${btn.title}]`).join(' ');
       const botMessage = {
         from: 'bot',
@@ -203,8 +217,9 @@ const sendInteractiveList = async (to, bodyText, buttonText, sections) => {
     ));
     console.log('✅ Lista enviada');
 
-    // Registrar mensaje con lista en el panel
-    if (to !== ADVISOR_PHONE) {
+    // SOLO registrar mensaje con lista en el panel SI el usuario está con asesor
+    const isWithAdvisor = getIsUserWithAdvisor()(to);
+    if (to !== ADVISOR_PHONE && isWithAdvisor) {
       const botMessage = {
         from: 'bot',
         text: `${bodyText}\n\n[Menú: ${buttonText}]`,

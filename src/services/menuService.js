@@ -301,11 +301,18 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
   await sendInteractiveButtons(userPhone, clientMessage, buttons);
   console.log(`👤 Usuario ${userPhone} ahora está en modo asesor con consulta: "${userQuery}"`);
 
+  // CREAR conversación en el panel con la consulta inicial
+  conversationService.addMessage(userPhone, {
+    from: 'client',
+    text: userQuery,
+    type: 'text'
+  });
+  console.log(`💾 Conversación creada en panel para ${userPhone} con consulta inicial`);
+
   // Cambiar estado de la sesión para que no procese más mensajes como nueva consulta
   if (userSessions[userPhone]) {
     userSessions[userPhone].state = 'WITH_ADVISOR';
     userSessions[userPhone].advisorSession = advisorSessionData;
-    
   }
 
   // IMPORTANTE: Emitir evento WebSocket adicional para habilitar textarea en el panel
@@ -535,27 +542,24 @@ const handleMenuSelection = async (userPhone, message) => {
 
     const messageText = message.toLowerCase().trim();
 
-    // Registrar mensaje del cliente en el panel (solo si no es el asesor)
-    if (userPhone !== ADVISOR_PHONE) {
+    // Verificar si está en modo asesor para guardar en panel
+    const userState = userSessions[userPhone]?.state || 'UNKNOWN';
+    const isWithAdvisorMap = isUserWithAdvisor(userPhone);
+    const isInAdvisorMode = isWithAdvisorMap ||
+                           userState === 'WAITING_ADVISOR_QUERY' ||
+                           userState === 'WITH_ADVISOR';
+
+    // SOLO registrar mensaje del cliente en el panel SI está con asesor
+    if (userPhone !== ADVISOR_PHONE && isInAdvisorMode) {
       conversationService.addMessage(userPhone, {
         from: 'client',
         text: message,
         type: 'text'
       });
 
-      // Notificar al panel mediante WebSocket (si está disponible)
+      // Notificar al panel mediante WebSocket
       const io = global.io;
       if (io) {
-        const userState = userSessions[userPhone]?.state || 'UNKNOWN';
-
-        // Verificar si está con asesor usando la función correcta que chequea el Map usersWithAdvisor
-        // O si está en estado WAITING_ADVISOR_QUERY (escribiendo consulta inicial)
-        // O si está en estado WITH_ADVISOR (ya conectado con asesor)
-        const isWithAdvisorMap = isUserWithAdvisor(userPhone);
-        const isInAdvisorMode = isWithAdvisorMap ||
-                               userState === 'WAITING_ADVISOR_QUERY' ||
-                               userState === 'WITH_ADVISOR';
-
         io.emit('new_message', {
           phoneNumber: userPhone,
           message: {
@@ -563,9 +567,9 @@ const handleMenuSelection = async (userPhone, message) => {
             text: message,
             timestamp: new Date()
           },
-          userState: userState, // Enviar estado del usuario para notificaciones
-          messageId: message, // ID del mensaje/botón para filtrar "volver_menu"
-          isWithAdvisor: isInAdvisorMode // Estado del modo asesor para habilitar/deshabilitar textarea
+          userState: userState,
+          messageId: message,
+          isWithAdvisor: isInAdvisorMode
         });
       }
     }
