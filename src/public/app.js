@@ -270,10 +270,11 @@ function renderConversations(convs) {
         const preview = lastMsg.text ? lastMsg.text.substring(0, 50) : 'Sin mensajes';
         const time = lastMsg.timestamp ? formatTime(new Date(lastMsg.timestamp)) : '';
         const isActive = currentConversation === conv.phoneNumber ? 'active' : '';
+        const formattedPhone = formatPhoneNumber(conv.phoneNumber);
 
         return `
             <div class="conversation-item ${isActive}" onclick="selectConversation('${conv.phoneNumber}')">
-                <div class="conversation-phone">${conv.phoneNumber}</div>
+                <div class="conversation-phone">${formattedPhone}</div>
                 <div class="conversation-preview">${preview}${lastMsg.text && lastMsg.text.length > 50 ? '...' : ''}</div>
                 <div class="conversation-meta">
                     <span>${conv.messageCount} mensajes</span>
@@ -332,7 +333,8 @@ function showConversation(conversation) {
     noConversationSelected.style.display = 'none';
     chatContainer.style.display = 'flex';
 
-    document.getElementById('chat-phone-number').textContent = conversation.phoneNumber;
+    const formattedPhone = formatPhoneNumber(conversation.phoneNumber);
+    document.getElementById('chat-phone-number').textContent = formattedPhone;
 
     messagesContainer.innerHTML = '';
     conversation.messages.forEach(msg => {
@@ -688,6 +690,97 @@ function formatDate(date) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+/**
+ * Formatea un número de teléfono con código de país
+ * Detecta automáticamente el código de país y lo formatea con + y espacio
+ * Ejemplos:
+ *   573173745021 -> +57 317 374 5021
+ *   15551234567  -> +1 555 123 4567
+ */
+function formatPhoneNumber(phoneNumber) {
+    if (!phoneNumber) return phoneNumber;
+
+    // Remover cualquier caracter que no sea número
+    const cleaned = phoneNumber.toString().replace(/\D/g, '');
+
+    // Detectar código de país y formatear
+    // Colombia (+57) - 12 dígitos totales (57 + 10 dígitos)
+    if (cleaned.startsWith('57') && cleaned.length === 12) {
+        const countryCode = cleaned.substring(0, 2);
+        const number = cleaned.substring(2);
+        // Formato: +57 317 374 5021
+        return `+${countryCode} ${number.substring(0, 3)} ${number.substring(3, 6)} ${number.substring(6)}`;
+    }
+
+    // Estados Unidos/Canadá (+1) - 11 dígitos totales (1 + 10 dígitos)
+    if (cleaned.startsWith('1') && cleaned.length === 11) {
+        const countryCode = cleaned.substring(0, 1);
+        const number = cleaned.substring(1);
+        // Formato: +1 555 123 4567
+        return `+${countryCode} ${number.substring(0, 3)} ${number.substring(3, 6)} ${number.substring(6)}`;
+    }
+
+    // México (+52) - 12 dígitos totales (52 + 10 dígitos)
+    if (cleaned.startsWith('52') && cleaned.length === 12) {
+        const countryCode = cleaned.substring(0, 2);
+        const number = cleaned.substring(2);
+        // Formato: +52 55 1234 5678
+        return `+${countryCode} ${number.substring(0, 2)} ${number.substring(2, 6)} ${number.substring(6)}`;
+    }
+
+    // Argentina (+54) - 12-13 dígitos
+    if (cleaned.startsWith('54') && (cleaned.length === 12 || cleaned.length === 13)) {
+        const countryCode = cleaned.substring(0, 2);
+        const number = cleaned.substring(2);
+        // Formato: +54 11 1234 5678
+        return `+${countryCode} ${number.substring(0, 2)} ${number.substring(2, 6)} ${number.substring(6)}`;
+    }
+
+    // España (+34) - 11 dígitos totales (34 + 9 dígitos)
+    if (cleaned.startsWith('34') && cleaned.length === 11) {
+        const countryCode = cleaned.substring(0, 2);
+        const number = cleaned.substring(2);
+        // Formato: +34 612 345 678
+        return `+${countryCode} ${number.substring(0, 3)} ${number.substring(3, 6)} ${number.substring(6)}`;
+    }
+
+    // Brasil (+55) - 12-13 dígitos
+    if (cleaned.startsWith('55') && (cleaned.length === 12 || cleaned.length === 13)) {
+        const countryCode = cleaned.substring(0, 2);
+        const number = cleaned.substring(2);
+        // Formato: +55 11 91234 5678
+        return `+${countryCode} ${number.substring(0, 2)} ${number.substring(2, 7)} ${number.substring(7)}`;
+    }
+
+    // Chile (+56) - 11 dígitos totales (56 + 9 dígitos)
+    if (cleaned.startsWith('56') && cleaned.length === 11) {
+        const countryCode = cleaned.substring(0, 2);
+        const number = cleaned.substring(2);
+        // Formato: +56 9 1234 5678
+        return `+${countryCode} ${number.substring(0, 1)} ${number.substring(1, 5)} ${number.substring(5)}`;
+    }
+
+    // Perú (+51) - 11 dígitos totales (51 + 9 dígitos)
+    if (cleaned.startsWith('51') && cleaned.length === 11) {
+        const countryCode = cleaned.substring(0, 2);
+        const number = cleaned.substring(2);
+        // Formato: +51 987 654 321
+        return `+${countryCode} ${number.substring(0, 3)} ${number.substring(3, 6)} ${number.substring(6)}`;
+    }
+
+    // Formato genérico para otros países
+    // Intentar detectar código de país (1-3 dígitos)
+    if (cleaned.length > 10) {
+        // Asumir código de país de 2 dígitos para números largos
+        const countryCode = cleaned.substring(0, 2);
+        const number = cleaned.substring(2);
+        return `+${countryCode} ${number}`;
+    }
+
+    // Si no se detecta formato conocido, retornar con + al inicio
+    return `+${cleaned}`;
 }
 
 function scrollToBottom() {
