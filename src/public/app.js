@@ -720,6 +720,9 @@ window.confirmSendImage = async function() {
         return;
     }
 
+    // IMPORTANTE: Guardar referencia al archivo ANTES de cerrar el modal
+    // porque closeImagePreviewModal() limpia pendingFile
+    const fileToSend = pendingFile;
     const caption = imageCaption.value.trim();
 
     // Cerrar modal y deshabilitar botón
@@ -727,13 +730,12 @@ window.confirmSendImage = async function() {
     attachBtn.disabled = true;
 
     try {
-        await sendFileImmediately(pendingFile, caption);
+        await sendFileImmediately(fileToSend, caption);
     } catch (error) {
         console.error('Error al enviar imagen:', error);
         alert('Error al enviar la imagen. Intenta nuevamente.');
     } finally {
         attachBtn.disabled = false;
-        pendingFile = null;
     }
 };
 
