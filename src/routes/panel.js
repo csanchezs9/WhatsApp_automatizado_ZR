@@ -492,6 +492,12 @@ router.post('/send-media', authMiddleware, async (req, res) => {
         // Emitir por WebSocket al panel
         const io = req.app.get('io');
         if (io) {
+            // Obtener estado del usuario para el frontend
+            const userSession = menuService.getUserSession(phoneNumber);
+            const isWithAdvisorNow = menuService.isUserWithAdvisor(phoneNumber) ||
+                                    userSession?.state === 'WAITING_ADVISOR_QUERY' ||
+                                    userSession?.state === 'WITH_ADVISOR';
+
             io.emit('new_message', {
                 phoneNumber: phoneNumber,
                 message: {
@@ -502,7 +508,9 @@ router.post('/send-media', authMiddleware, async (req, res) => {
                     caption: caption,
                     filename: filename,
                     timestamp: new Date()
-                }
+                },
+                isWithAdvisor: isWithAdvisorNow, // Incluir estado para frontend
+                userState: userSession?.state // Incluir estado del usuario
             });
         }
 

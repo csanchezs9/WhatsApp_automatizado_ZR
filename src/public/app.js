@@ -202,7 +202,11 @@ function connectWebSocket() {
 
         // Actualizar estado del textarea si estamos viendo esta conversación
         if (currentConversation === data.phoneNumber) {
-            updateTextareaState(data.isWithAdvisor);
+            // IMPORTANTE: Solo actualizar el estado del textarea si el campo isWithAdvisor está presente
+            // Esto previene deshabilitar accidentalmente el textarea cuando se reciben mensajes multimedia
+            if (data.hasOwnProperty('isWithAdvisor')) {
+                updateTextareaState(data.isWithAdvisor);
+            }
             addMessageToChat(data.message);
         }
 

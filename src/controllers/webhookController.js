@@ -172,6 +172,9 @@ const handleIncomingMessage = async (req, res) => {
               // Emitir por socket al panel
               const io = req.app.get('io');
               if (io) {
+                const { getUserSession } = require('../services/menuService');
+                const userSession = getUserSession(from);
+
                 io.emit('new_message', {
                   phoneNumber: from,
                   message: {
@@ -182,7 +185,9 @@ const handleIncomingMessage = async (req, res) => {
                     caption: mediaInfo.caption,
                     filename: mediaInfo.filename,
                     timestamp: new Date()
-                  }
+                  },
+                  isWithAdvisor: isWithAdvisor, // Incluir estado de asesor para frontend
+                  userState: userSession?.state // Incluir estado del usuario
                 });
               }
             } catch (error) {
