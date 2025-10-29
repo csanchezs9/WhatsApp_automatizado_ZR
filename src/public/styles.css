@@ -969,6 +969,69 @@ body {
     margin-top: 2px;
 }
 
+/* Multimedia en mensajes */
+.message-media {
+    margin-bottom: 8px;
+    max-width: 300px;
+}
+
+.message-image {
+    width: 100%;
+    max-width: 300px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.message-image:hover {
+    opacity: 0.9;
+}
+
+.message-document {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.message-document:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.message-document-icon {
+    font-size: 32px;
+}
+
+.message-document-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.message-document-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.message-document-size {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.message-caption {
+    font-size: 14px;
+    margin-top: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* ============================================
    MESSAGE INPUT
    ============================================ */
@@ -1041,6 +1104,37 @@ body {
     background: var(--text-tertiary);
     cursor: not-allowed;
     opacity: 0.5;
+}
+
+/* Botón de adjuntar archivos */
+.attach-btn {
+    padding: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+
+.attach-btn:hover:not(:disabled) {
+    background: var(--conversation-hover);
+    color: var(--accent-primary);
+}
+
+.attach-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+#file-input {
+    display: none;
 }
 
 /* ============================================

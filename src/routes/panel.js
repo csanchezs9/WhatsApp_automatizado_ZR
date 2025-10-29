@@ -3,8 +3,47 @@ const router = express.Router();
 const conversationService = require('../services/conversationService');
 const whatsappService = require('../services/whatsappService');
 const menuService = require('../services/menuService');
+const mediaService = require('../services/mediaService');
+const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+
+// Configurar multer para subir archivos
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, mediaService.MEDIA_DIR);
+    },
+    filename: (req, file, cb) => {
+        const timestamp = Date.now();
+        const extension = path.extname(file.originalname);
+        cb(null, `${timestamp}${extension}`);
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 16 * 1024 * 1024 // 16MB max (WhatsApp limit)
+    },
+    fileFilter: (req, file, cb) => {
+        // Permitir imágenes, PDFs, documentos comunes
+        const allowedMimes = [
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/plain'
+        ];
+
+        if (allowedMimes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Tipo de archivo no permitido'));
+        }
+    }
+});
 
 /**
  * Middleware de autenticación básica
@@ -347,6 +386,133 @@ router.post('/promotions', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Error al actualizar promociones:', error);
         res.status(500).json({ error: 'Error al actualizar promociones' });
+    }
+});
+
+/**
+ * POST /api/upload-media
+ * Subir archivo multimedia desde el panel
+ */
+router.post('/upload-media', authMiddleware, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No se recibió ningún archivo' });
+        }
+
+        const { phoneNumber, caption } = req.body;
+
+        if (!phoneNumber) {
+            // Eliminar archivo subido
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: 'Número de teléfono requerido' });
+        }
+
+        const relativePath = `media/${req.file.filename}`;
+        const fileType = req.file.mimetype.startsWith('image/') ? 'image' : 'document';
+
+        // Guardar en conversación
+        conversationService.addMessage(phoneNumber, {
+            from: 'advisor',
+            type: fileType,
+            mediaPath: relativePath,
+            mimeType: req.file.mimetype,
+            caption: caption || null,
+            filename: req.file.originalname,
+            size: req.file.size
+        });
+
+        console.log(`✅ Archivo subido desde panel: ${req.file.filename}`);
+
+        res.json({
+            success: true,
+            mediaPath: relativePath,
+            filename: req.file.filename,
+            mimeType: req.file.mimetype,
+            size: req.file.size,
+            type: fileType
+        });
+    } catch (error) {
+        console.error('Error al subir archivo:', error);
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({ error: 'Error al subir archivo' });
+    }
+});
+
+/**
+ * GET /api/media/:filename
+ * Servir archivos multimedia
+ */
+router.get('/media/:filename', authMiddleware, (req, res) => {
+    try {
+        const filename = req.params.filename;
+        const filepath = mediaService.getMediaFullPath(`media/${filename}`);
+
+        if (!fs.existsSync(filepath)) {
+            return res.status(404).json({ error: 'Archivo no encontrado' });
+        }
+
+        res.sendFile(filepath);
+    } catch (error) {
+        console.error('Error al servir media:', error);
+        res.status(500).json({ error: 'Error al servir archivo' });
+    }
+});
+
+/**
+ * POST /api/send-media
+ * Enviar archivo multimedia al cliente vía WhatsApp
+ */
+router.post('/send-media', authMiddleware, async (req, res) => {
+    try {
+        const { phoneNumber, mediaPath, caption, mimeType, filename } = req.body;
+
+        if (!phoneNumber || !mediaPath) {
+            return res.status(400).json({ error: 'Faltan parámetros requeridos' });
+        }
+
+        // Obtener path completo del archivo
+        const fullPath = mediaService.getMediaFullPath(mediaPath);
+
+        if (!fs.existsSync(fullPath)) {
+            return res.status(404).json({ error: 'Archivo no encontrado' });
+        }
+
+        // Subir archivo a WhatsApp y obtener media ID
+        const mediaId = await whatsappService.uploadMediaToWhatsApp(fullPath, mimeType);
+
+        // Enviar según el tipo
+        if (mimeType.startsWith('image/')) {
+            await whatsappService.sendImage(phoneNumber, mediaId, caption);
+        } else {
+            await whatsappService.sendDocument(phoneNumber, mediaId, filename, caption);
+        }
+
+        // Emitir por WebSocket al panel
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('new_message', {
+                phoneNumber: phoneNumber,
+                message: {
+                    from: 'advisor',
+                    type: mimeType.startsWith('image/') ? 'image' : 'document',
+                    mediaPath: mediaPath,
+                    mimeType: mimeType,
+                    caption: caption,
+                    filename: filename,
+                    timestamp: new Date()
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Archivo enviado correctamente'
+        });
+    } catch (error) {
+        console.error('Error al enviar media:', error);
+        res.status(500).json({ error: 'Error al enviar archivo' });
     }
 });
 

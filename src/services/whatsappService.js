@@ -1,5 +1,7 @@
 const axios = require('axios');
 const conversationService = require('./conversationService');
+const FormData = require('form-data');
+const fs = require('fs');
 
 const WHATSAPP_API_URL = `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`;
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
@@ -318,10 +320,120 @@ const sendRawInteractiveButtons = async (to, bodyText, buttons) => {
   }
 };
 
+/**
+ * Subir archivo multimedia a WhatsApp y obtener media ID
+ */
+const uploadMediaToWhatsApp = async (filePath, mimeType) => {
+  try {
+    const uploadUrl = `https://graph.facebook.com/v21.0/${process.env.WHATSAPP_PHONE_ID}/media`;
+
+    const formData = new FormData();
+    formData.append('file', fs.createReadStream(filePath));
+    formData.append('type', mimeType);
+    formData.append('messaging_product', 'whatsapp');
+
+    const response = await axios.post(uploadUrl, formData, {
+      headers: {
+        ...formData.getHeaders(),
+        'Authorization': `Bearer ${WHATSAPP_TOKEN}`
+      }
+    });
+
+    console.log('✅ Media uploaded to WhatsApp:', response.data.id);
+    return response.data.id;
+  } catch (error) {
+    console.error('❌ Error uploading media to WhatsApp:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Enviar imagen a través de WhatsApp
+ */
+const sendImage = async (to, mediaId, caption = null) => {
+  try {
+    const payload = {
+      messaging_product: 'whatsapp',
+      to: to,
+      type: 'image',
+      image: {
+        id: mediaId
+      }
+    };
+
+    if (caption) {
+      payload.image.caption = caption;
+    }
+
+    const response = await retryRequest(() => axios.post(
+      WHATSAPP_API_URL,
+      payload,
+      {
+        headers: {
+          'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      }
+    ));
+
+    console.log('✅ Imagen enviada:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error enviando imagen:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Enviar documento (PDF, Word, etc.) a través de WhatsApp
+ */
+const sendDocument = async (to, mediaId, filename = null, caption = null) => {
+  try {
+    const payload = {
+      messaging_product: 'whatsapp',
+      to: to,
+      type: 'document',
+      document: {
+        id: mediaId
+      }
+    };
+
+    if (filename) {
+      payload.document.filename = filename;
+    }
+
+    if (caption) {
+      payload.document.caption = caption;
+    }
+
+    const response = await retryRequest(() => axios.post(
+      WHATSAPP_API_URL,
+      payload,
+      {
+        headers: {
+          'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      }
+    ));
+
+    console.log('✅ Documento enviado:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error enviando documento:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
 module.exports = {
   sendTextMessage,
   sendInteractiveButtons,
   sendInteractiveList,
   sendRawTextMessage,
-  sendRawInteractiveButtons
+  sendRawInteractiveButtons,
+  uploadMediaToWhatsApp,
+  sendImage,
+  sendDocument
 };

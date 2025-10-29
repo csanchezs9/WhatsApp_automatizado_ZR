@@ -1,5 +1,7 @@
 const { sendWhatsAppMessage } = require('../services/whatsappService');
 const { handleMenuSelection, updateLastActivity, isUserWithAdvisor } = require('../services/menuService');
+const { processMediaMessage } = require('../services/mediaService');
+const { addMessage } = require('../services/conversationService');
 
 const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573173745021';
 
@@ -144,6 +146,53 @@ const handleIncomingMessage = async (req, res) => {
             await handleMenuSelection(from, interactiveResponse.button_reply.id);
           } else if (interactiveResponse.type === 'list_reply') {
             await handleMenuSelection(from, interactiveResponse.list_reply.id);
+          }
+        } else if (['image', 'document', 'audio', 'video'].includes(messageType)) {
+          // Procesar archivos multimedia (solo cuando está con asesor)
+          const isWithAdvisor = isUserWithAdvisor(from);
+
+          if (isWithAdvisor) {
+            try {
+              console.log(`📎 Procesando ${messageType} de ${from}`);
+              const mediaInfo = await processMediaMessage(message);
+
+              // Guardar mensaje multimedia en conversación
+              addMessage(from, {
+                from: 'client',
+                type: messageType,
+                mediaPath: mediaInfo.localPath,
+                mimeType: mediaInfo.mimeType,
+                caption: mediaInfo.caption,
+                filename: mediaInfo.filename,
+                size: mediaInfo.size
+              });
+
+              console.log(`✅ ${messageType} guardado: ${mediaInfo.localPath}`);
+
+              // Emitir por socket al panel
+              const io = req.app.get('io');
+              if (io) {
+                io.emit('new_message', {
+                  phoneNumber: from,
+                  message: {
+                    from: 'client',
+                    type: messageType,
+                    mediaPath: mediaInfo.localPath,
+                    mimeType: mediaInfo.mimeType,
+                    caption: mediaInfo.caption,
+                    filename: mediaInfo.filename,
+                    timestamp: new Date()
+                  }
+                });
+              }
+            } catch (error) {
+              console.error(`❌ Error procesando ${messageType}:`, error);
+              // Notificar al cliente que hubo un error
+              await sendWhatsAppMessage(from, '❌ Hubo un error procesando tu archivo. Por favor, intenta nuevamente.');
+            }
+          } else {
+            // Cliente no está con asesor, informar que no puede enviar archivos
+            await sendWhatsAppMessage(from, '⚠️ Solo puedes enviar archivos cuando estás hablando con un asesor. Por favor, selecciona "Hablar con asesor" en el menú.');
           }
         }
 

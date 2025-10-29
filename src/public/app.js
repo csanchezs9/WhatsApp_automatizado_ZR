@@ -31,6 +31,8 @@ const themeToggleCheckbox = document.getElementById('theme-toggle-checkbox');
 const backToListBtn = document.getElementById('back-to-list-btn');
 const sidebar = document.querySelector('.sidebar');
 const chatArea = document.querySelector('.chat-area');
+const attachBtn = document.getElementById('attach-btn');
+const fileInput = document.getElementById('file-input');
 
 // Login
 loginForm.addEventListener('submit', async (e) => {
@@ -317,6 +319,7 @@ function updateTextareaState(isWithAdvisor) {
     const enabled = isWithAdvisor === true;
     messageInput.disabled = !enabled;
     sendBtn.disabled = !enabled;
+    attachBtn.disabled = !enabled;
 
     if (!enabled) {
         messageInput.placeholder = '⚠️ El cliente no está en modo asesor. No puedes enviar mensajes.';
@@ -356,19 +359,88 @@ function addMessageToChat(message) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${message.from}`;
 
-    const textDiv = document.createElement('div');
-    textDiv.className = 'message-text';
-    textDiv.textContent = message.text || message.body || '(mensaje sin texto)';
+    // Manejar mensajes multimedia
+    if (message.type === 'image') {
+        const mediaDiv = document.createElement('div');
+        mediaDiv.className = 'message-media';
+
+        const img = document.createElement('img');
+        img.className = 'message-image';
+        img.src = `/api/media/${message.mediaPath.split('/')[1]}`;
+        img.alt = 'Imagen';
+        img.onclick = () => window.open(img.src, '_blank');
+
+        mediaDiv.appendChild(img);
+        messageDiv.appendChild(mediaDiv);
+
+        if (message.caption) {
+            const captionDiv = document.createElement('div');
+            captionDiv.className = 'message-caption';
+            captionDiv.textContent = message.caption;
+            messageDiv.appendChild(captionDiv);
+        }
+    } else if (message.type === 'document') {
+        const mediaDiv = document.createElement('div');
+        mediaDiv.className = 'message-media';
+
+        const docDiv = document.createElement('div');
+        docDiv.className = 'message-document';
+        docDiv.onclick = () => window.open(`/api/media/${message.mediaPath.split('/')[1]}`, '_blank');
+
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'message-document-icon';
+        iconDiv.textContent = '📄';
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'message-document-info';
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'message-document-name';
+        nameDiv.textContent = message.filename || 'Documento';
+
+        const sizeDiv = document.createElement('div');
+        sizeDiv.className = 'message-document-size';
+        sizeDiv.textContent = message.size ? formatFileSize(message.size) : '';
+
+        infoDiv.appendChild(nameDiv);
+        if (sizeDiv.textContent) {
+            infoDiv.appendChild(sizeDiv);
+        }
+
+        docDiv.appendChild(iconDiv);
+        docDiv.appendChild(infoDiv);
+        mediaDiv.appendChild(docDiv);
+        messageDiv.appendChild(mediaDiv);
+
+        if (message.caption) {
+            const captionDiv = document.createElement('div');
+            captionDiv.className = 'message-caption';
+            captionDiv.textContent = message.caption;
+            messageDiv.appendChild(captionDiv);
+        }
+    } else {
+        // Mensaje de texto normal
+        const textDiv = document.createElement('div');
+        textDiv.className = 'message-text';
+        textDiv.textContent = message.text || message.body || '(mensaje sin texto)';
+        messageDiv.appendChild(textDiv);
+    }
 
     const timeDiv = document.createElement('div');
     timeDiv.className = 'message-time';
     timeDiv.textContent = formatTime(new Date(message.timestamp));
 
-    messageDiv.appendChild(textDiv);
     messageDiv.appendChild(timeDiv);
     messagesContainer.appendChild(messageDiv);
 
     scrollToBottom();
+}
+
+// Formatear tamaño de archivo
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
 // Mostrar sin conversación
@@ -386,6 +458,75 @@ messageInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
+    }
+});
+
+// Manejar adjuntar archivos
+attachBtn.addEventListener('click', () => {
+    if (!currentConversation) return;
+    fileInput.click();
+});
+
+fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file || !currentConversation) return;
+
+    // Validar tamaño (16MB max)
+    if (file.size > 16 * 1024 * 1024) {
+        alert('El archivo es demasiado grande. Máximo 16MB.');
+        fileInput.value = '';
+        return;
+    }
+
+    // Subir archivo
+    try {
+        attachBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('phoneNumber', currentConversation);
+
+        // Upload file
+        const uploadResponse = await fetch('/api/upload-media', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${currentAuth}`
+            },
+            body: formData
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error('Error al subir archivo');
+        }
+
+        const uploadData = await uploadResponse.json();
+
+        // Send file to WhatsApp
+        const sendResponse = await fetch('/api/send-media', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${currentAuth}`
+            },
+            body: JSON.stringify({
+                phoneNumber: currentConversation,
+                mediaPath: uploadData.mediaPath,
+                mimeType: uploadData.mimeType,
+                filename: file.name
+            })
+        });
+
+        if (!sendResponse.ok) {
+            throw new Error('Error al enviar archivo');
+        }
+
+        console.log('✅ Archivo enviado correctamente');
+    } catch (error) {
+        console.error('Error enviando archivo:', error);
+        alert('Error al enviar el archivo. Intenta nuevamente.');
+    } finally {
+        attachBtn.disabled = false;
+        fileInput.value = '';
     }
 });
 
