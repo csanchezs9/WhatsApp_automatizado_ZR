@@ -30,6 +30,7 @@ const dropdownMenu = document.getElementById('dropdown-menu');
 const promotionsModal = document.getElementById('promotions-modal');
 const promoMessage = document.getElementById('promo-message');
 const charCount = document.getElementById('char-count');
+const themeToggleCheckbox = document.getElementById('theme-toggle-checkbox');
 
 // Login
 loginForm.addEventListener('submit', async (e) => {
@@ -88,6 +89,31 @@ document.addEventListener('click', (e) => {
         dropdownMenu.classList.remove('show');
     }
 });
+
+// ============================================
+// THEME TOGGLE (Light/Dark Mode)
+// ============================================
+function initTheme() {
+    // Cargar tema guardado o usar claro por defecto
+    const savedTheme = localStorage.getItem('panelTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    themeToggleCheckbox.checked = savedTheme === 'dark';
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('panelTheme', newTheme);
+    themeToggleCheckbox.checked = newTheme === 'dark';
+}
+
+// Event listener para el toggle
+themeToggleCheckbox.addEventListener('change', toggleTheme);
+
+// Inicializar tema al cargar
+initTheme();
 
 // Mostrar/ocultar pantallas
 function showLoginScreen() {
