@@ -17,7 +17,6 @@ const messagesContainer = document.getElementById('messages-container');
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
 const activeCount = document.getElementById('active-count');
-const dbCount = document.getElementById('db-count');
 const connectionStatus = document.getElementById('connection-status');
 const connectionText = document.getElementById('connection-text');
 const logoutBtn = document.getElementById('logout-btn');
@@ -128,12 +127,10 @@ function showMainApp() {
 function initializeApp() {
     connectWebSocket();
     loadConversations();
-    loadStatistics();
 
     // Auto-refresh cada 10 segundos
     autoRefreshInterval = setInterval(() => {
         loadConversations();
-        loadStatistics();
     }, 10000);
 }
 
@@ -560,23 +557,6 @@ searchInput.addEventListener('input', (e) => {
     }, 300);
 });
 
-// Cargar estadísticas
-async function loadStatistics() {
-    try {
-        const response = await fetch('/api/statistics', {
-            headers: {
-                'Authorization': `Basic ${currentAuth}`
-            }
-        });
-
-        if (!response.ok) return;
-
-        const data = await response.json();
-        dbCount.textContent = data.statistics.totalConversations;
-    } catch (error) {
-        console.error('Error al cargar estadísticas:', error);
-    }
-}
 
 // Utilidades
 function formatTime(date) {
