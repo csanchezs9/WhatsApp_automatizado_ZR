@@ -94,7 +94,7 @@ router.get('/conversations/:phoneNumber', authMiddleware, (req, res) => {
 
 /**
  * GET /api/conversations/:phoneNumber/history
- * Obtener historial de conversaciones de un cliente (últimos 90 días)
+ * Obtener historial de conversaciones de un cliente (últimos 20 días)
  */
 router.get('/conversations/:phoneNumber/history', authMiddleware, async (req, res) => {
     try {
@@ -162,77 +162,8 @@ router.post('/send-message', authMiddleware, async (req, res) => {
 });
 
 /**
- * POST /api/conversations/:phoneNumber/archive
- * Archivar conversación y eliminarla de activas
- * También finaliza la sesión con el asesor si está activa
- */
-router.post('/conversations/:phoneNumber/archive', authMiddleware, async (req, res) => {
-    try {
-        const { phoneNumber } = req.params;
-        const { advisorNotes } = req.body;
-
-        // Finalizar la conversación con el asesor (si está activa)
-        if (menuService.isUserWithAdvisor(phoneNumber)) {
-            menuService.deactivateAdvisorMode(phoneNumber);
-
-            // Enviar mensaje al cliente informando que la conversación finalizó
-            const finalMessage = `✅ *Conversación finalizada*\n\n` +
-                `El asesor ha finalizado la conversación.\n\n` +
-                `Si necesitas más ayuda:`;
-
-            const buttons = [
-                { id: 'volver_menu', title: '🏠 Volver al menú' }
-            ];
-
-            // Enviar por WhatsApp (sin registro automático)
-            await whatsappService.sendRawInteractiveButtons(phoneNumber, finalMessage, buttons);
-
-            // Registrar mensaje en el panel para que el asesor lo vea
-            const buttonText = buttons.map(btn => `[${btn.title}]`).join(' ');
-            conversationService.addMessage(phoneNumber, {
-                from: 'bot',
-                text: `${finalMessage}\n\n${buttonText}`,
-                type: 'interactive_buttons',
-                timestamp: new Date()
-            });
-
-            // Emitir evento WebSocket para que aparezca en tiempo real
-            if (req.app.get('io')) {
-                req.app.get('io').emit('new_message', {
-                    phoneNumber,
-                    message: {
-                        from: 'bot',
-                        text: `${finalMessage}\n\n${buttonText}`,
-                        type: 'interactive_buttons',
-                        timestamp: new Date()
-                    }
-                });
-            }
-
-            console.log(`🔚 Conversación con asesor finalizada desde el panel para ${phoneNumber}`);
-        }
-
-        // Archivar la conversación
-        await conversationService.archiveConversation(phoneNumber, advisorNotes);
-
-        res.json({
-            success: true,
-            message: 'Conversación archivada y finalizada correctamente'
-        });
-
-        // Emitir evento de WebSocket
-        if (req.app.get('io')) {
-            req.app.get('io').emit('conversation_archived', { phoneNumber });
-        }
-    } catch (error) {
-        console.error('Error al archivar conversación:', error);
-        res.status(500).json({ error: 'Error al archivar conversación' });
-    }
-});
-
-/**
  * POST /api/conversations/:phoneNumber/finalize
- * Finaliza la conversación con el asesor sin archivarla
+ * Finaliza la conversación con el asesor (la conversación se mantiene visible hasta que se auto-elimine en 20 días)
  */
 router.post('/conversations/:phoneNumber/finalize', authMiddleware, async (req, res) => {
     try {

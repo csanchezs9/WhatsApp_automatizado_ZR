@@ -87,9 +87,6 @@
                         <button class="dropdown-item" onclick="openPromotionsModal()">
                             <span>🔥</span> Actualizar Promociones
                         </button>
-                        <button class="dropdown-item" onclick="showAllHistory()">
-                            <span>📚</span> Historial General
-                        </button>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-item theme-toggle-item">
                             <span>🌓</span>
@@ -133,9 +130,7 @@
                             <span id="chat-status" class="chat-status-badge">Activa</span>
                         </div>
                         <div class="chat-actions">
-                            <button id="view-history-btn" class="action-btn">📚 Ver Historial</button>
                             <button id="finalize-btn" class="action-btn warning">✅ Finalizar</button>
-                            <button id="archive-btn" class="action-btn danger">🗄️ Archivar</button>
                         </div>
                     </div>
 
@@ -155,19 +150,6 @@
                             </svg>
                         </button>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal de historial -->
-        <div id="history-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>📚 Historial de Conversaciones</h2>
-                    <button class="close-modal" onclick="closeHistoryModal()">✕</button>
-                </div>
-                <div class="modal-body" id="history-content">
-                    <p class="loading">Cargando historial...</p>
                 </div>
             </div>
         </div>

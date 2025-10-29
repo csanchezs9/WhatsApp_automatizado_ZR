@@ -21,9 +21,7 @@ const dbCount = document.getElementById('db-count');
 const connectionStatus = document.getElementById('connection-status');
 const connectionText = document.getElementById('connection-text');
 const logoutBtn = document.getElementById('logout-btn');
-const archiveBtn = document.getElementById('archive-btn');
 const finalizeBtn = document.getElementById('finalize-btn');
-const viewHistoryBtn = document.getElementById('view-history-btn');
 const searchInput = document.getElementById('search-input');
 const menuToggleBtn = document.getElementById('menu-toggle-btn');
 const dropdownMenu = document.getElementById('dropdown-menu');
@@ -467,94 +465,6 @@ finalizeBtn.addEventListener('click', async () => {
     }
 });
 
-// Archivar conversación
-archiveBtn.addEventListener('click', async () => {
-    if (!currentConversation) return;
-
-    const notes = prompt('Notas del asesor (opcional):');
-
-    if (confirm(`¿Archivar conversación con ${currentConversation}?\n\nEsto finalizará y archivará la conversación.`)) {
-        try {
-            const response = await fetch(`/api/conversations/${currentConversation}/archive`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Basic ${currentAuth}`
-                },
-                body: JSON.stringify({ advisorNotes: notes })
-            });
-
-            if (!response.ok) {
-                throw new Error('Error al archivar');
-            }
-
-            alert('Conversación archivada y finalizada correctamente');
-            currentConversation = null;
-            showNoConversation();
-            loadConversations();
-        } catch (error) {
-            console.error('Error al archivar:', error);
-            alert('Error al archivar conversación');
-        }
-    }
-});
-
-// Ver historial
-viewHistoryBtn.addEventListener('click', async () => {
-    if (!currentConversation) return;
-
-    const modal = document.getElementById('history-modal');
-    const historyContent = document.getElementById('history-content');
-
-    modal.classList.add('show');
-    historyContent.innerHTML = '<p class="loading">Cargando historial...</p>';
-
-    try {
-        const response = await fetch(`/api/conversations/${currentConversation}/history`, {
-            headers: {
-                'Authorization': `Basic ${currentAuth}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('Error al cargar historial');
-        }
-
-        const data = await response.json();
-
-        if (data.history.length === 0) {
-            historyContent.innerHTML = '<p class="empty-state">📭 No hay historial previo</p>';
-            return;
-        }
-
-        historyContent.innerHTML = data.history.map(conv => `
-            <div class="history-item">
-                <div class="history-header">
-                    <span>📅 ${formatDate(new Date(conv.startedAt))}</span>
-                    <span>${conv.messages.length} mensajes</span>
-                </div>
-                <div class="history-messages">
-                    ${conv.messages.slice(0, 5).map(msg => `
-                        <div class="history-message">
-                            <strong>${msg.from === 'client' ? 'Cliente' : msg.from === 'advisor' ? 'Asesor' : 'Bot'}:</strong>
-                            ${msg.text || msg.body || '(sin texto)'}
-                        </div>
-                    `).join('')}
-                    ${conv.messages.length > 5 ? '<p><em>... y más mensajes</em></p>' : ''}
-                </div>
-                ${conv.advisorNotes ? `<p><strong>Notas:</strong> ${conv.advisorNotes}</p>` : ''}
-            </div>
-        `).join('');
-
-    } catch (error) {
-        console.error('Error al cargar historial:', error);
-        historyContent.innerHTML = '<p class="error-message">Error al cargar historial</p>';
-    }
-});
-
-window.closeHistoryModal = function() {
-    document.getElementById('history-modal').classList.remove('show');
-};
 
 // Promotions modal
 window.openPromotionsModal = async function() {
@@ -630,12 +540,6 @@ promoMessage.addEventListener('input', () => {
     charCount.textContent = promoMessage.value.length;
 });
 
-// Show all history (general history view)
-window.showAllHistory = function() {
-    dropdownMenu.classList.remove('show');
-    alert('Función de historial general en desarrollo');
-    // TODO: Implement general history view showing all conversations history
-};
 
 // Búsqueda
 let searchTimeout = null;

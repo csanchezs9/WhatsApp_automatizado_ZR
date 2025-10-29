@@ -151,7 +151,7 @@ function archiveOldestConversation() {
 }
 
 /**
- * Obtener historial de conversaciones de un cliente (últimos 90 días)
+ * Obtener historial de conversaciones de un cliente (últimos 20 días)
  */
 function getConversationHistory(phoneNumber, limit = 10) {
     return new Promise((resolve, reject) => {
@@ -159,7 +159,7 @@ function getConversationHistory(phoneNumber, limit = 10) {
             `SELECT id, phone_number, messages, started_at, ended_at, advisor_notes
              FROM conversations
              WHERE phone_number = ?
-             AND started_at >= datetime('now', '-90 days')
+             AND started_at >= datetime('now', '-20 days')
              ORDER BY started_at DESC
              LIMIT ?`,
             [phoneNumber, limit],
@@ -191,7 +191,7 @@ function searchConversations(searchTerm, limit = 20) {
             `SELECT id, phone_number, messages, started_at, ended_at
              FROM conversations
              WHERE phone_number LIKE ? OR messages LIKE ?
-             AND started_at >= datetime('now', '-90 days')
+             AND started_at >= datetime('now', '-20 days')
              ORDER BY started_at DESC
              LIMIT ?`,
             [`%${searchTerm}%`, `%${searchTerm}%`, limit],
@@ -214,19 +214,19 @@ function searchConversations(searchTerm, limit = 20) {
 }
 
 /**
- * Rotación automática: Eliminar conversaciones mayores a 90 días
+ * Rotación automática: Eliminar conversaciones mayores a 20 días
  */
 function cleanupOldConversations() {
     return new Promise((resolve, reject) => {
         db.run(
-            `DELETE FROM conversations WHERE started_at < datetime('now', '-90 days')`,
+            `DELETE FROM conversations WHERE started_at < datetime('now', '-20 days')`,
             function(err) {
                 if (err) {
                     console.error('❌ Error al limpiar conversaciones antiguas:', err.message);
                     reject(err);
                 } else {
                     if (this.changes > 0) {
-                        console.log(`🗑️ Conversaciones eliminadas (>90 días): ${this.changes}`);
+                        console.log(`🗑️ Conversaciones eliminadas (>20 días): ${this.changes}`);
                     }
                     resolve(this.changes);
                 }
