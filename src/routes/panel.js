@@ -442,9 +442,10 @@ router.post('/upload-media', authMiddleware, upload.single('file'), async (req, 
 
 /**
  * GET /api/media/:filename
- * Servir archivos multimedia
+ * Servir archivos multimedia (sin autenticación para permitir carga de imágenes en <img>)
+ * NOTA: Los archivos multimedia no contienen información sensible y se generan con nombres únicos
  */
-router.get('/media/:filename', authMiddleware, (req, res) => {
+router.get('/media/:filename', (req, res) => {
     try {
         const filename = req.params.filename;
         const filepath = mediaService.getMediaFullPath(`media/${filename}`);

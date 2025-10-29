@@ -33,6 +33,14 @@ const sidebar = document.querySelector('.sidebar');
 const chatArea = document.querySelector('.chat-area');
 const attachBtn = document.getElementById('attach-btn');
 const fileInput = document.getElementById('file-input');
+const imagePreviewModal = document.getElementById('image-preview-modal');
+const previewImage = document.getElementById('preview-image');
+const imageCaption = document.getElementById('image-caption');
+const captionCharCount = document.getElementById('caption-char-count');
+
+// Variable temporal para guardar el archivo seleccionado
+let pendingFile = null;
+let pendingFileData = null;
 
 // Login
 loginForm.addEventListener('submit', async (e) => {
@@ -482,56 +490,26 @@ fileInput.addEventListener('change', async (e) => {
         return;
     }
 
-    // Subir archivo
-    try {
-        attachBtn.disabled = true;
+    // Guardar archivo temporalmente
+    pendingFile = file;
 
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('phoneNumber', currentConversation);
-
-        // Upload file
-        const uploadResponse = await fetch('/api/upload-media', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Basic ${currentAuth}`
-            },
-            body: formData
-        });
-
-        if (!uploadResponse.ok) {
-            throw new Error('Error al subir archivo');
-        }
-
-        const uploadData = await uploadResponse.json();
-
-        // Send file to WhatsApp
-        const sendResponse = await fetch('/api/send-media', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${currentAuth}`
-            },
-            body: JSON.stringify({
-                phoneNumber: currentConversation,
-                mediaPath: uploadData.mediaPath,
-                mimeType: uploadData.mimeType,
-                filename: file.name
-            })
-        });
-
-        if (!sendResponse.ok) {
-            throw new Error('Error al enviar archivo');
-        }
-
-        console.log('✅ Archivo enviado correctamente');
-    } catch (error) {
-        console.error('Error enviando archivo:', error);
-        alert('Error al enviar el archivo. Intenta nuevamente.');
-    } finally {
-        attachBtn.disabled = false;
-        fileInput.value = '';
+    // Si es imagen, mostrar preview
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImage.src = e.target.result;
+            imageCaption.value = '';
+            captionCharCount.textContent = '0';
+            imagePreviewModal.classList.add('show');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        // Si es documento, enviar directamente sin preview
+        await sendFileImmediately(file);
     }
+
+    // Limpiar input para permitir seleccionar el mismo archivo de nuevo
+    fileInput.value = '';
 });
 
 async function sendMessage() {
@@ -702,6 +680,96 @@ window.savePromotion = async function() {
 promoMessage.addEventListener('input', () => {
     charCount.textContent = promoMessage.value.length;
 });
+
+// Character counter for image caption
+imageCaption.addEventListener('input', () => {
+    captionCharCount.textContent = imageCaption.value.length;
+});
+
+// Funciones para el modal de preview de imagen
+window.closeImagePreviewModal = function() {
+    imagePreviewModal.classList.remove('show');
+    pendingFile = null;
+    pendingFileData = null;
+    previewImage.src = '';
+    imageCaption.value = '';
+};
+
+window.confirmSendImage = async function() {
+    if (!pendingFile || !currentConversation) {
+        closeImagePreviewModal();
+        return;
+    }
+
+    const caption = imageCaption.value.trim();
+
+    // Cerrar modal y deshabilitar botón
+    closeImagePreviewModal();
+    attachBtn.disabled = true;
+
+    try {
+        await sendFileImmediately(pendingFile, caption);
+    } catch (error) {
+        console.error('Error al enviar imagen:', error);
+        alert('Error al enviar la imagen. Intenta nuevamente.');
+    } finally {
+        attachBtn.disabled = false;
+        pendingFile = null;
+    }
+};
+
+// Función auxiliar para enviar archivos
+async function sendFileImmediately(file, caption = '') {
+    try {
+        attachBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('phoneNumber', currentConversation);
+
+        // Upload file
+        const uploadResponse = await fetch('/api/upload-media', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${currentAuth}`
+            },
+            body: formData
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error('Error al subir archivo');
+        }
+
+        const uploadData = await uploadResponse.json();
+
+        // Send file to WhatsApp
+        const sendResponse = await fetch('/api/send-media', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${currentAuth}`
+            },
+            body: JSON.stringify({
+                phoneNumber: currentConversation,
+                mediaPath: uploadData.mediaPath,
+                mimeType: uploadData.mimeType,
+                filename: file.name,
+                caption: caption || undefined
+            })
+        });
+
+        if (!sendResponse.ok) {
+            throw new Error('Error al enviar archivo');
+        }
+
+        console.log('✅ Archivo enviado correctamente');
+    } catch (error) {
+        console.error('Error enviando archivo:', error);
+        throw error;
+    } finally {
+        attachBtn.disabled = false;
+    }
+}
 
 
 // Búsqueda
