@@ -148,11 +148,16 @@ body {
 .login-left::before {
     content: '';
     position: absolute;
-    top: -50%;
-    right: -50%;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 255, 255, 0.08) 10px, rgba(255, 255, 255, 0.08) 20px),
+        repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(255, 255, 255, 0.08) 10px, rgba(255, 255, 255, 0.08) 20px);
 }
 
 .login-branding {
