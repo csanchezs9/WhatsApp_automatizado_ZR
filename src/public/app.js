@@ -493,19 +493,38 @@ fileInput.addEventListener('change', async (e) => {
     // Guardar archivo temporalmente
     pendingFile = file;
 
-    // Si es imagen, mostrar preview
+    // Si es imagen, mostrar preview con imagen
     if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
             previewImage.src = e.target.result;
+            previewImage.style.display = 'block';
+            document.querySelector('.file-preview-info').style.display = 'none';
             imageCaption.value = '';
             captionCharCount.textContent = '0';
             imagePreviewModal.classList.add('show');
         };
         reader.readAsDataURL(file);
     } else {
-        // Si es documento, enviar directamente sin preview
-        await sendFileImmediately(file);
+        // Si es documento, mostrar preview con información del archivo
+        previewImage.style.display = 'none';
+        const fileInfoDiv = document.querySelector('.file-preview-info');
+        fileInfoDiv.style.display = 'block';
+
+        // Mostrar icono según tipo de archivo
+        let fileIcon = '📄';
+        if (file.type.includes('pdf')) fileIcon = '📕';
+        else if (file.type.includes('word')) fileIcon = '📘';
+        else if (file.type.includes('excel') || file.type.includes('spreadsheet')) fileIcon = '📊';
+        else if (file.type.includes('text')) fileIcon = '📝';
+
+        document.getElementById('file-preview-icon').textContent = fileIcon;
+        document.getElementById('file-preview-name').textContent = file.name;
+        document.getElementById('file-preview-size').textContent = formatFileSize(file.size);
+
+        imageCaption.value = '';
+        captionCharCount.textContent = '0';
+        imagePreviewModal.classList.add('show');
     }
 
     // Limpiar input para permitir seleccionar el mismo archivo de nuevo

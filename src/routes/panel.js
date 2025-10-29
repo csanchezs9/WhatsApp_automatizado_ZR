@@ -391,7 +391,7 @@ router.post('/promotions', authMiddleware, async (req, res) => {
 
 /**
  * POST /api/upload-media
- * Subir archivo multimedia desde el panel
+ * Subir archivo multimedia desde el panel (SOLO UPLOAD, no envía ni guarda en conversación)
  */
 router.post('/upload-media', authMiddleware, upload.single('file'), async (req, res) => {
     try {
@@ -399,7 +399,7 @@ router.post('/upload-media', authMiddleware, upload.single('file'), async (req, 
             return res.status(400).json({ error: 'No se recibió ningún archivo' });
         }
 
-        const { phoneNumber, caption } = req.body;
+        const { phoneNumber } = req.body;
 
         if (!phoneNumber) {
             // Eliminar archivo subido
@@ -410,23 +410,12 @@ router.post('/upload-media', authMiddleware, upload.single('file'), async (req, 
         const relativePath = `media/${req.file.filename}`;
         const fileType = req.file.mimetype.startsWith('image/') ? 'image' : 'document';
 
-        // Guardar en conversación
-        conversationService.addMessage(phoneNumber, {
-            from: 'advisor',
-            type: fileType,
-            mediaPath: relativePath,
-            mimeType: req.file.mimetype,
-            caption: caption || null,
-            filename: req.file.originalname,
-            size: req.file.size
-        });
-
-        console.log(`✅ Archivo subido desde panel: ${req.file.filename}`);
+        console.log(`✅ Archivo subido desde panel: ${req.file.filename} (tipo: ${fileType})`);
 
         res.json({
             success: true,
             mediaPath: relativePath,
-            filename: req.file.filename,
+            filename: req.file.originalname,
             mimeType: req.file.mimetype,
             size: req.file.size,
             type: fileType
@@ -489,6 +478,17 @@ router.post('/send-media', authMiddleware, async (req, res) => {
         } else {
             await whatsappService.sendDocument(phoneNumber, mediaId, filename, caption);
         }
+
+        // Guardar mensaje en la conversación (CON caption si fue proporcionado)
+        conversationService.addMessage(phoneNumber, {
+            from: 'advisor',
+            type: mimeType.startsWith('image/') ? 'image' : 'document',
+            mediaPath: mediaPath,
+            mimeType: mimeType,
+            caption: caption || null,
+            filename: filename,
+            size: fs.statSync(fullPath).size
+        });
 
         // Emitir por WebSocket al panel
         const io = req.app.get('io');

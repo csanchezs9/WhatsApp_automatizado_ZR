@@ -189,20 +189,25 @@
             </div>
         </div>
 
-        <!-- Modal de preview de imagen -->
+        <!-- Modal de preview de imagen/archivo -->
         <div id="image-preview-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>📷 Enviar Imagen</h2>
+                    <h2>📎 Enviar Archivo</h2>
                     <button class="close-modal" onclick="closeImagePreviewModal()">✕</button>
                 </div>
                 <div class="modal-body">
                     <div class="image-preview-container">
                         <img id="preview-image" src="" alt="Preview" style="max-width: 100%; max-height: 400px; border-radius: 8px;">
+                        <div class="file-preview-info" style="display: none; text-align: center; padding: 40px;">
+                            <div id="file-preview-icon" style="font-size: 80px; margin-bottom: 20px;">📄</div>
+                            <div id="file-preview-name" style="font-size: 16px; font-weight: 600; margin-bottom: 10px; word-break: break-word;">archivo.pdf</div>
+                            <div id="file-preview-size" style="font-size: 14px; color: #666;">0 KB</div>
+                        </div>
                     </div>
                     <div class="form-group" style="margin-top: 20px;">
                         <label for="image-caption">Mensaje (opcional):</label>
-                        <textarea id="image-caption" rows="3" maxlength="1000" placeholder="Agrega un mensaje con la imagen..."></textarea>
+                        <textarea id="image-caption" rows="3" maxlength="1000" placeholder="Agrega un mensaje con el archivo..."></textarea>
                         <div class="char-counter">
                             <span id="caption-char-count">0</span> / 1000 caracteres
                         </div>

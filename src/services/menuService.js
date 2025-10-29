@@ -11,6 +11,12 @@ const {
   formatProductList
 } = require('./quoteService');
 const conversationService = require('./conversationService');
+const {
+  saveUserSession,
+  loadAllUserSessions,
+  deleteUserSession,
+  cleanupOldUserSessions
+} = conversationService;
 const fs = require('fs');
 const path = require('path');
 
@@ -74,12 +80,13 @@ const updatePromoMessage = (newMessage, updatedBy = 'Asesor') => {
 };
 
 /**
- * Limpia sesiones antiguas de la memoria para prevenir fuga de memoria
+ * Limpia sesiones antiguas de la memoria y BD para prevenir fuga de memoria
  */
-const cleanupOldSessions = () => {
+const cleanupOldSessions = async () => {
   const now = Date.now();
   let cleanedCount = 0;
-  
+
+  // Limpiar de memoria
   for (const [userPhone, session] of Object.entries(userSessions)) {
     // Eliminar sesiones sin actividad reciente (más de 1 día / 24 horas)
     if (session.lastActivity && (now - session.lastActivity) > MAX_SESSION_AGE) {
@@ -87,19 +94,78 @@ const cleanupOldSessions = () => {
       cleanedCount++;
     }
   }
-  
-  if (cleanedCount > 0) {
-    console.log(`🧹 Limpieza automática: ${cleanedCount} sesiones antiguas eliminadas`);
+
+  // Limpiar de BD
+  try {
+    await cleanupOldUserSessions();
+  } catch (error) {
+    console.error('⚠️ Error limpiando sesiones de BD:', error.message);
   }
-  
-  console.log(`📊 Sesiones activas: ${Object.keys(userSessions).length}`);
+
+  if (cleanedCount > 0) {
+    console.log(`🧹 Limpieza automática: ${cleanedCount} sesiones antiguas eliminadas de memoria`);
+  }
+
+  console.log(`📊 Sesiones activas en memoria: ${Object.keys(userSessions).length}`);
+};
+
+/**
+ * Recupera todas las sesiones desde la BD al iniciar el servidor
+ */
+const loadSessionsFromDB = async () => {
+  try {
+    console.log('🔄 Cargando sesiones desde BD...');
+    const sessions = await loadAllUserSessions();
+
+    // Copiar al objeto userSessions
+    Object.assign(userSessions, sessions);
+
+    console.log(`✅ ${Object.keys(sessions).length} sesiones recuperadas desde BD`);
+
+    // También recuperar el estado de usuarios con asesor
+    for (const [userPhone, session] of Object.entries(sessions)) {
+      if (session.state === 'WITH_ADVISOR' && session.advisorSession) {
+        usersWithAdvisor.set(userPhone, session.advisorSession);
+        console.log(`✅ Restaurado modo asesor para ${userPhone}`);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error cargando sesiones desde BD:', error.message);
+  }
 };
 
 // Ejecutar limpieza periódica cada 24 horas
 setInterval(cleanupOldSessions, CLEANUP_INTERVAL);
 
-// Ejecutar limpieza inicial 10 segundos después de arrancar
-setTimeout(cleanupOldSessions, 10000);
+// Ejecutar carga de sesiones y limpieza inicial al arrancar
+setTimeout(async () => {
+  await loadSessionsFromDB();
+  await cleanupOldSessions();
+}, 10000);
+
+/**
+ * Inicializa una nueva sesión para un usuario y la guarda en BD
+ */
+const initializeUserSession = async (userPhone) => {
+  userSessions[userPhone] = {
+    state: 'MAIN_MENU',
+    cart: [],
+    selectedCategory: null,
+    selectedSubcategory: null,
+    categoriesList: [],
+    subcategoriesList: [],
+    lastActivity: Date.now()
+  };
+
+  // Guardar en BD
+  try {
+    await saveUserSession(userPhone, userSessions[userPhone]);
+  } catch (error) {
+    console.error(`⚠️ Error guardando nueva sesión de ${userPhone}:`, error.message);
+  }
+
+  return userSessions[userPhone];
+};
 
 /**
  * Verifica si la sesión del usuario ha expirado por inactividad
@@ -126,12 +192,50 @@ const isSessionExpired = (userPhone) => {
 };
 
 /**
- * Actualiza el timestamp de última actividad del usuario
+ * Actualiza el timestamp de última actividad del usuario y guarda en BD
  */
-const updateLastActivity = (userPhone) => {
+const updateLastActivity = async (userPhone) => {
   if (userSessions[userPhone]) {
     userSessions[userPhone].lastActivity = Date.now();
+    // Guardar en BD de forma asíncrona (no bloquea)
+    try {
+      await saveUserSession(userPhone, userSessions[userPhone]);
+    } catch (error) {
+      console.error(`⚠️ Error guardando sesión de ${userPhone}:`, error.message);
+    }
   }
+};
+
+/**
+ * Helper para guardar sesión en BD después de cualquier modificación
+ * Uso: después de modificar userSessions[userPhone].state u otros campos
+ */
+const persistSession = async (userPhone) => {
+  if (userSessions[userPhone]) {
+    try {
+      await saveUserSession(userPhone, userSessions[userPhone]);
+    } catch (error) {
+      console.error(`⚠️ Error persistiendo sesión de ${userPhone}:`, error.message);
+    }
+  }
+};
+
+/**
+ * Cambia el estado de la sesión y lo persiste automáticamente en BD
+ * Uso: await setSessionState(userPhone, 'WITH_ADVISOR')
+ */
+const setSessionState = async (userPhone, newState, additionalData = {}) => {
+  if (!userSessions[userPhone]) {
+    await initializeUserSession(userPhone);
+  }
+
+  userSessions[userPhone].state = newState;
+
+  // Aplicar datos adicionales si se proveen
+  Object.assign(userSessions[userPhone], additionalData);
+
+  // Persistir en BD
+  await persistSession(userPhone);
 };
 
 /**
@@ -230,21 +334,22 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
   }
 
   const now = Date.now();
-  usersWithAdvisor.set(userPhone, {
+  const advisorSessionData = {
     startTime: now,
     lastAdvisorMessage: now,
     userQuery: userQuery,
     advisorHasResponded: false  // Inicialmente el asesor no ha respondido
-  });
+  };
+  usersWithAdvisor.set(userPhone, advisorSessionData);
 
   // Notificar al asesor con la consulta del usuario
   const advisorMessage = `🔔 *NUEVA SOLICITUD DE ATENCIÓN*\n\n` +
     `📱 Cliente: +${userPhone}\n` +
     `⏰ Hora: ${new Date().toLocaleString('es-CO')}\n\n` +
     `💬 *Consulta del cliente:*\n"${userQuery}"\n\n` +
-    `Por favor responde desde WhatsApp Business.\n\n` +
+    `Por favor responde desde el panel web o WhatsApp Business.\n\n` +
     `📌 *Para finalizar la conversación:*\n` +
-    `Escribe "/finalizar" en este chat (del bot) o dile al cliente que escriba "menú".`;
+    `Escribe "/finalizar" en este chat del bot o usa el botón "Finalizar" en el panel web.`;
 
   try {
     await sendTextMessage(ADVISOR_PHONE, advisorMessage);
@@ -270,6 +375,8 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
   // Cambiar estado de la sesión para que no procese más mensajes como nueva consulta
   if (userSessions[userPhone]) {
     userSessions[userPhone].state = 'WITH_ADVISOR';
+    userSessions[userPhone].advisorSession = advisorSessionData;
+    await persistSession(userPhone);
   }
 
   // IMPORTANTE: Emitir evento WebSocket adicional para habilitar textarea en el panel
@@ -286,9 +393,19 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
 /**
  * Desactiva el modo asesor para un usuario
  */
-const deactivateAdvisorMode = (userPhone) => {
+const deactivateAdvisorMode = async (userPhone) => {
   if (usersWithAdvisor.has(userPhone)) {
     usersWithAdvisor.delete(userPhone);
+
+    // Actualizar sesión en memoria y BD
+    if (userSessions[userPhone]) {
+      delete userSessions[userPhone].advisorSession;
+      if (userSessions[userPhone].state === 'WITH_ADVISOR') {
+        userSessions[userPhone].state = 'MAIN_MENU';
+      }
+      await persistSession(userPhone);
+    }
+
     console.log(`🤖 Bot reactivado para ${userPhone}`);
     return true;
   }
@@ -424,6 +541,7 @@ const showClientSelectionMenu = async (advisorPhone, activeClients) => {
     }
     userSessions[advisorPhone].state = 'SELECTING_CLIENT_TO_FINALIZE';
     userSessions[advisorPhone].clientList = activeClients;
+    await persistSession(advisorPhone);
   }
 };
 
@@ -551,6 +669,7 @@ const handleMenuSelection = async (userPhone, message) => {
     // Limpiar el estado
     delete userSessions[userPhone].state;
     delete userSessions[userPhone].clientList;
+    await persistSession(userPhone);
     
     // Verificar que el cliente todavía está activo
     if (usersWithAdvisor.has(clientPhone)) {
@@ -624,19 +743,12 @@ const handleMenuSelection = async (userPhone, message) => {
     console.log(`🔥 Asesor presionó botón de /actualizar_promo`);
     // Inicializar sesión si no existe
     if (!userSessions[userPhone]) {
-      userSessions[userPhone] = {
-        state: 'MAIN_MENU',
-        cart: [],
-        selectedCategory: null,
-        selectedSubcategory: null,
-        categoriesList: [],
-        subcategoriesList: [],
-        lastActivity: Date.now()
-      };
+      await initializeUserSession(userPhone);
     }
 
     // Cambiar estado para esperar el nuevo mensaje de promoción
     userSessions[userPhone].state = 'UPDATING_PROMO';
+    await saveUserSession(userPhone, userSessions[userPhone]);
     await sendTextMessage(
       userPhone,
       `📝 *ACTUALIZAR MENSAJE DE PROMOCIONES*\n\n` +
@@ -662,19 +774,12 @@ const handleMenuSelection = async (userPhone, message) => {
 
     // Inicializar sesión si no existe
     if (!userSessions[userPhone]) {
-      userSessions[userPhone] = {
-        state: 'MAIN_MENU',
-        cart: [],
-        selectedCategory: null,
-        selectedSubcategory: null,
-        categoriesList: [],
-        subcategoriesList: [],
-        lastActivity: Date.now()
-      };
+      await initializeUserSession(userPhone);
     }
 
     // Cambiar estado para esperar el nuevo mensaje de promoción
     userSessions[userPhone].state = 'UPDATING_PROMO';
+    await saveUserSession(userPhone, userSessions[userPhone]);
     await sendTextMessage(
       userPhone,
       `📝 *ACTUALIZAR MENSAJE DE PROMOCIONES*\n\n` +
@@ -904,14 +1009,6 @@ const handleMenuSelection = async (userPhone, message) => {
 
   // SI EL USUARIO ESTÁ CON UN ASESOR (y NO ha expirado)
   if (isUserWithAdvisor(userPhone)) {
-    // Si escribe "menú", desactivar modo asesor y volver al bot
-    if (messageText === 'menu' || messageText === 'menú' || messageText === 'inicio') {
-      deactivateAdvisorMode(userPhone);
-      await sendTextMessage(userPhone, '✅ Conversación con asesor finalizada.\n\n🤖 Bot reactivado. Volviendo al menú principal...');
-      await showMainMenu(userPhone);
-      return;
-    }
-    
     // Actualizar actividad
     updateLastActivity(userPhone);
 
@@ -924,8 +1021,7 @@ const handleMenuSelection = async (userPhone, message) => {
         userPhone,
         `⏳ *En conversación con asesor*\n\n` +
         `Tu consulta fue enviada. El asesor te responderá pronto.\n\n` +
-        `💬 Puedes seguir escribiendo y el asesor verá tus mensajes.\n\n` +
-        `_No finalices la sesión, pero si deseas volver al menú automático, escribe *menú*_`
+        `💬 Puedes seguir escribiendo y el asesor verá tus mensajes.`
       );
       console.log(`👤 Mensaje de ${userPhone} recibido - esperando respuesta del asesor`);
     } else {
@@ -958,14 +1054,7 @@ const handleMenuSelection = async (userPhone, message) => {
 
   // Inicializar sesión si no existe
   if (!userSessions[userPhone]) {
-    userSessions[userPhone] = {
-      state: 'MAIN_MENU',
-      cart: [],
-      selectedCategory: null,
-      selectedSubcategory: null,
-      categoriesList: [],
-      subcategoriesList: []
-    };
+    await initializeUserSession(userPhone);
   }
 
   const session = userSessions[userPhone];
@@ -1231,6 +1320,10 @@ const handleMenuSelection = async (userPhone, message) => {
       default:
         await showMainMenu(userPhone);
     }
+
+    // Persistir sesión después de cualquier cambio en el switch
+    await persistSession(userPhone);
+
   } catch (error) {
     console.error('Error manejando selección:', error);
     // Intentar enviar mensaje de error al usuario
@@ -1261,6 +1354,9 @@ const showMainMenu = async (userPhone) => {
     subcategoriesList: [],
     lastActivity: Date.now()
   };
+
+  // Guardar sesión en BD
+  await saveUserSession(userPhone, userSessions[userPhone]);
 
   // Crear lista interactiva del menú principal
     const sections = [
