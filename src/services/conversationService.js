@@ -38,12 +38,25 @@ db.serialize(() => {
         )
     `);
 
+    // Tabla de sesiones de usuario para persistir estado entre reinicios
+    db.run(`
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            phone_number TEXT PRIMARY KEY,
+            session_data TEXT NOT NULL,
+            last_activity INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
     // Crear índice para búsquedas rápidas
     db.run(`CREATE INDEX IF NOT EXISTS idx_phone_number ON conversations(phone_number)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_status ON conversations(status)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_started_at ON conversations(started_at)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_session_activity ON user_sessions(last_activity)`);
 
     console.log('✅ Tabla de conversaciones inicializada');
+    console.log('✅ Tabla de sesiones de usuario inicializada');
 });
 
 // Conversaciones activas en memoria (para rendimiento)
@@ -62,7 +75,8 @@ function addMessage(phoneNumber, message) {
             messages: [],
             startedAt: new Date(),
             status: 'active',
-            lastActivity: new Date()
+            lastActivity: new Date(),
+            isWithAdvisor: false
         });
     }
 
@@ -72,6 +86,11 @@ function addMessage(phoneNumber, message) {
         timestamp: new Date()
     });
     conversation.lastActivity = new Date();
+
+    // Auto-guardar en BD después de cada mensaje (asíncrono, no bloquea)
+    saveConversationToDB(phoneNumber).catch(err => {
+        console.error('⚠️ Error auto-guardando conversación:', err.message);
+    });
 
     // Límite de 500 mensajes por conversación
     if (conversation.messages.length > 500) {
@@ -132,6 +151,107 @@ function archiveConversation(phoneNumber, advisorNotes = null) {
                     activeConversations.delete(phoneNumber);
                     resolve(this.lastID);
                 }
+            }
+        );
+    });
+}
+
+/**
+ * Guardar conversación activa en BD sin eliminarla de memoria
+ * Se usa para persistencia durante reinicios del servidor
+ */
+function saveConversationToDB(phoneNumber) {
+    const conversation = activeConversations.get(phoneNumber);
+    if (!conversation) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+        const messagesJson = JSON.stringify(conversation.messages);
+
+        // Intentar UPDATE primero, si no existe hacer INSERT
+        db.run(
+            `UPDATE conversations
+             SET messages = ?,
+                 started_at = ?,
+                 status = 'active'
+             WHERE phone_number = ? AND status = 'active'`,
+            [
+                messagesJson,
+                conversation.startedAt.toISOString(),
+                phoneNumber
+            ],
+            function(err) {
+                if (err) {
+                    reject(err);
+                } else if (this.changes === 0) {
+                    // No existía, hacer INSERT
+                    db.run(
+                        `INSERT INTO conversations (phone_number, messages, started_at, status)
+                         VALUES (?, ?, ?, 'active')`,
+                        [
+                            phoneNumber,
+                            messagesJson,
+                            conversation.startedAt.toISOString()
+                        ],
+                        function(insertErr) {
+                            if (insertErr) {
+                                reject(insertErr);
+                            } else {
+                                resolve(this.lastID);
+                            }
+                        }
+                    );
+                } else {
+                    resolve(this.changes);
+                }
+            }
+        );
+    });
+}
+
+/**
+ * Recuperar conversaciones activas desde la BD al iniciar el servidor
+ */
+function loadActiveConversationsFromDB() {
+    return new Promise((resolve, reject) => {
+        db.all(
+            `SELECT phone_number, messages, started_at
+             FROM conversations
+             WHERE status = 'active'
+             ORDER BY started_at DESC`,
+            [],
+            (err, rows) => {
+                if (err) {
+                    console.error('❌ Error cargando conversaciones activas:', err.message);
+                    reject(err);
+                    return;
+                }
+
+                let loadedCount = 0;
+                rows.forEach(row => {
+                    try {
+                        const messages = JSON.parse(row.messages);
+                        const lastMessage = messages[messages.length - 1];
+
+                        activeConversations.set(row.phone_number, {
+                            phoneNumber: row.phone_number,
+                            messages: messages,
+                            startedAt: new Date(row.started_at),
+                            status: 'active',
+                            lastActivity: lastMessage ? new Date(lastMessage.timestamp) : new Date(row.started_at),
+                            isWithAdvisor: messages.some(m => m.from === 'advisor') // Inferir si está con asesor
+                        });
+                        loadedCount++;
+                    } catch (parseError) {
+                        console.error(`⚠️ Error parseando conversación ${row.phone_number}:`, parseError.message);
+                    }
+                });
+
+                if (loadedCount > 0) {
+                    console.log(`✅ Conversaciones activas recuperadas: ${loadedCount}`);
+                }
+                resolve(loadedCount);
             }
         );
     });
@@ -313,17 +433,165 @@ setInterval(async () => {
     }
 }, 24 * 60 * 60 * 1000); // 24 horas
 
-// Limpieza inicial al arrancar (10 segundos después)
+// Recuperar conversaciones activas al iniciar el servidor
 setTimeout(async () => {
-    console.log('🔄 Limpieza inicial de conversaciones...');
+    console.log('🔄 Recuperando conversaciones activas desde BD...');
     try {
+        await loadActiveConversationsFromDB();
+        console.log('🔄 Limpieza inicial de conversaciones antiguas...');
         await cleanupOldConversations();
         const stats = await getStatistics();
         console.log('📊 Estadísticas iniciales:', stats);
     } catch (error) {
-        console.error('❌ Error en limpieza inicial:', error);
+        console.error('❌ Error en inicialización:', error);
     }
-}, 10000);
+}, 3000); // 3 segundos después de iniciar
+
+/**
+ * Guardar sesión de usuario en BD
+ */
+function saveUserSession(phoneNumber, sessionData) {
+    return new Promise((resolve, reject) => {
+        try {
+            const sessionJson = JSON.stringify(sessionData);
+            const lastActivity = sessionData.lastActivity || Date.now();
+
+            db.run(
+                `INSERT OR REPLACE INTO user_sessions (phone_number, session_data, last_activity, updated_at)
+                 VALUES (?, ?, ?, datetime('now'))`,
+                [phoneNumber, sessionJson, lastActivity],
+                function(err) {
+                    if (err) {
+                        console.error(`❌ Error guardando sesión ${phoneNumber}:`, err.message);
+                        console.error('Datos de sesión:', { state: sessionData.state, hasAdvisorSession: !!sessionData.advisorSession });
+                        // No rechazar para no bloquear el flujo
+                        resolve();
+                    } else {
+                        resolve();
+                    }
+                }
+            );
+        } catch (stringifyError) {
+            console.error(`❌ Error al serializar sesión ${phoneNumber}:`, stringifyError.message);
+            console.error('Datos problemáticos:', sessionData);
+            // No rechazar para no bloquear el flujo
+            resolve();
+        }
+    });
+}
+
+/**
+ * Cargar sesión de usuario desde BD
+ */
+function loadUserSession(phoneNumber) {
+    return new Promise((resolve, reject) => {
+        db.get(
+            `SELECT session_data, last_activity FROM user_sessions WHERE phone_number = ?`,
+            [phoneNumber],
+            (err, row) => {
+                if (err) {
+                    reject(err);
+                } else if (row) {
+                    try {
+                        const sessionData = JSON.parse(row.session_data);
+                        sessionData.lastActivity = row.last_activity;
+                        resolve(sessionData);
+                    } catch (parseError) {
+                        console.error(`⚠️ Error parseando sesión ${phoneNumber}:`, parseError.message);
+                        resolve(null);
+                    }
+                } else {
+                    resolve(null);
+                }
+            }
+        );
+    });
+}
+
+/**
+ * Cargar todas las sesiones activas desde BD
+ */
+function loadAllUserSessions() {
+    return new Promise((resolve, reject) => {
+        db.all(
+            `SELECT phone_number, session_data, last_activity FROM user_sessions`,
+            [],
+            (err, rows) => {
+                if (err) {
+                    console.error('❌ Error cargando sesiones desde BD:', err.message);
+                    console.error('Stack:', err.stack);
+                    // Devolver objeto vacío para no bloquear el inicio
+                    resolve({});
+                    return;
+                }
+
+                const sessions = {};
+                let loadedCount = 0;
+
+                rows.forEach(row => {
+                    try {
+                        const sessionData = JSON.parse(row.session_data);
+                        sessionData.lastActivity = row.last_activity;
+                        sessions[row.phone_number] = sessionData;
+                        loadedCount++;
+                    } catch (parseError) {
+                        console.error(`⚠️ Error parseando sesión ${row.phone_number}:`, parseError.message);
+                    }
+                });
+
+                if (loadedCount > 0) {
+                    console.log(`✅ Sesiones de usuario recuperadas: ${loadedCount}`);
+                }
+                resolve(sessions);
+            }
+        );
+    });
+}
+
+/**
+ * Eliminar sesión de usuario de BD
+ */
+function deleteUserSession(phoneNumber) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `DELETE FROM user_sessions WHERE phone_number = ?`,
+            [phoneNumber],
+            function(err) {
+                if (err) {
+                    console.error(`❌ Error eliminando sesión ${phoneNumber}:`, err.message);
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            }
+        );
+    });
+}
+
+/**
+ * Limpiar sesiones antiguas (más de 24 horas)
+ */
+function cleanupOldUserSessions() {
+    return new Promise((resolve, reject) => {
+        const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // 24 horas
+
+        db.run(
+            `DELETE FROM user_sessions WHERE last_activity < ?`,
+            [cutoffTime],
+            function(err) {
+                if (err) {
+                    console.error('❌ Error limpiando sesiones antiguas:', err.message);
+                    reject(err);
+                } else {
+                    if (this.changes > 0) {
+                        console.log(`🗑️ Sesiones antiguas eliminadas: ${this.changes}`);
+                    }
+                    resolve(this.changes);
+                }
+            }
+        );
+    });
+}
 
 // Cerrar base de datos al terminar proceso
 process.on('SIGINT', () => {
@@ -353,5 +621,13 @@ module.exports = {
     getConversationHistory,
     searchConversations,
     cleanupOldConversations,
-    getStatistics
+    getStatistics,
+    saveConversationToDB,
+    loadActiveConversationsFromDB,
+    // Nuevas funciones para sesiones
+    saveUserSession,
+    loadUserSession,
+    loadAllUserSessions,
+    deleteUserSession,
+    cleanupOldUserSessions
 };
