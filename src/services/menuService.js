@@ -1355,8 +1355,13 @@ const showMainMenu = async (userPhone) => {
     lastActivity: Date.now()
   };
 
-  // Guardar sesión en BD
-  await saveUserSession(userPhone, userSessions[userPhone]);
+  // Guardar sesión en BD (no bloquear si falla)
+  try {
+    await saveUserSession(userPhone, userSessions[userPhone]);
+  } catch (error) {
+    console.error(`⚠️ Error guardando sesión en BD para ${userPhone}:`, error.message);
+    // Continuar mostrando el menú aunque falle guardar en BD
+  }
 
   // Crear lista interactiva del menú principal
     const sections = [
