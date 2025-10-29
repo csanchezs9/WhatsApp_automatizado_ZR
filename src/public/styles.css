@@ -333,13 +333,13 @@ body {
    ============================================ */
 .header {
     background: var(--bg-header);
-    padding: 12px 20px;
+    padding: 20px 35px;
     box-shadow: var(--shadow-sm);
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
-    height: 60px;
+    height: 90px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     z-index: 100;
 }
@@ -353,22 +353,23 @@ body {
 .header-title-section {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
 }
 
 .header h1 {
-    font-size: 20px;
+    font-size: 26px;
     color: white;
     font-weight: 600;
     margin: 0;
+    letter-spacing: -0.3px;
 }
 
 .header-subtitle {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.75);
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.85);
     font-weight: 400;
     margin: 0;
-    line-height: 1.2;
+    line-height: 1.4;
 }
 
 .status-indicator {
@@ -591,7 +592,7 @@ body {
    ============================================ */
 .main-content {
     display: flex;
-    height: calc(100vh - 60px);
+    height: calc(100vh - 90px);
     overflow: hidden;
     position: relative;
 }
