@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const { deleteMedia } = require('./mediaService');
 
 // Ruta persistente en Render Disk
 const DB_PATH = process.env.NODE_ENV === 'production'
@@ -215,21 +216,57 @@ function searchConversations(searchTerm, limit = 20) {
 
 /**
  * Rotación automática: Eliminar conversaciones mayores a 20 días
+ * IMPORTANTE: También elimina archivos multimedia asociados
  */
 function cleanupOldConversations() {
     return new Promise((resolve, reject) => {
-        db.run(
-            `DELETE FROM conversations WHERE started_at < datetime('now', '-20 days')`,
-            function(err) {
+        // Primero, obtener las conversaciones que se van a eliminar para borrar sus archivos
+        db.all(
+            `SELECT messages FROM conversations WHERE started_at < datetime('now', '-20 days')`,
+            [],
+            (err, rows) => {
                 if (err) {
-                    console.error('❌ Error al limpiar conversaciones antiguas:', err.message);
+                    console.error('❌ Error al obtener conversaciones antiguas:', err.message);
                     reject(err);
-                } else {
-                    if (this.changes > 0) {
-                        console.log(`🗑️ Conversaciones eliminadas (>20 días): ${this.changes}`);
-                    }
-                    resolve(this.changes);
+                    return;
                 }
+
+                // Extraer todos los archivos multimedia de las conversaciones
+                let mediaFilesDeleted = 0;
+                rows.forEach(row => {
+                    try {
+                        const messages = JSON.parse(row.messages);
+                        messages.forEach(msg => {
+                            // Si el mensaje tiene archivo multimedia, eliminarlo
+                            if (msg.mediaPath && (msg.type === 'image' || msg.type === 'document' || msg.type === 'audio' || msg.type === 'video')) {
+                                deleteMedia(msg.mediaPath);
+                                mediaFilesDeleted++;
+                            }
+                        });
+                    } catch (parseError) {
+                        console.error('⚠️ Error parseando mensajes:', parseError.message);
+                    }
+                });
+
+                if (mediaFilesDeleted > 0) {
+                    console.log(`🗑️ Archivos multimedia eliminados: ${mediaFilesDeleted}`);
+                }
+
+                // Ahora sí, eliminar las conversaciones de la BD
+                db.run(
+                    `DELETE FROM conversations WHERE started_at < datetime('now', '-20 days')`,
+                    function(err) {
+                        if (err) {
+                            console.error('❌ Error al limpiar conversaciones antiguas:', err.message);
+                            reject(err);
+                        } else {
+                            if (this.changes > 0) {
+                                console.log(`🗑️ Conversaciones eliminadas (>20 días): ${this.changes}`);
+                            }
+                            resolve(this.changes);
+                        }
+                    }
+                );
             }
         );
     });
