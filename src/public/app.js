@@ -742,6 +742,8 @@ async function sendFileImmediately(file, caption = '') {
     try {
         attachBtn.disabled = true;
 
+        console.log('📤 Iniciando upload:', { name: file.name, size: file.size, type: file.type });
+
         const formData = new FormData();
         formData.append('file', file);
         formData.append('phoneNumber', currentConversation);
@@ -756,10 +758,13 @@ async function sendFileImmediately(file, caption = '') {
         });
 
         if (!uploadResponse.ok) {
-            throw new Error('Error al subir archivo');
+            const uploadError = await uploadResponse.json().catch(() => ({}));
+            const uploadMsg = uploadError.error || 'Error desconocido al subir';
+            throw new Error(`Error al subir archivo: ${uploadMsg}`);
         }
 
         const uploadData = await uploadResponse.json();
+        console.log('✅ Upload exitoso:', uploadData);
 
         // Send file to WhatsApp
         const sendResponse = await fetch('/api/send-media', {
@@ -778,12 +783,20 @@ async function sendFileImmediately(file, caption = '') {
         });
 
         if (!sendResponse.ok) {
-            throw new Error('Error al enviar archivo');
+            const errorData = await sendResponse.json().catch(() => ({}));
+            const errorMsg = errorData.details || errorData.error || 'Error desconocido';
+            throw new Error(`Error al enviar archivo: ${errorMsg}`);
         }
 
         console.log('✅ Archivo enviado correctamente');
     } catch (error) {
-        console.error('Error enviando archivo:', error);
+        console.error('❌ Error enviando archivo:', error);
+        console.error('Detalles:', {
+            file: file?.name,
+            size: file?.size,
+            type: file?.type,
+            caption: caption
+        });
         throw error;
     } finally {
         attachBtn.disabled = false;

@@ -458,26 +458,43 @@ router.post('/send-media', authMiddleware, async (req, res) => {
     try {
         const { phoneNumber, mediaPath, caption, mimeType, filename } = req.body;
 
+        console.log('📤 Enviando media:', { phoneNumber, mediaPath, caption, mimeType, filename });
+
         if (!phoneNumber || !mediaPath) {
-            return res.status(400).json({ error: 'Faltan parámetros requeridos' });
+            console.error('❌ Faltan parámetros:', { phoneNumber, mediaPath });
+            return res.status(400).json({ error: 'Faltan parámetros requeridos: phoneNumber y mediaPath' });
+        }
+
+        if (!mimeType) {
+            console.error('❌ Falta mimeType');
+            return res.status(400).json({ error: 'Falta parámetro requerido: mimeType' });
         }
 
         // Obtener path completo del archivo
         const fullPath = mediaService.getMediaFullPath(mediaPath);
 
         if (!fs.existsSync(fullPath)) {
+            console.error('❌ Archivo no encontrado:', fullPath);
             return res.status(404).json({ error: 'Archivo no encontrado' });
         }
+
+        console.log('✅ Archivo encontrado, subiendo a WhatsApp...');
 
         // Subir archivo a WhatsApp y obtener media ID
         const mediaId = await whatsappService.uploadMediaToWhatsApp(fullPath, mimeType);
 
+        console.log('✅ Media ID obtenido:', mediaId);
+
         // Enviar según el tipo
         if (mimeType.startsWith('image/')) {
+            console.log('📷 Enviando imagen a WhatsApp...');
             await whatsappService.sendImage(phoneNumber, mediaId, caption);
         } else {
-            await whatsappService.sendDocument(phoneNumber, mediaId, filename, caption);
+            console.log('📄 Enviando documento a WhatsApp...');
+            await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'documento', caption);
         }
+
+        console.log('✅ Mensaje enviado a WhatsApp, guardando en conversación...');
 
         // Guardar mensaje en la conversación (CON caption si fue proporcionado)
         conversationService.addMessage(phoneNumber, {
@@ -486,9 +503,11 @@ router.post('/send-media', authMiddleware, async (req, res) => {
             mediaPath: mediaPath,
             mimeType: mimeType,
             caption: caption || null,
-            filename: filename,
+            filename: filename || 'archivo',
             size: fs.statSync(fullPath).size
         });
+
+        console.log('✅ Mensaje guardado en conversación');
 
         // Emitir por WebSocket al panel
         const io = req.app.get('io');
@@ -515,13 +534,19 @@ router.post('/send-media', authMiddleware, async (req, res) => {
             });
         }
 
+        console.log('✅ Archivo enviado completamente');
+
         res.json({
             success: true,
             message: 'Archivo enviado correctamente'
         });
     } catch (error) {
-        console.error('Error al enviar media:', error);
-        res.status(500).json({ error: 'Error al enviar archivo' });
+        console.error('❌ Error al enviar media:', error);
+        console.error('Stack:', error.stack);
+        res.status(500).json({
+            error: 'Error al enviar archivo',
+            details: error.message
+        });
     }
 });
 
