@@ -100,7 +100,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #0a1929 0%, #1a237e 50%, #0d1b2a 100%);
+    background: #e3f2fd;
     overflow: hidden;
     position: relative;
 }
@@ -108,13 +108,16 @@ body {
 .login-container::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-    background-size: 50px 50px;
-    animation: moveGrid 20s linear infinite;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.02) 10px, rgba(0, 0, 0, 0.02) 20px),
+        repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.02) 10px, rgba(0, 0, 0, 0.02) 20px);
 }
 
 @keyframes moveGrid {
@@ -148,16 +151,11 @@ body {
 .login-left::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
+    top: -50%;
+    right: -50%;
     width: 100%;
     height: 100%;
-    opacity: 0.3;
-    pointer-events: none;
-    z-index: 0;
-    background-image:
-        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 255, 255, 0.08) 10px, rgba(255, 255, 255, 0.08) 20px),
-        repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(255, 255, 255, 0.08) 10px, rgba(255, 255, 255, 0.08) 20px);
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
 }
 
 .login-branding {
@@ -828,6 +826,11 @@ body {
     gap: 8px;
 }
 
+/* Botón de volver - oculto en desktop */
+.back-button {
+    display: none;
+}
+
 .action-btn {
     padding: 8px 14px;
     background: var(--accent-primary);
@@ -1281,6 +1284,8 @@ body {
 /* ============================================
    RESPONSIVE DESIGN
    ============================================ */
+
+/* Tablet y móviles grandes */
 @media (max-width: 968px) {
     .login-content {
         flex-direction: column;
@@ -1293,55 +1298,268 @@ body {
     .login-branding h1 {
         font-size: 36px;
     }
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        width: 100%;
-        max-width: 320px;
-    }
-
-    .message {
-        max-width: 80%;
-    }
 
     .header {
-        padding: 10px 16px;
+        height: auto;
+        min-height: 70px;
+        padding: 12px 16px;
     }
 
-    .header h1 {
-        font-size: 18px;
+    .header-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .header-title-section h1 {
+        font-size: 20px;
+    }
+
+    .header-subtitle {
+        font-size: 12px;
     }
 
     .stats {
+        padding: 6px 12px;
+    }
+
+    .stat-label, .stat-value {
+        font-size: 12px;
+    }
+}
+
+/* Móviles - Estilo WhatsApp/Messenger */
+@media (max-width: 768px) {
+    body {
+        overflow: auto;
+    }
+
+    .main-content {
+        position: relative;
+    }
+
+    /* Sidebar ocupa toda la pantalla inicialmente */
+    .sidebar {
+        position: absolute;
+        width: 100%;
+        height: calc(100vh - 70px);
+        max-width: 100%;
+        left: 0;
+        transition: transform 0.3s ease;
+        z-index: 10;
+        border-right: none;
+    }
+
+    /* Cuando hay chat activo, ocultar sidebar */
+    .sidebar.hidden-mobile {
+        transform: translateX(-100%);
+    }
+
+    /* Chat area ocupa toda la pantalla */
+    .chat-area {
+        position: absolute;
+        width: 100%;
+        height: calc(100vh - 70px);
+        left: 0;
+        transition: transform 0.3s ease;
+        z-index: 5;
+    }
+
+    /* Mostrar chat cuando está activo */
+    .chat-area.show-mobile {
+        transform: translateX(0);
+    }
+
+    /* Header más compacto en móvil */
+    .header {
+        height: auto;
+        min-height: 70px;
         flex-direction: column;
-        gap: 4px;
-        padding: 6px 10px;
+        gap: 10px;
+    }
+
+    .header-left {
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-title-section {
+        flex: 1;
+    }
+
+    .header-title-section h1 {
+        font-size: 18px;
+    }
+
+    .header-subtitle {
+        display: none;
+    }
+
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .stats {
+        padding: 4px 10px;
+    }
+
+    /* Botón de volver en el chat header */
+    .chat-header {
+        position: relative;
+        padding-left: 50px;
+    }
+
+    .back-button {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--text-primary);
+        cursor: pointer;
+        font-size: 24px;
+        padding: 8px;
+        border-radius: 50%;
+        transition: background 0.2s;
+    }
+
+    .back-button:hover {
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    .chat-info h2 {
+        font-size: 16px;
+    }
+
+    .chat-status {
+        font-size: 11px;
     }
 
     .chat-actions {
         flex-wrap: wrap;
+        gap: 6px;
     }
 
     .action-btn {
         font-size: 11px;
         padding: 6px 10px;
     }
+
+    .message {
+        max-width: 80%;
+    }
+
+    .message-input-container {
+        padding: 10px;
+    }
+
+    #message-input {
+        font-size: 15px;
+        padding: 10px 12px;
+    }
+
+    .send-btn {
+        width: 42px;
+        height: 42px;
+    }
+
+    /* Conversaciones en la lista */
+    .conversation-item {
+        padding: 14px;
+    }
+
+    .conversation-info h3 {
+        font-size: 15px;
+    }
+
+    .last-message {
+        font-size: 13px;
+    }
+
+    /* Modal full screen en móvil */
+    .modal-content {
+        width: 100%;
+        height: 100vh;
+        max-width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        margin: 0;
+    }
+
+    .modal-body {
+        max-height: calc(100vh - 200px);
+    }
+
+    /* Dropdown menu ajustado */
+    .dropdown-menu {
+        right: 0;
+        left: auto;
+        min-width: 200px;
+    }
+
+    /* No selection mensaje */
+    .no-selection {
+        display: none;
+    }
 }
 
+/* Móviles pequeños */
 @media (max-width: 480px) {
-    .sidebar {
-        width: 100%;
-        position: absolute;
-        z-index: 50;
+    .header-title-section h1 {
+        font-size: 16px;
+    }
+
+    .stats {
+        font-size: 11px;
+    }
+
+    .stat-item {
+        flex-direction: row;
+        gap: 4px;
+    }
+
+    .conversation-item {
+        padding: 12px;
+    }
+
+    .conversation-info h3 {
+        font-size: 14px;
+    }
+
+    .last-message {
+        font-size: 12px;
     }
 
     .message {
-        max-width: 90%;
+        max-width: 85%;
+        font-size: 14px;
+        padding: 8px 12px;
     }
 
-    .modal-content {
-        width: 95%;
-        max-height: 90vh;
+    .message-time {
+        font-size: 10px;
+    }
+
+    #message-input {
+        font-size: 14px;
+    }
+
+    .login-left, .login-right {
+        padding: 30px 20px;
+    }
+
+    .login-branding h1 {
+        font-size: 28px;
+    }
+
+    .login-box h2 {
+        font-size: 24px;
     }
 }

@@ -28,6 +28,9 @@ const promotionsModal = document.getElementById('promotions-modal');
 const promoMessage = document.getElementById('promo-message');
 const charCount = document.getElementById('char-count');
 const themeToggleCheckbox = document.getElementById('theme-toggle-checkbox');
+const backToListBtn = document.getElementById('back-to-list-btn');
+const sidebar = document.querySelector('.sidebar');
+const chatArea = document.querySelector('.chat-area');
 
 // Login
 loginForm.addEventListener('submit', async (e) => {
@@ -339,6 +342,12 @@ function showConversation(conversation) {
     // Habilitar/deshabilitar input según si el cliente está con asesor
     updateTextareaState(conversation.isWithAdvisor);
 
+    // Responsive: En móvil, ocultar sidebar y mostrar chat
+    if (window.innerWidth <= 768) {
+        sidebar.classList.add('hidden-mobile');
+        chatArea.classList.add('show-mobile');
+    }
+
     scrollToBottom();
 }
 
@@ -431,6 +440,18 @@ async function sendMessage() {
 }
 
 // Finalizar conversación (sin archivar)
+// Botón volver en móvil
+backToListBtn.addEventListener('click', () => {
+    // Ocultar chat y mostrar sidebar
+    sidebar.classList.remove('hidden-mobile');
+    chatArea.classList.remove('show-mobile');
+
+    // Opcionalmente cerrar el chat
+    chatContainer.style.display = 'none';
+    noConversationSelected.style.display = 'flex';
+    currentConversation = null;
+});
+
 finalizeBtn.addEventListener('click', async () => {
     if (!currentConversation) return;
 

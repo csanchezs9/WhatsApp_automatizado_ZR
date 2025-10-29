@@ -1,9 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install)",
-      "Read(//c/Users/USER/Documents/AUTwpp/**)",
-      "Bash(git add:*)"
+      "Bash(taskkill //F //PID 13188)",
+      "Bash(git commit:*)",
+      "Bash(taskkill //F //PID 12272)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(npm install:*)",
+      "Bash(npm test)"
     ],
     "deny": [],
     "ask": []
