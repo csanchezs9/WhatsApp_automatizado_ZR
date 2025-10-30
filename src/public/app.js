@@ -424,9 +424,20 @@ function addMessageToChat(message) {
 
         const img = document.createElement('img');
         img.className = 'message-image';
-        img.src = `/api/media/${message.mediaPath.split('/')[1]}`;
+
+        // Extraer nombre de archivo de forma robusta
+        const filename = message.mediaPath.includes('/')
+            ? message.mediaPath.split('/').pop()
+            : message.mediaPath;
+
+        img.src = `/api/media/${filename}`;
         img.alt = 'Imagen';
         img.onclick = () => window.open(img.src, '_blank');
+
+        // Debug: mostrar en consola si hay problema
+        img.onerror = () => {
+            console.error('❌ Error cargando imagen:', message.mediaPath, '-> URL:', img.src);
+        };
 
         mediaDiv.appendChild(img);
         messageDiv.appendChild(mediaDiv);
@@ -441,9 +452,14 @@ function addMessageToChat(message) {
         const mediaDiv = document.createElement('div');
         mediaDiv.className = 'message-media';
 
+        // Extraer nombre de archivo de forma robusta
+        const filename = message.mediaPath.includes('/')
+            ? message.mediaPath.split('/').pop()
+            : message.mediaPath;
+
         const docDiv = document.createElement('div');
         docDiv.className = 'message-document';
-        docDiv.onclick = () => window.open(`/api/media/${message.mediaPath.split('/')[1]}`, '_blank');
+        docDiv.onclick = () => window.open(`/api/media/${filename}`, '_blank');
 
         const iconDiv = document.createElement('div');
         iconDiv.className = 'message-document-icon';
@@ -488,12 +504,21 @@ function addMessageToChat(message) {
         iconDiv.className = 'message-audio-icon';
         iconDiv.innerHTML = `<img src="/audiobot.jpg" alt="Audio" class="audio-bot-icon">`;
 
+        // Extraer nombre de archivo de forma robusta
+        const filename = message.mediaPath.includes('/')
+            ? message.mediaPath.split('/').pop()
+            : message.mediaPath;
 
         const audioPlayer = document.createElement('audio');
         audioPlayer.className = 'message-audio-player';
         audioPlayer.controls = true;
         audioPlayer.controlsList = 'nodownload';
-        audioPlayer.src = `/api/media/${message.mediaPath.split('/')[1]}`;
+        audioPlayer.src = `/api/media/${filename}`;
+
+        // Debug: mostrar en consola si hay problema
+        audioPlayer.onerror = () => {
+            console.error('❌ Error cargando audio:', message.mediaPath, '-> URL:', audioPlayer.src);
+        };
 
         audioDiv.appendChild(iconDiv);
         audioDiv.appendChild(audioPlayer);

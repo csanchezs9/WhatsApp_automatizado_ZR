@@ -556,6 +556,18 @@ router.get('/media/:filename', (req, res) => {
         const filepath = mediaService.getMediaFullPath(`media/${filename}`);
 
         if (!fs.existsSync(filepath)) {
+            console.error(`❌ Archivo multimedia no encontrado: ${filename}`);
+            console.error(`   Ruta completa buscada: ${filepath}`);
+            console.error(`   Directorio media: ${mediaService.MEDIA_DIR}`);
+
+            // Listar archivos en el directorio para debug
+            try {
+                const files = fs.readdirSync(mediaService.MEDIA_DIR);
+                console.error(`   Archivos disponibles en media (${files.length}): ${files.slice(0, 10).join(', ')}${files.length > 10 ? '...' : ''}`);
+            } catch (e) {
+                console.error(`   No se pudo listar directorio media:`, e.message);
+            }
+
             return res.status(404).json({ error: 'Archivo no encontrado' });
         }
 
