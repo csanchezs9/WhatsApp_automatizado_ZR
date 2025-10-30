@@ -491,21 +491,29 @@ router.post('/upload-media', authMiddleware, upload.single('file'), async (req, 
 
         // Determinar tipo de archivo
         let fileType;
+        let normalizedMimeType = req.file.mimetype;
+
         if (req.file.mimetype.startsWith('image/')) {
             fileType = 'image';
         } else if (req.file.mimetype.startsWith('audio/')) {
             fileType = 'audio';
+            // IMPORTANTE: WhatsApp Business API solo acepta ciertos formatos de audio
+            // Normalizar audio/webm a audio/ogg (ambos usan codec opus)
+            if (req.file.mimetype.includes('webm')) {
+                normalizedMimeType = 'audio/ogg; codecs=opus';
+                console.log(`🔄 Normalizando ${req.file.mimetype} -> ${normalizedMimeType}`);
+            }
         } else {
             fileType = 'document';
         }
 
-        console.log(`✅ Archivo subido desde panel: ${req.file.filename} (tipo: ${fileType}, mime: ${req.file.mimetype})`);
+        console.log(`✅ Archivo subido desde panel: ${req.file.filename} (tipo: ${fileType}, mime original: ${req.file.mimetype}, normalizado: ${normalizedMimeType})`);
 
         res.json({
             success: true,
             mediaPath: relativePath,
             filename: req.file.originalname,
-            mimeType: req.file.mimetype,
+            mimeType: normalizedMimeType, // Usar mimeType normalizado
             size: req.file.size,
             type: fileType
         });

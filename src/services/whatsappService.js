@@ -342,9 +342,17 @@ const uploadMediaToWhatsApp = async (filePath, mimeType) => {
   try {
     const uploadUrl = `https://graph.facebook.com/v21.0/${process.env.WHATSAPP_PHONE_ID}/media`;
 
+    // Limpiar mimeType: remover codecs y parámetros extra
+    // WhatsApp API solo acepta "audio/ogg", no "audio/ogg; codecs=opus"
+    const cleanMimeType = mimeType.split(';')[0].trim();
+
+    console.log(`📤 Subiendo media a WhatsApp: ${filePath}`);
+    console.log(`   MimeType original: ${mimeType}`);
+    console.log(`   MimeType limpio: ${cleanMimeType}`);
+
     const formData = new FormData();
     formData.append('file', fs.createReadStream(filePath));
-    formData.append('type', mimeType);
+    formData.append('type', cleanMimeType); // Usar mimeType limpio
     formData.append('messaging_product', 'whatsapp');
 
     const response = await axios.post(uploadUrl, formData, {
@@ -358,6 +366,7 @@ const uploadMediaToWhatsApp = async (filePath, mimeType) => {
     return response.data.id;
   } catch (error) {
     console.error('❌ Error uploading media to WhatsApp:', error.response?.data || error.message);
+    console.error('   Detalles completos:', JSON.stringify(error.response?.data, null, 2));
     throw error;
   }
 };

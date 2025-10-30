@@ -1426,7 +1426,19 @@ function startRecording(stream) {
     recordedAudioBlob = null;
 
     // Configurar MediaRecorder
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+    // Usar codecs soportados por WhatsApp Business API
+    let mimeType;
+    if (MediaRecorder.isTypeSupported('audio/ogg; codecs=opus')) {
+        mimeType = 'audio/ogg; codecs=opus';
+    } else if (MediaRecorder.isTypeSupported('audio/webm; codecs=opus')) {
+        mimeType = 'audio/webm; codecs=opus';
+    } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm';
+    } else {
+        mimeType = 'audio/ogg';
+    }
+
+    console.log('🎤 Grabando con formato:', mimeType);
     mediaRecorder = new MediaRecorder(stream, { mimeType });
 
     mediaRecorder.ondataavailable = (event) => {
@@ -1503,7 +1515,12 @@ window.sendVoiceMessage = async function() {
     // IMPORTANTE: Guardar referencias ANTES de cerrar el modal
     const audioToSend = recordedAudioBlob;
     const audioSize = recordedAudioBlob.size;
-    const filename = `audio_${Date.now()}.webm`;
+
+    // Determinar extensión correcta basada en el mimeType del blob
+    // WhatsApp acepta: .ogg (opus), .mp3, .m4a, .aac
+    // Forzar .ogg para compatibilidad
+    const extension = 'ogg';
+    const filename = `audio_${Date.now()}.${extension}`;
 
     let progressInterval = null;
 
