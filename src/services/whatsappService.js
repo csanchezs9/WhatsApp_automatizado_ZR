@@ -465,6 +465,12 @@ const sendAudio = async (to, mediaId, caption = null) => {
       }
     };
 
+    console.log('🎤 sendAudio() - Preparando envío de audio:');
+    console.log('   → Destino:', to);
+    console.log('   → Media ID:', mediaId);
+    console.log('   → API URL:', WHATSAPP_API_URL);
+    console.log('   → Payload:', JSON.stringify(payload, null, 2));
+
     // Los audios NO soportan caption en WhatsApp Business API
     // Si se proporciona caption, se ignora silenciosamente
 
@@ -480,10 +486,14 @@ const sendAudio = async (to, mediaId, caption = null) => {
       }
     ));
 
-    console.log('✅ Audio enviado:', response.data);
+    console.log('✅ Audio enviado exitosamente a WhatsApp');
+    console.log('   → Respuesta:', JSON.stringify(response.data, null, 2));
     return response.data;
   } catch (error) {
-    console.error('❌ Error enviando audio:', error.response?.data || error.message);
+    console.error('❌ ERROR CRÍTICO enviando audio a WhatsApp:');
+    console.error('   → Error message:', error.message);
+    console.error('   → Error response:', JSON.stringify(error.response?.data, null, 2));
+    console.error('   → Status code:', error.response?.status);
     throw error;
   }
 };

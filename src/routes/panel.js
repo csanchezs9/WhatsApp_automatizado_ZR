@@ -612,7 +612,11 @@ router.post('/send-media', authMiddleware, async (req, res) => {
             await whatsappService.sendImage(phoneNumber, mediaId, caption);
         } else if (messageType === 'audio') {
             console.log('🎤 Enviando audio a WhatsApp...');
-            await whatsappService.sendAudio(phoneNumber, mediaId, caption);
+            console.log(`   → Número destino: ${phoneNumber}`);
+            console.log(`   → Media ID: ${mediaId}`);
+            console.log(`   → Tipo de mensaje: ${messageType}`);
+            const audioResult = await whatsappService.sendAudio(phoneNumber, mediaId, caption);
+            console.log('✅ Respuesta de WhatsApp para audio:', JSON.stringify(audioResult, null, 2));
         } else {
             console.log('📄 Enviando documento a WhatsApp...');
             await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'documento', caption);
