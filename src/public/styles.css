@@ -758,19 +758,26 @@ body {
     text-align: center;
     color: var(--text-secondary);
     z-index: 1;
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
 }
 
 .no-selection h2 {
     font-size: 24px;
     color: var(--text-primary);
     margin-bottom: 12px;
+    margin-top: 0;
     font-weight: 400;
+    line-height: 1.4;
 }
 
 .no-selection p {
     font-size: 14px;
     color: var(--text-secondary);
     max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.6;
 }
 
 #chat-container {
@@ -1427,6 +1434,14 @@ body {
 
     .stat-label, .stat-value {
         font-size: 12px;
+    }
+
+    .no-selection h2 {
+        font-size: 20px;
+    }
+
+    .no-selection p {
+        font-size: 13px;
     }
 }
 
