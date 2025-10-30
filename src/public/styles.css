@@ -1876,14 +1876,46 @@ body {
     color: var(--accent-primary);
 }
 
+/* Contenedor con scroll para conversaciones pesadas */
+.heavy-conversations-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.heavy-conversations-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.heavy-conversations-container::-webkit-scrollbar-track {
+    background: var(--input-bg);
+    border-radius: 4px;
+}
+
+.heavy-conversations-container::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 4px;
+}
+
+.heavy-conversations-container::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
+}
+
 .heavy-conversation-item {
     background: var(--input-bg);
-    padding: 14px;
+    padding: 16px;
     border-radius: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.heavy-conversation-item:hover {
+    border-color: var(--accent-primary);
+    transform: translateX(4px);
 }
 
 .heavy-conversation-item:last-child {
@@ -1895,22 +1927,25 @@ body {
 }
 
 .heavy-conversation-phone {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 
 .heavy-conversation-details {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-secondary);
+    line-height: 1.5;
 }
 
 .heavy-conversation-size {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     color: #ef4444;
-    margin-left: 12px;
+    margin-left: 16px;
+    min-width: 80px;
+    text-align: right;
 }
 
 .alert-box {

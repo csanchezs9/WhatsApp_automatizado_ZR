@@ -1053,7 +1053,8 @@ async function loadSystemInfo() {
                 </div>
             `).join('');
 
-            heavyConversationsInfo.innerHTML = conversationsHtml;
+            // Envolver en contenedor con scroll
+            heavyConversationsInfo.innerHTML = `<div class="heavy-conversations-container">${conversationsHtml}</div>`;
         }
 
     } catch (error) {

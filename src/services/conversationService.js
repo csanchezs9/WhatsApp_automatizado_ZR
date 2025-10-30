@@ -789,7 +789,13 @@ function getSystemInfo() {
 
                                     messages.forEach(msg => {
                                         if (msg.mediaPath && ['image', 'document', 'audio', 'video'].includes(msg.type)) {
-                                            const mediaPath = path.join(mediaDir, msg.mediaPath.replace('media/', ''));
+                                            // Extraer solo el nombre del archivo
+                                            const filename = msg.mediaPath.includes('/')
+                                                ? msg.mediaPath.split('/').pop()
+                                                : msg.mediaPath;
+
+                                            const mediaPath = path.join(mediaDir, filename);
+
                                             if (fs.existsSync(mediaPath)) {
                                                 const stats = fs.statSync(mediaPath);
                                                 mediaSize += stats.size;
@@ -798,7 +804,7 @@ function getSystemInfo() {
                                         }
                                     });
                                 } catch (err) {
-                                    // Ignorar errores
+                                    console.error(`⚠️ Error procesando multimedia para ${conv.phone_number}:`, err.message);
                                 }
 
                                 return {
@@ -833,7 +839,7 @@ function getSystemInfo() {
                                     activeInMemory: activeConversations.size,
                                     totalMediaFiles: mediaFileCount
                                 },
-                                heavyConversations: conversationsWithSize.slice(0, 5).map(conv => ({
+                                heavyConversations: conversationsWithSize.slice(0, 10).map(conv => ({
                                     phoneNumber: conv.phoneNumber,
                                     messageCount: conv.messageCount,
                                     mediaCount: conv.mediaCount,
