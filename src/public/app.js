@@ -905,6 +905,140 @@ imageCaption.addEventListener('input', () => {
     captionCharCount.textContent = imageCaption.value.length;
 });
 
+// ============================================
+// SYSTEM INFO MODAL
+// ============================================
+
+window.openSystemInfoModal = async function() {
+    dropdownMenu.classList.remove('show');
+    const modal = document.getElementById('system-info-modal');
+    modal.classList.add('show');
+    await loadSystemInfo();
+};
+
+window.closeSystemInfoModal = function() {
+    const modal = document.getElementById('system-info-modal');
+    modal.classList.remove('show');
+};
+
+window.refreshSystemInfo = async function() {
+    await loadSystemInfo();
+};
+
+async function loadSystemInfo() {
+    const diskUsageInfo = document.getElementById('disk-usage-info');
+    const generalStatsInfo = document.getElementById('general-stats-info');
+    const heavyConversationsInfo = document.getElementById('heavy-conversations-info');
+
+    // Mostrar loading
+    diskUsageInfo.innerHTML = '<p class="loading">Cargando...</p>';
+    generalStatsInfo.innerHTML = '<p class="loading">Cargando...</p>';
+    heavyConversationsInfo.innerHTML = '<p class="loading">Cargando...</p>';
+
+    try {
+        const response = await fetch('/api/system-info', {
+            headers: {
+                'Authorization': `Basic ${currentAuth}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al cargar información del sistema');
+        }
+
+        const data = await response.json();
+        const info = data.systemInfo;
+
+        // 1. DISK USAGE
+        const diskPercentage = parseFloat(info.diskUsage.usagePercentage || 0);
+        const totalSizeMB = parseFloat(info.diskUsage.totalSizeMB);
+        const dbSizeMB = parseFloat(info.diskUsage.dbSizeMB);
+        const mediaSizeMB = parseFloat(info.diskUsage.mediaSizeMB);
+
+        let barClass = '';
+        let alertHtml = '';
+
+        if (diskPercentage > 90) {
+            barClass = 'danger';
+            alertHtml = '<div class="alert-box"><p>⚠️ <strong>Advertencia:</strong> El disco está casi lleno. Considera eliminar conversaciones pesadas.</p></div>';
+        } else if (diskPercentage > 75) {
+            barClass = 'warning';
+            alertHtml = '<div class="alert-box warning"><p>⚠️ Espacio en disco por encima del 75%. Revisa las conversaciones pesadas.</p></div>';
+        } else {
+            alertHtml = '<div class="alert-box info"><p>✅ Espacio en disco en niveles normales.</p></div>';
+        }
+
+        diskUsageInfo.innerHTML = `
+            ${alertHtml}
+            <div class="disk-stats-grid">
+                <div class="disk-stat-item">
+                    <div class="disk-stat-label">Total Usado</div>
+                    <div class="disk-stat-value">${totalSizeMB} MB</div>
+                </div>
+                <div class="disk-stat-item">
+                    <div class="disk-stat-label">Base de Datos</div>
+                    <div class="disk-stat-value">${dbSizeMB} MB</div>
+                </div>
+                <div class="disk-stat-item">
+                    <div class="disk-stat-label">Archivos Multimedia</div>
+                    <div class="disk-stat-value">${mediaSizeMB} MB</div>
+                </div>
+                <div class="disk-stat-item">
+                    <div class="disk-stat-label">Total de Archivos</div>
+                    <div class="disk-stat-value">${info.diskUsage.mediaFileCount}</div>
+                </div>
+            </div>
+        `;
+
+        // 2. GENERAL STATS
+        generalStatsInfo.innerHTML = `
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-label">Total Conversaciones</div>
+                    <div class="stat-card-value">${info.statistics.totalConversations}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-label">Últimos 7 días</div>
+                    <div class="stat-card-value">${info.statistics.last7Days}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-label">Activas en Memoria</div>
+                    <div class="stat-card-value">${info.statistics.activeInMemory}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-label">Archivos Multimedia</div>
+                    <div class="stat-card-value">${info.statistics.totalMediaFiles}</div>
+                </div>
+            </div>
+        `;
+
+        // 3. HEAVY CONVERSATIONS
+        if (info.heavyConversations.length === 0) {
+            heavyConversationsInfo.innerHTML = '<p class="modal-description">No hay conversaciones pesadas en este momento.</p>';
+        } else {
+            const conversationsHtml = info.heavyConversations.map(conv => `
+                <div class="heavy-conversation-item">
+                    <div class="heavy-conversation-info">
+                        <div class="heavy-conversation-phone">${conv.phoneNumber}</div>
+                        <div class="heavy-conversation-details">
+                            ${conv.messageCount} mensajes • ${conv.mediaCount} archivos multimedia
+                        </div>
+                    </div>
+                    <div class="heavy-conversation-size">${conv.totalSizeMB} MB</div>
+                </div>
+            `).join('');
+
+            heavyConversationsInfo.innerHTML = conversationsHtml;
+        }
+
+    } catch (error) {
+        console.error('Error al cargar información del sistema:', error);
+        diskUsageInfo.innerHTML = '<p class="modal-description" style="color: #ef4444;">Error al cargar información del disco</p>';
+        generalStatsInfo.innerHTML = '<p class="modal-description" style="color: #ef4444;">Error al cargar estadísticas</p>';
+        heavyConversationsInfo.innerHTML = '<p class="modal-description" style="color: #ef4444;">Error al cargar conversaciones</p>';
+    }
+}
+
 // Funciones para el modal de preview de imagen
 window.closeImagePreviewModal = function() {
     imagePreviewModal.classList.remove('show');

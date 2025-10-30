@@ -1774,6 +1774,171 @@ body {
 }
 
 /* ============================================
+   SYSTEM INFO MODAL
+   ============================================ */
+.system-info-section {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.system-info-section:last-child {
+    border-bottom: none;
+}
+
+.system-info-section h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.disk-usage-bar {
+    width: 100%;
+    height: 24px;
+    background: var(--input-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 12px 0;
+    position: relative;
+}
+
+.disk-usage-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #059669);
+    transition: width 0.5s ease, background 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.disk-usage-fill.warning {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.disk-usage-fill.danger {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.disk-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.disk-stat-item {
+    background: var(--input-bg);
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.disk-stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.disk-stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.stat-card {
+    background: var(--input-bg);
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-card-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.stat-card-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+.heavy-conversation-item {
+    background: var(--input-bg);
+    padding: 14px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.heavy-conversation-item:last-child {
+    margin-bottom: 0;
+}
+
+.heavy-conversation-info {
+    flex: 1;
+}
+
+.heavy-conversation-phone {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.heavy-conversation-details {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.heavy-conversation-size {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ef4444;
+    margin-left: 12px;
+}
+
+.alert-box {
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 4px solid #ef4444;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.alert-box.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-left-color: #f59e0b;
+}
+
+.alert-box.info {
+    background: rgba(33, 150, 243, 0.1);
+    border-left-color: #2196f3;
+}
+
+.alert-box p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+/* ============================================
    CUSTOM MODALS (Alertas y confirmaciones personalizadas)
    ============================================ */
 .custom-modal-overlay {

@@ -111,8 +111,11 @@
                         </svg>
                     </button>
                     <div id="dropdown-menu" class="dropdown-menu">
+                        <button class="dropdown-item" onclick="openSystemInfoModal()">
+                            📊 Información del Sistema
+                        </button>
                         <button class="dropdown-item" onclick="openPromotionsModal()">
-                            Actualizar Promociones
+                            🔥 Actualizar Promociones
                         </button>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-item theme-toggle-item">
@@ -123,7 +126,7 @@
                             </label>
                         </div>
                         <button class="dropdown-item" onclick="doLogout()">
-                            Cerrar Sesión
+                            🚪 Cerrar Sesión
                         </button>
                     </div>
                 </div>
@@ -230,6 +233,48 @@
                         <button class="btn-secondary" onclick="closePromotionsModal()">Cancelar</button>
                         <button class="btn-primary" onclick="savePromotion()">Guardar</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de información del sistema -->
+        <div id="system-info-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>📊 Información del Sistema</h2>
+                    <button class="close-modal" onclick="closeSystemInfoModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="system-info-section">
+                        <h3>📝 Acerca del Sistema</h3>
+                        <p class="modal-description">
+                            Este panel te permite gestionar conversaciones de WhatsApp en tiempo real.
+                            Las conversaciones se almacenan durante 20 días y luego se eliminan automáticamente
+                            junto con sus archivos multimedia para ahorrar espacio en disco.
+                        </p>
+                    </div>
+
+                    <div class="system-info-section">
+                        <h3>💾 Uso de Disco</h3>
+                        <div id="disk-usage-info" class="loading">Cargando...</div>
+                    </div>
+
+                    <div class="system-info-section">
+                        <h3>📊 Estadísticas Generales</h3>
+                        <div id="general-stats-info" class="loading">Cargando...</div>
+                    </div>
+
+                    <div class="system-info-section">
+                        <h3>⚠️ Conversaciones Pesadas</h3>
+                        <p class="modal-description">
+                            Estas conversaciones ocupan más espacio en disco. Considera eliminarlas si necesitas liberar espacio.
+                        </p>
+                        <div id="heavy-conversations-info" class="loading">Cargando...</div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeSystemInfoModal()">Cerrar</button>
+                    <button class="btn-primary" onclick="refreshSystemInfo()">🔄 Actualizar</button>
                 </div>
             </div>
         </div>

@@ -374,6 +374,23 @@ router.get('/statistics', authMiddleware, async (req, res) => {
 });
 
 /**
+ * GET /api/system-info
+ * Obtener información del sistema (uso de disco, conversaciones pesadas, etc.)
+ */
+router.get('/system-info', authMiddleware, async (req, res) => {
+    try {
+        const systemInfo = await conversationService.getSystemInfo();
+        res.json({
+            success: true,
+            systemInfo
+        });
+    } catch (error) {
+        console.error('Error al obtener información del sistema:', error);
+        res.status(500).json({ error: 'Error al obtener información del sistema' });
+    }
+});
+
+/**
  * GET /api/promotions
  * Obtener el mensaje actual de promociones
  */

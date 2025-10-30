@@ -718,6 +718,139 @@ process.on('SIGINT', () => {
     });
 });
 
+/**
+ * Obtener información detallada del sistema
+ */
+function getSystemInfo() {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const fs = require('fs');
+            const path = require('path');
+
+            // 1. Calcular uso de disco de archivos multimedia
+            const mediaDir = process.env.NODE_ENV === 'production'
+                ? '/opt/render/project/src/media'
+                : path.join(__dirname, '../media');
+
+            let totalMediaSize = 0;
+            let mediaFileCount = 0;
+
+            if (fs.existsSync(mediaDir)) {
+                const files = fs.readdirSync(mediaDir);
+                for (const file of files) {
+                    try {
+                        const filePath = path.join(mediaDir, file);
+                        const stats = fs.statSync(filePath);
+                        if (stats.isFile()) {
+                            totalMediaSize += stats.size;
+                            mediaFileCount++;
+                        }
+                    } catch (err) {
+                        // Ignorar archivos que no se pueden leer
+                    }
+                }
+            }
+
+            // 2. Obtener estadísticas de base de datos
+            db.get(
+                `SELECT
+                    COUNT(*) as total_conversations,
+                    COUNT(CASE WHEN started_at >= datetime('now', '-7 days') THEN 1 END) as last_7_days,
+                    SUM(LENGTH(messages)) as total_db_size_bytes
+                 FROM conversations`,
+                (err, dbStats) => {
+                    if (err) {
+                        return reject(err);
+                    }
+
+                    // 3. Obtener conversaciones más pesadas
+                    db.all(
+                        `SELECT
+                            phone_number,
+                            messages,
+                            LENGTH(messages) as message_size,
+                            json_array_length(messages) as message_count,
+                            started_at
+                         FROM conversations
+                         ORDER BY message_size DESC
+                         LIMIT 10`,
+                        (err, heavyConversations) => {
+                            if (err) {
+                                return reject(err);
+                            }
+
+                            // Calcular tamaño de archivos multimedia por conversación
+                            const conversationsWithSize = heavyConversations.map(conv => {
+                                let mediaSize = 0;
+                                let mediaCount = 0;
+
+                                try {
+                                    const messages = JSON.parse(conv.messages || '[]');
+
+                                    messages.forEach(msg => {
+                                        if (msg.mediaPath && ['image', 'document', 'audio', 'video'].includes(msg.type)) {
+                                            const mediaPath = path.join(mediaDir, msg.mediaPath.replace('media/', ''));
+                                            if (fs.existsSync(mediaPath)) {
+                                                const stats = fs.statSync(mediaPath);
+                                                mediaSize += stats.size;
+                                                mediaCount++;
+                                            }
+                                        }
+                                    });
+                                } catch (err) {
+                                    // Ignorar errores
+                                }
+
+                                return {
+                                    phoneNumber: conv.phone_number,
+                                    messageCount: conv.message_count,
+                                    messageSize: conv.message_size,
+                                    mediaSize,
+                                    mediaCount,
+                                    totalSize: conv.message_size + mediaSize,
+                                    startedAt: conv.started_at
+                                };
+                            });
+
+                            // Ordenar por tamaño total
+                            conversationsWithSize.sort((a, b) => b.totalSize - a.totalSize);
+
+                            // Calcular uso total del disco
+                            const totalDiskUsage = (dbStats.total_db_size_bytes || 0) + totalMediaSize;
+                            const usagePercentage = 0; // No podemos calcular sin conocer el tamaño total del disco
+
+                            resolve({
+                                diskUsage: {
+                                    totalSizeMB: (totalDiskUsage / (1024 * 1024)).toFixed(2),
+                                    dbSizeMB: ((dbStats.total_db_size_bytes || 0) / (1024 * 1024)).toFixed(2),
+                                    mediaSizeMB: (totalMediaSize / (1024 * 1024)).toFixed(2),
+                                    mediaFileCount,
+                                    usagePercentage
+                                },
+                                statistics: {
+                                    totalConversations: dbStats.total_conversations || 0,
+                                    last7Days: dbStats.last_7_days || 0,
+                                    activeInMemory: activeConversations.size,
+                                    totalMediaFiles: mediaFileCount
+                                },
+                                heavyConversations: conversationsWithSize.slice(0, 5).map(conv => ({
+                                    phoneNumber: conv.phoneNumber,
+                                    messageCount: conv.messageCount,
+                                    mediaCount: conv.mediaCount,
+                                    totalSizeMB: (conv.totalSize / (1024 * 1024)).toFixed(2),
+                                    startedAt: conv.startedAt
+                                }))
+                            });
+                        }
+                    );
+                }
+            );
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
 module.exports = {
     addMessage,
     getActiveConversation,
@@ -728,6 +861,7 @@ module.exports = {
     searchConversations,
     cleanupOldConversations,
     getStatistics,
+    getSystemInfo,
     saveConversationToDB,
     loadActiveConversationsFromDB,
     // Nuevas funciones para sesiones
