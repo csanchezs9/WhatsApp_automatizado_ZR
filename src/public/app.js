@@ -962,14 +962,19 @@ function showFileLoader(filename, filesize) {
 
     loader.style.display = 'flex';
 
-    // Simular progreso (ya que fetch no da progreso real sin XMLHttpRequest)
+    // Simular progreso lineal y suave
     let progress = 0;
     const interval = setInterval(() => {
-        progress += Math.random() * 15;
-        if (progress > 90) progress = 90; // No llegar a 100% hasta que termine
+        // Incremento progresivo que disminuye cerca del final (más realista)
+        const increment = progress < 50 ? 3 : progress < 70 ? 2 : progress < 85 ? 1.5 : 0.5;
+        progress += increment;
+
+        // No pasar del 90% hasta que termine
+        if (progress > 90) progress = 90;
+
         progressFill.style.width = `${progress}%`;
         progressText.textContent = `${Math.floor(progress)}%`;
-    }, 300);
+    }, 200);
 
     return interval;
 }
