@@ -1481,7 +1481,17 @@ function showVoicePreview(blob) {
 }
 
 window.sendVoiceMessage = async function() {
-    if (!recordedAudioBlob || !currentConversation) return;
+    if (!recordedAudioBlob || !currentConversation) {
+        console.error('❌ No hay audio grabado o conversación seleccionada');
+        return;
+    }
+
+    // IMPORTANTE: Guardar referencias ANTES de cerrar el modal
+    const audioToSend = recordedAudioBlob;
+    const audioSize = recordedAudioBlob.size;
+    const filename = `audio_${Date.now()}.webm`;
+
+    let progressInterval = null;
 
     try {
         voiceSendBtn.disabled = true;
@@ -1489,13 +1499,14 @@ window.sendVoiceMessage = async function() {
 
         // Crear FormData
         const formData = new FormData();
-        const filename = `audio_${Date.now()}.webm`;
-        formData.append('file', recordedAudioBlob, filename);
+        formData.append('file', audioToSend, filename);
         formData.append('phoneNumber', currentConversation);
 
-        // Mostrar loader
+        // Cerrar modal DESPUÉS de guardar referencias
         closeVoiceModal();
-        const progressInterval = showFileLoader(filename, recordedAudioBlob.size);
+
+        // Mostrar loader
+        progressInterval = showFileLoader(filename, audioSize);
 
         // Upload audio
         const uploadResponse = await fetch('/api/upload-media', {
@@ -1559,7 +1570,12 @@ window.sendVoiceMessage = async function() {
         console.log('✅ Audio enviado correctamente');
     } catch (error) {
         console.error('Error al enviar audio:', error);
-        hideFileLoader(progressInterval);
+
+        // Cerrar loader solo si se creó
+        if (progressInterval) {
+            hideFileLoader(progressInterval);
+        }
+
         alert(`❌ Error al enviar el audio:\n\n${error.message}`);
     } finally {
         voiceSendBtn.disabled = false;
