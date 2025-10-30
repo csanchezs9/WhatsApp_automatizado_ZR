@@ -2,4 +2,24 @@ node_modules/
 .env
 *.log
 .DS_Store
-package-lock.json
+
+# Test coverage
+coverage/
+__tests__/
+*.test.js
+
+# OS specific
+.DS_Store
+Thumbs.db
+nul
+
+# Development
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+
+# Temporary files
+tmp/
+temp/
