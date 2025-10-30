@@ -114,10 +114,20 @@ function getActiveConversation(phoneNumber) {
 
 /**
  * Obtener todas las conversaciones activas
+ * @param {boolean} onlyWithAdvisor - Si es true, solo retorna conversaciones en modo asesor
  */
-function getAllActiveConversations() {
-    return Array.from(activeConversations.values())
-        .sort((a, b) => b.lastActivity - a.lastActivity);
+function getAllActiveConversations(onlyWithAdvisor = false) {
+    let conversations = Array.from(activeConversations.values());
+
+    // Si solo queremos conversaciones con asesor, filtrar
+    if (onlyWithAdvisor) {
+        const { isUserWithAdvisor } = require('./menuService');
+        conversations = conversations.filter(conv => {
+            return isUserWithAdvisor(conv.phoneNumber);
+        });
+    }
+
+    return conversations.sort((a, b) => b.lastActivity - a.lastActivity);
 }
 
 /**

@@ -78,11 +78,12 @@ function authMiddleware(req, res, next) {
 
 /**
  * GET /api/conversations
- * Obtener todas las conversaciones activas
+ * Obtener SOLO conversaciones en modo asesor (no muestra usuarios solo en menú)
  */
 router.get('/conversations', authMiddleware, (req, res) => {
     try {
-        const conversations = conversationService.getAllActiveConversations();
+        // onlyWithAdvisor = true → Solo conversaciones donde el usuario está con asesor
+        const conversations = conversationService.getAllActiveConversations(true);
         res.json({
             success: true,
             total: conversations.length,
