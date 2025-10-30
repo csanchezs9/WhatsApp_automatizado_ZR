@@ -26,7 +26,7 @@ const upload = multer({
         fileSize: 16 * 1024 * 1024 // 16MB max (WhatsApp limit)
     },
     fileFilter: (req, file, cb) => {
-        // Permitir imágenes, PDFs, documentos comunes
+        // Permitir imágenes, PDFs, documentos comunes y AUDIO
         const allowedMimes = [
             'image/jpeg', 'image/png', 'image/gif', 'image/webp',
             'application/pdf',
@@ -34,13 +34,17 @@ const upload = multer({
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/vnd.ms-excel',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'text/plain'
+            'text/plain',
+            // Tipos de audio
+            'audio/ogg', 'audio/oga', 'audio/opus',
+            'audio/webm', 'audio/wav', 'audio/mp3', 'audio/mpeg',
+            'audio/mp4', 'audio/aac', 'audio/m4a'
         ];
 
         if (allowedMimes.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error('Tipo de archivo no permitido'));
+            cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}`));
         }
     }
 });
@@ -484,9 +488,18 @@ router.post('/upload-media', authMiddleware, upload.single('file'), async (req, 
         }
 
         const relativePath = `media/${req.file.filename}`;
-        const fileType = req.file.mimetype.startsWith('image/') ? 'image' : 'document';
 
-        console.log(`✅ Archivo subido desde panel: ${req.file.filename} (tipo: ${fileType})`);
+        // Determinar tipo de archivo
+        let fileType;
+        if (req.file.mimetype.startsWith('image/')) {
+            fileType = 'image';
+        } else if (req.file.mimetype.startsWith('audio/')) {
+            fileType = 'audio';
+        } else {
+            fileType = 'document';
+        }
+
+        console.log(`✅ Archivo subido desde panel: ${req.file.filename} (tipo: ${fileType}, mime: ${req.file.mimetype})`);
 
         res.json({
             success: true,

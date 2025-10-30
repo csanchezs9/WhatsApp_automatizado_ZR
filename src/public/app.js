@@ -342,6 +342,14 @@ function updateTextareaState(isWithAdvisor) {
     sendBtn.disabled = !enabled;
     attachBtn.disabled = !enabled;
 
+    // Deshabilitar también el botón de voz
+    const voiceBtn = document.getElementById('voice-btn');
+    if (voiceBtn) {
+        voiceBtn.disabled = !enabled;
+        voiceBtn.style.opacity = enabled ? '1' : '0.5';
+        voiceBtn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+    }
+
     if (!enabled) {
         messageInput.placeholder = '⚠️ El cliente no está en modo asesor. No puedes enviar mensajes.';
         messageInput.value = '';
@@ -1394,6 +1402,12 @@ const voicePreviewDuration = document.getElementById('voice-preview-duration');
 voiceBtn.addEventListener('click', async () => {
     if (!currentConversation) {
         alert('Selecciona una conversación primero');
+        return;
+    }
+
+    // Validar que esté habilitado (modo asesor)
+    if (voiceBtn.disabled) {
+        alert('⚠️ No se puede grabar audio.\n\nEl cliente no está en modo asesor. Debe seleccionar "Hablar con asesor" primero desde el menú de WhatsApp.');
         return;
     }
 
