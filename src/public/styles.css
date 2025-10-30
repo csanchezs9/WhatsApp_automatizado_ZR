@@ -2740,6 +2740,38 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
     color: var(--text-primary);
 }
 
+/* Estilos para inputs del formulario de etiquetas */
+.label-form-container input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.label-form-container input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.label-form-container input[type="text"]::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+.label-form-container label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
 /* Vista previa de color random */
 .color-preview-box {
     display: flex;
@@ -2911,6 +2943,7 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
     gap: 8px;
     max-height: 400px;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .label-selector-item {
