@@ -81,19 +81,17 @@
                     </button>
                     <div id="dropdown-menu" class="dropdown-menu">
                         <button class="dropdown-item" onclick="openPromotionsModal()">
-                            <span>🔥</span> Actualizar Promociones
+                            Actualizar Promociones
                         </button>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-item theme-toggle-item">
-                            <span>🌓</span>
-                            <span>Tema</span>
                             <label class="theme-switch">
                                 <input type="checkbox" id="theme-toggle-checkbox">
                                 <span class="theme-slider"></span>
                             </label>
                         </div>
                         <button class="dropdown-item" onclick="doLogout()">
-                            <span>🚪</span> Cerrar Sesión
+                            Cerrar Sesión
                         </button>
                     </div>
                 </div>
@@ -115,7 +113,7 @@
 
             <div class="chat-area">
                 <div id="no-conversation-selected" class="no-selection">
-                    <h2>📱 Selecciona una conversación</h2>
+                    <h2>Selecciona una conversación</h2>
                     <p>Elige una conversación de la lista para ver los mensajes</p>
                 </div>
 
@@ -129,7 +127,8 @@
                             <span id="chat-status" class="chat-status-badge">Activa</span>
                         </div>
                         <div class="chat-actions">
-                            <button id="finalize-btn" class="action-btn warning">✅ Finalizar</button>
+                            <button id="finalize-btn" class="action-btn success">Finalizar Conversación</button>
+                            <button id="delete-btn" class="action-btn danger">Eliminar Conversación</button>
                         </div>
                     </div>
 
@@ -163,7 +162,7 @@
         <div id="promotions-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>🔥 Actualizar Promociones</h2>
+                    <h2>Actualizar Promociones</h2>
                     <button class="close-modal" onclick="closePromotionsModal()">✕</button>
                 </div>
                 <div class="modal-body">
@@ -183,7 +182,7 @@
                     </div>
                     <div class="modal-actions">
                         <button class="btn-secondary" onclick="closePromotionsModal()">Cancelar</button>
-                        <button class="btn-primary" onclick="savePromotion()">💾 Guardar</button>
+                        <button class="btn-primary" onclick="savePromotion()">Guardar</button>
                     </div>
                 </div>
             </div>
@@ -193,7 +192,7 @@
         <div id="image-preview-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>📎 Enviar Archivo</h2>
+                    <h2>Enviar Archivo</h2>
                     <button class="close-modal" onclick="closeImagePreviewModal()">✕</button>
                 </div>
                 <div class="modal-body">
@@ -214,7 +213,7 @@
                     </div>
                     <div class="modal-actions">
                         <button class="btn-secondary" onclick="closeImagePreviewModal()">Cancelar</button>
-                        <button class="btn-primary" onclick="confirmSendImage()">📤 Enviar</button>
+                        <button class="btn-primary" onclick="confirmSendImage()">Enviar</button>
                     </div>
                 </div>
             </div>
