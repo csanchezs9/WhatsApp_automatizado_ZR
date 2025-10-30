@@ -2181,6 +2181,11 @@ body {
     filter: brightness(0.9);
 }
 
+/* Ocultar botón de descarga */
+.message-audio-player::-webkit-media-controls-download-button {
+    display: none !important;
+}
+
 .message-audio-player::-webkit-media-controls-current-time-display,
 .message-audio-player::-webkit-media-controls-time-remaining-display {
     display: none !important;

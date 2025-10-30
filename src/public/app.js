@@ -463,6 +463,7 @@ function addMessageToChat(message) {
         const audioPlayer = document.createElement('audio');
         audioPlayer.className = 'message-audio-player';
         audioPlayer.controls = true;
+        audioPlayer.controlsList = 'nodownload';
         audioPlayer.src = `/api/media/${message.mediaPath.split('/')[1]}`;
 
         audioDiv.appendChild(iconDiv);
