@@ -869,6 +869,14 @@ body {
     background: #dc2626;
 }
 
+.action-btn.success {
+    background: #10b981;
+}
+
+.action-btn.success:hover {
+    background: #059669;
+}
+
 /* ============================================
    MESSAGES CONTAINER
    ============================================ */
@@ -1655,5 +1663,175 @@ body {
 
     .login-box h2 {
         font-size: 24px;
+    }
+}
+
+/* ============================================
+   CUSTOM MODALS (Alertas y confirmaciones personalizadas)
+   ============================================ */
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.custom-modal-overlay.show {
+    opacity: 1;
+}
+
+.custom-modal {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    overflow: hidden;
+}
+
+.custom-modal-alert {
+    text-align: center;
+}
+
+.custom-modal-icon {
+    padding: 30px 30px 10px;
+    display: flex;
+    justify-content: center;
+}
+
+.custom-modal-header {
+    padding: 24px 24px 12px;
+}
+
+.custom-modal-alert .custom-modal-header {
+    padding: 12px 24px 12px;
+}
+
+.custom-modal-header h3 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.custom-modal-body {
+    padding: 0 24px 24px;
+}
+
+.custom-modal-message {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.custom-modal-description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.custom-modal-footer {
+    padding: 16px 24px 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.custom-modal-alert .custom-modal-footer {
+    justify-content: center;
+}
+
+.custom-modal-btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+}
+
+.custom-modal-btn-primary {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.custom-modal-btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+.custom-modal-btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.custom-modal-btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.custom-modal-btn-secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+}
+
+.custom-modal-btn-secondary:hover {
+    background: var(--conversation-hover);
+    border-color: var(--text-tertiary);
+}
+
+.custom-modal-btn:active {
+    transform: translateY(0);
+}
+
+/* Responsive para modales personalizados */
+@media (max-width: 480px) {
+    .custom-modal {
+        width: 95%;
+        max-width: 95%;
+    }
+
+    .custom-modal-header h3 {
+        font-size: 18px;
+    }
+
+    .custom-modal-message {
+        font-size: 14px;
+    }
+
+    .custom-modal-description {
+        font-size: 13px;
+    }
+
+    .custom-modal-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+        min-width: 100px;
+    }
+
+    .custom-modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    .custom-modal-footer .custom-modal-btn {
+        width: 100%;
     }
 }

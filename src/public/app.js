@@ -237,6 +237,15 @@ function connectWebSocket() {
         }
     });
 
+    socket.on('conversation_deleted', (data) => {
+        console.log('🗑️ Conversación eliminada:', data);
+        loadConversations();
+        if (currentConversation === data.phoneNumber) {
+            currentConversation = null;
+            showNoConversation();
+        }
+    });
+
     socket.on('advisor_mode_activated', (data) => {
         console.log('✅ Modo asesor activado:', data);
         // Habilitar textarea inmediatamente cuando se activa modo asesor
@@ -597,31 +606,108 @@ backToListBtn.addEventListener('click', () => {
 finalizeBtn.addEventListener('click', async () => {
     if (!currentConversation) return;
 
-    if (confirm(`¿Finalizar conversación con ${currentConversation}?\n\nEsto desconectará al cliente del modo asesor y le permitirá usar el bot nuevamente.`)) {
-        try {
-            const response = await fetch(`/api/conversations/${currentConversation}/finalize`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Basic ${currentAuth}`
-                }
-            });
+    const formattedPhone = formatPhoneNumber(currentConversation);
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Error al finalizar');
+    const confirmed = await showCustomConfirm(
+        'Finalizar Conversación',
+        `¿Deseas finalizar la conversación con ${formattedPhone}?`,
+        'El cliente será desconectado del modo asesor y podrá usar el bot automático nuevamente. La conversación permanecerá visible en el panel.',
+        'Finalizar',
+        'Cancelar'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`/api/conversations/${currentConversation}/finalize`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${currentAuth}`
             }
+        });
 
-            alert('Conversación finalizada correctamente.\n\nEl cliente puede usar el bot nuevamente.');
-
-            // Deshabilitar input inmediatamente después de finalizar
-            updateTextareaState(false);
-
-            loadConversations();
-        } catch (error) {
-            console.error('Error al finalizar:', error);
-            alert(error.message || 'Error al finalizar conversación');
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Error al finalizar');
         }
+
+        await showCustomAlert(
+            'Conversación Finalizada',
+            `La conversación con ${formattedPhone} ha sido finalizada exitosamente.`,
+            'El cliente puede usar el bot nuevamente.',
+            'success'
+        );
+
+        // Deshabilitar input inmediatamente después de finalizar
+        updateTextareaState(false);
+
+        loadConversations();
+    } catch (error) {
+        console.error('Error al finalizar:', error);
+        await showCustomAlert(
+            'Error',
+            'No se pudo finalizar la conversación',
+            error.message || 'Ocurrió un error inesperado. Intenta nuevamente.',
+            'error'
+        );
+    }
+});
+
+// Delete conversation
+const deleteBtn = document.getElementById('delete-btn');
+deleteBtn.addEventListener('click', async () => {
+    if (!currentConversation) return;
+
+    const formattedPhone = formatPhoneNumber(currentConversation);
+
+    const confirmed = await showCustomConfirm(
+        'Eliminar Conversación',
+        `¿Estás seguro de eliminar PERMANENTEMENTE la conversación con ${formattedPhone}?`,
+        'Esta acción NO se puede deshacer. Se eliminará toda la conversación de la base de datos y todos los archivos multimedia asociados. El cliente NO recibirá ninguna notificación.',
+        'Eliminar',
+        'Cancelar',
+        true // isDangerous
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`/api/conversations/${currentConversation}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Basic ${currentAuth}`
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Error al eliminar');
+        }
+
+        const result = await response.json();
+
+        await showCustomAlert(
+            'Conversación Eliminada',
+            `La conversación con ${formattedPhone} ha sido eliminada permanentemente.`,
+            `Se eliminaron ${result.messageCount || 0} mensajes y ${result.deletedFiles || 0} archivos multimedia.`,
+            'success'
+        );
+
+        // Cerrar chat y volver a la lista
+        currentConversation = null;
+        chatContainer.style.display = 'none';
+        noConversationSelected.style.display = 'flex';
+
+        loadConversations();
+    } catch (error) {
+        console.error('Error al eliminar:', error);
+        await showCustomAlert(
+            'Error',
+            'No se pudo eliminar la conversación',
+            error.message || 'Ocurrió un error inesperado. Intenta nuevamente.',
+            'error'
+        );
     }
 });
 
@@ -937,6 +1023,132 @@ function formatPhoneNumber(phoneNumber) {
 
 function scrollToBottom() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// ============================================
+// CUSTOM MODALS (Alertas y confirmaciones profesionales)
+// ============================================
+
+/**
+ * Muestra un modal de confirmación personalizado
+ * @param {string} title - Título del modal
+ * @param {string} message - Mensaje principal
+ * @param {string} description - Descripción adicional
+ * @param {string} confirmText - Texto del botón confirmar
+ * @param {string} cancelText - Texto del botón cancelar
+ * @param {boolean} isDangerous - Si es una acción peligrosa (rojo)
+ * @returns {boolean} true si confirma, false si cancela
+ */
+function showCustomConfirm(title, message, description, confirmText, cancelText, isDangerous = false) {
+    return new Promise((resolve) => {
+        // Crear overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'custom-modal-overlay';
+
+        // Crear modal
+        const modal = document.createElement('div');
+        modal.className = 'custom-modal';
+        modal.innerHTML = `
+            <div class="custom-modal-header">
+                <h3>${title}</h3>
+            </div>
+            <div class="custom-modal-body">
+                <p class="custom-modal-message">${message}</p>
+                <p class="custom-modal-description">${description}</p>
+            </div>
+            <div class="custom-modal-footer">
+                <button class="custom-modal-btn custom-modal-btn-secondary" id="custom-cancel">${cancelText}</button>
+                <button class="custom-modal-btn custom-modal-btn-${isDangerous ? 'danger' : 'primary'}" id="custom-confirm">${confirmText}</button>
+            </div>
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // Animar entrada
+        setTimeout(() => {
+            overlay.classList.add('show');
+        }, 10);
+
+        // Event listeners
+        const handleConfirm = () => {
+            overlay.classList.remove('show');
+            setTimeout(() => overlay.remove(), 200);
+            resolve(true);
+        };
+
+        const handleCancel = () => {
+            overlay.classList.remove('show');
+            setTimeout(() => overlay.remove(), 200);
+            resolve(false);
+        };
+
+        document.getElementById('custom-confirm').addEventListener('click', handleConfirm);
+        document.getElementById('custom-cancel').addEventListener('click', handleCancel);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) handleCancel();
+        });
+    });
+}
+
+/**
+ * Muestra un modal de alerta personalizado
+ * @param {string} title - Título del modal
+ * @param {string} message - Mensaje principal
+ * @param {string} description - Descripción adicional
+ * @param {string} type - Tipo de alerta: 'success', 'error', 'warning', 'info'
+ */
+function showCustomAlert(title, message, description, type = 'info') {
+    return new Promise((resolve) => {
+        // Iconos según tipo
+        const icons = {
+            success: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+            error: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+            warning: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+            info: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+        };
+
+        // Crear overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'custom-modal-overlay';
+
+        // Crear modal
+        const modal = document.createElement('div');
+        modal.className = 'custom-modal custom-modal-alert';
+        modal.innerHTML = `
+            <div class="custom-modal-icon">${icons[type] || icons.info}</div>
+            <div class="custom-modal-header">
+                <h3>${title}</h3>
+            </div>
+            <div class="custom-modal-body">
+                <p class="custom-modal-message">${message}</p>
+                <p class="custom-modal-description">${description}</p>
+            </div>
+            <div class="custom-modal-footer">
+                <button class="custom-modal-btn custom-modal-btn-primary" id="custom-ok">Entendido</button>
+            </div>
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // Animar entrada
+        setTimeout(() => {
+            overlay.classList.add('show');
+        }, 10);
+
+        // Event listeners
+        const handleClose = () => {
+            overlay.classList.remove('show');
+            setTimeout(() => overlay.remove(), 200);
+            resolve();
+        };
+
+        document.getElementById('custom-ok').addEventListener('click', handleClose);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) handleClose();
+        });
+    });
 }
 
 // Auto-login si hay credenciales guardadas
