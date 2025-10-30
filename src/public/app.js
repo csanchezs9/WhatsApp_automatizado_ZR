@@ -667,7 +667,8 @@ deleteBtn.addEventListener('click', async () => {
         'Esta acción NO se puede deshacer. Se eliminará toda la conversación de la base de datos y todos los archivos multimedia asociados. El cliente NO recibirá ninguna notificación.',
         'Eliminar',
         'Cancelar',
-        true // isDangerous
+        true, // isDangerous
+        'ELIMINAR' // requireText - debe escribir "ELIMINAR" para confirmar
     );
 
     if (!confirmed) return;
@@ -1037,9 +1038,10 @@ function scrollToBottom() {
  * @param {string} confirmText - Texto del botón confirmar
  * @param {string} cancelText - Texto del botón cancelar
  * @param {boolean} isDangerous - Si es una acción peligrosa (rojo)
+ * @param {string} requireText - Texto que debe escribir el usuario para confirmar (opcional)
  * @returns {boolean} true si confirma, false si cancela
  */
-function showCustomConfirm(title, message, description, confirmText, cancelText, isDangerous = false) {
+function showCustomConfirm(title, message, description, confirmText, cancelText, isDangerous = false, requireText = null) {
     return new Promise((resolve) => {
         // Crear overlay
         const overlay = document.createElement('div');
@@ -1048,6 +1050,26 @@ function showCustomConfirm(title, message, description, confirmText, cancelText,
         // Crear modal
         const modal = document.createElement('div');
         modal.className = 'custom-modal';
+
+        // Si se requiere texto de confirmación, agregar input
+        const confirmInputHtml = requireText ? `
+            <div class="custom-modal-confirm-input-container">
+                <label class="custom-modal-confirm-label">
+                    Para confirmar, escribe <strong>${requireText}</strong> a continuación:
+                </label>
+                <input
+                    type="text"
+                    id="custom-confirm-input"
+                    class="custom-modal-confirm-input"
+                    placeholder="Escribe ${requireText} aquí"
+                    autocomplete="off"
+                >
+                <p class="custom-modal-confirm-hint" id="confirm-hint" style="display: none;">
+                    Debes escribir exactamente "${requireText}"
+                </p>
+            </div>
+        ` : '';
+
         modal.innerHTML = `
             <div class="custom-modal-header">
                 <h3>${title}</h3>
@@ -1055,10 +1077,11 @@ function showCustomConfirm(title, message, description, confirmText, cancelText,
             <div class="custom-modal-body">
                 <p class="custom-modal-message">${message}</p>
                 <p class="custom-modal-description">${description}</p>
+                ${confirmInputHtml}
             </div>
             <div class="custom-modal-footer">
                 <button class="custom-modal-btn custom-modal-btn-secondary" id="custom-cancel">${cancelText}</button>
-                <button class="custom-modal-btn custom-modal-btn-${isDangerous ? 'danger' : 'primary'}" id="custom-confirm">${confirmText}</button>
+                <button class="custom-modal-btn custom-modal-btn-${isDangerous ? 'danger' : 'primary'}" id="custom-confirm" ${requireText ? 'disabled' : ''}>${confirmText}</button>
             </div>
         `;
 
@@ -1068,7 +1091,48 @@ function showCustomConfirm(title, message, description, confirmText, cancelText,
         // Animar entrada
         setTimeout(() => {
             overlay.classList.add('show');
+            if (requireText) {
+                // Enfocar el input después de la animación
+                setTimeout(() => {
+                    document.getElementById('custom-confirm-input')?.focus();
+                }, 100);
+            }
         }, 10);
+
+        // Si se requiere texto, validar input
+        if (requireText) {
+            const input = document.getElementById('custom-confirm-input');
+            const confirmBtn = document.getElementById('custom-confirm');
+            const hint = document.getElementById('confirm-hint');
+
+            input.addEventListener('input', (e) => {
+                const value = e.target.value.trim();
+
+                if (value === requireText) {
+                    confirmBtn.disabled = false;
+                    input.classList.remove('invalid');
+                    input.classList.add('valid');
+                    hint.style.display = 'none';
+                } else {
+                    confirmBtn.disabled = true;
+                    input.classList.remove('valid');
+                    if (value.length > 0) {
+                        input.classList.add('invalid');
+                        hint.style.display = 'block';
+                    } else {
+                        input.classList.remove('invalid');
+                        hint.style.display = 'none';
+                    }
+                }
+            });
+
+            // Permitir confirmar con Enter si el texto es correcto
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !confirmBtn.disabled) {
+                    confirmBtn.click();
+                }
+            });
+        }
 
         // Event listeners
         const handleConfirm = () => {

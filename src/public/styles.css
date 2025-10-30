@@ -1802,6 +1802,91 @@ body {
     transform: translateY(0);
 }
 
+/* Input de confirmación para acciones peligrosas */
+.custom-modal-confirm-input-container {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.custom-modal-confirm-label {
+    display: block;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.custom-modal-confirm-label strong {
+    color: #ef4444;
+    font-weight: 700;
+    font-family: monospace;
+    font-size: 15px;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.custom-modal-confirm-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid var(--input-border);
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: monospace;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    text-transform: uppercase;
+}
+
+.custom-modal-confirm-input:focus {
+    outline: none;
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.custom-modal-confirm-input.valid {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.custom-modal-confirm-input.valid:focus {
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.custom-modal-confirm-input.invalid {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.custom-modal-confirm-input.invalid:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.custom-modal-confirm-hint {
+    font-size: 12px;
+    color: #ef4444;
+    margin-top: 8px;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.custom-modal-confirm-hint::before {
+    content: "⚠️";
+    font-size: 14px;
+}
+
+.custom-modal-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
 /* Responsive para modales personalizados */
 @media (max-width: 480px) {
     .custom-modal {
@@ -1833,5 +1918,14 @@ body {
 
     .custom-modal-footer .custom-modal-btn {
         width: 100%;
+    }
+
+    .custom-modal-confirm-label {
+        font-size: 13px;
+    }
+
+    .custom-modal-confirm-input {
+        font-size: 14px;
+        padding: 10px 12px;
     }
 }
