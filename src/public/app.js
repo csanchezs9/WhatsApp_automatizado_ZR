@@ -813,12 +813,22 @@ window.savePromotion = async function() {
     const message = promoMessage.value.trim();
 
     if (!message) {
-        alert('Por favor ingresa un mensaje de promoción');
+        await showCustomAlert(
+            'Campo vacío',
+            'Por favor ingresa un mensaje de promoción',
+            'El mensaje promocional no puede estar vacío.',
+            'warning'
+        );
         return;
     }
 
     if (message.length > 4000) {
-        alert(`Mensaje demasiado largo (${message.length} caracteres). Máximo 4000 caracteres.`);
+        await showCustomAlert(
+            'Mensaje muy largo',
+            `El mensaje tiene ${message.length} caracteres`,
+            'El máximo permitido es 4000 caracteres. Por favor, acorta el mensaje.',
+            'warning'
+        );
         return;
     }
 
@@ -837,11 +847,21 @@ window.savePromotion = async function() {
             throw new Error(error.error || 'Error al guardar');
         }
 
-        alert('✅ Promoción actualizada correctamente');
+        await showCustomAlert(
+            '¡Éxito!',
+            'Promoción actualizada correctamente',
+            'El mensaje promocional ha sido guardado y estará disponible en el menú de WhatsApp.',
+            'success'
+        );
         closePromotionsModal();
     } catch (error) {
         console.error('Error al guardar promoción:', error);
-        alert('Error al guardar promoción: ' + error.message);
+        await showCustomAlert(
+            'Error al guardar',
+            'No se pudo actualizar la promoción',
+            `Detalles: ${error.message}`,
+            'error'
+        );
     }
 };
 
