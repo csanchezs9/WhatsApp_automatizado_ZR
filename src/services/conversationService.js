@@ -767,15 +767,20 @@ function getSystemInfo() {
             const path = require('path');
 
             // 1. Calcular uso de disco de archivos multimedia
+            // IMPORTANTE: Usar la misma ruta que en mediaService.js
             const mediaDir = process.env.NODE_ENV === 'production'
-                ? '/opt/render/project/src/media'
-                : path.join(__dirname, '../media');
+                ? '/opt/render/project/src/data/persistent/media'
+                : path.join(process.cwd(), 'src/data/persistent/media');
 
             let totalMediaSize = 0;
             let mediaFileCount = 0;
 
+            console.log('📁 Directorio de media para getSystemInfo:', mediaDir);
+
             if (fs.existsSync(mediaDir)) {
                 const files = fs.readdirSync(mediaDir);
+                console.log(`📊 Archivos encontrados en media: ${files.length}`);
+
                 for (const file of files) {
                     try {
                         const filePath = path.join(mediaDir, file);
@@ -785,9 +790,12 @@ function getSystemInfo() {
                             mediaFileCount++;
                         }
                     } catch (err) {
-                        // Ignorar archivos que no se pueden leer
+                        console.error(`⚠️ Error leyendo archivo ${file}:`, err.message);
                     }
                 }
+                console.log(`✅ Archivos multimedia contados: ${mediaFileCount}, Tamaño total: ${(totalMediaSize / (1024 * 1024)).toFixed(2)} MB`);
+            } else {
+                console.error('❌ Directorio de media NO existe:', mediaDir);
             }
 
             // 2. Obtener estadísticas de base de datos
@@ -803,6 +811,7 @@ function getSystemInfo() {
                     }
 
                     // 3. Obtener conversaciones más pesadas
+                    // Solo conversaciones con al menos 10 mensajes
                     db.all(
                         `SELECT
                             phone_number,
@@ -811,8 +820,9 @@ function getSystemInfo() {
                             json_array_length(messages) as message_count,
                             started_at
                          FROM conversations
+                         WHERE json_array_length(messages) >= 10
                          ORDER BY message_size DESC
-                         LIMIT 10`,
+                         LIMIT 50`,
                         (err, heavyConversations) => {
                             if (err) {
                                 return reject(err);
@@ -857,8 +867,12 @@ function getSystemInfo() {
                                 };
                             });
 
-                            // Ordenar por tamaño total
-                            conversationsWithSize.sort((a, b) => b.totalSize - a.totalSize);
+                            // Filtrar solo conversaciones realmente pesadas (>100KB)
+                            const MIN_SIZE_THRESHOLD = 100 * 1024; // 100KB
+                            const reallyHeavyConversations = conversationsWithSize
+                                .filter(conv => conv.totalSize >= MIN_SIZE_THRESHOLD)
+                                .sort((a, b) => b.totalSize - a.totalSize)
+                                .slice(0, 10);
 
                             // Calcular uso total del disco
                             const totalDiskUsage = (dbStats.total_db_size_bytes || 0) + totalMediaSize;
@@ -878,7 +892,7 @@ function getSystemInfo() {
                                     activeInMemory: activeConversations.size,
                                     totalMediaFiles: mediaFileCount
                                 },
-                                heavyConversations: conversationsWithSize.slice(0, 10).map(conv => ({
+                                heavyConversations: reallyHeavyConversations.map(conv => ({
                                     phoneNumber: conv.phoneNumber,
                                     messageCount: conv.messageCount,
                                     mediaCount: conv.mediaCount,
