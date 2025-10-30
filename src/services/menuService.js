@@ -31,6 +31,41 @@ const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // Limpiar cada 24 horas
 // Ruta al archivo de promociones (en directorio persistente para Render)
 const PROMO_FILE_PATH = path.join(__dirname, '../data/persistent/promoMessage.json');
 
+// Mensaje por defecto
+const DEFAULT_PROMO_MESSAGE = '🔥 *PROMOCIONES Y DESCUENTOS*\n\nActualmente no hay promociones activas.\n\nMantente atento a nuestras redes sociales.';
+
+/**
+ * Inicializa el archivo de promociones si no existe
+ */
+const initPromoFile = () => {
+  try {
+    // Crear directorio si no existe
+    const dir = path.dirname(PROMO_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log('📁 Directorio de promociones creado:', dir);
+    }
+
+    // Crear archivo con mensaje por defecto si no existe
+    if (!fs.existsSync(PROMO_FILE_PATH)) {
+      const defaultData = {
+        message: DEFAULT_PROMO_MESSAGE,
+        lastUpdated: new Date().toISOString(),
+        updatedBy: 'Sistema'
+      };
+      fs.writeFileSync(PROMO_FILE_PATH, JSON.stringify(defaultData, null, 2), 'utf8');
+      console.log('✅ Archivo de promociones inicializado con mensaje por defecto');
+    } else {
+      console.log('✅ Archivo de promociones encontrado:', PROMO_FILE_PATH);
+    }
+  } catch (error) {
+    console.error('❌ Error inicializando archivo de promociones:', error);
+  }
+};
+
+// Inicializar archivo al cargar el módulo
+initPromoFile();
+
 /**
  * Lee el mensaje de promociones desde el archivo JSON
  */
@@ -44,8 +79,8 @@ const getPromoMessage = () => {
   } catch (error) {
     console.error('Error leyendo mensaje de promociones:', error);
   }
-  // Mensaje por defecto si hay error
-  return '🔥 *PROMOCIONES Y DESCUENTOS*\n\nActualmente no hay promociones activas.\n\nMantente atento a nuestras redes sociales.';
+  // Fallback al mensaje por defecto
+  return DEFAULT_PROMO_MESSAGE;
 };
 
 /**
