@@ -341,18 +341,11 @@ const sendRawInteractiveButtons = async (to, bodyText, buttons) => {
 const uploadMediaToWhatsApp = async (filePath, mimeType) => {
   try {
     const uploadUrl = `https://graph.facebook.com/v21.0/${process.env.WHATSAPP_PHONE_ID}/media`;
-
-    // Limpiar mimeType: remover codecs y parámetros extra
-    // WhatsApp API solo acepta "audio/ogg", no "audio/ogg; codecs=opus"
     const cleanMimeType = mimeType.split(';')[0].trim();
-
-    console.log(`📤 Subiendo media a WhatsApp: ${filePath}`);
-    console.log(`   MimeType original: ${mimeType}`);
-    console.log(`   MimeType limpio: ${cleanMimeType}`);
 
     const formData = new FormData();
     formData.append('file', fs.createReadStream(filePath));
-    formData.append('type', cleanMimeType); // Usar mimeType limpio
+    formData.append('type', cleanMimeType);
     formData.append('messaging_product', 'whatsapp');
 
     const response = await axios.post(uploadUrl, formData, {
@@ -362,11 +355,10 @@ const uploadMediaToWhatsApp = async (filePath, mimeType) => {
       }
     });
 
-    console.log('✅ Media uploaded to WhatsApp:', response.data.id);
+    console.log('✅ Media subida a WhatsApp:', response.data.id);
     return response.data.id;
   } catch (error) {
-    console.error('❌ Error uploading media to WhatsApp:', error.response?.data || error.message);
-    console.error('   Detalles completos:', JSON.stringify(error.response?.data, null, 2));
+    console.error('❌ Error subiendo media:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -465,15 +457,6 @@ const sendAudio = async (to, mediaId, caption = null) => {
       }
     };
 
-    console.log('🎤 sendAudio() - Preparando envío de audio:');
-    console.log('   → Destino:', to);
-    console.log('   → Media ID:', mediaId);
-    console.log('   → API URL:', WHATSAPP_API_URL);
-    console.log('   → Payload:', JSON.stringify(payload, null, 2));
-
-    // Los audios NO soportan caption en WhatsApp Business API
-    // Si se proporciona caption, se ignora silenciosamente
-
     const response = await retryRequest(() => axios.post(
       WHATSAPP_API_URL,
       payload,
@@ -486,14 +469,10 @@ const sendAudio = async (to, mediaId, caption = null) => {
       }
     ));
 
-    console.log('✅ Audio enviado exitosamente a WhatsApp');
-    console.log('   → Respuesta:', JSON.stringify(response.data, null, 2));
+    console.log('✅ Audio enviado');
     return response.data;
   } catch (error) {
-    console.error('❌ ERROR CRÍTICO enviando audio a WhatsApp:');
-    console.error('   → Error message:', error.message);
-    console.error('   → Error response:', JSON.stringify(error.response?.data, null, 2));
-    console.error('   → Status code:', error.response?.status);
+    console.error('❌ Error enviando audio:', error.response?.data || error.message);
     throw error;
   }
 };

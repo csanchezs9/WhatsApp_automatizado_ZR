@@ -500,34 +500,26 @@ router.post('/upload-media', authMiddleware, upload.single('file'), async (req, 
         } else if (req.file.mimetype.startsWith('audio/')) {
             fileType = 'audio';
 
-            // CONVERSIÓN REAL: Convertir audio a formato compatible con WhatsApp
+            // Convertir audio a formato compatible con WhatsApp (M4A/AAC)
             try {
                 const fullPath = mediaService.getMediaFullPath(relativePath);
                 const converted = await audioConverter.convertAudioForWhatsApp(fullPath, req.file.mimetype);
 
                 if (converted.converted) {
-                    // Actualizar path y mimeType con el archivo convertido
                     const mediaDir = mediaService.getMediaFullPath('');
                     relativePath = converted.path.replace(mediaDir, '').replace(/\\/g, '/').replace(/^\/+/, '');
-                    // Asegurar que empiece con 'media/'
                     if (!relativePath.startsWith('media/')) {
                         relativePath = 'media/' + relativePath.split('/').pop();
                     }
 
                     finalMimeType = converted.mimeType;
                     finalSize = fs.statSync(converted.path).size;
-
-                    console.log(`✅ Audio convertido exitosamente:`);
-                    console.log(`   → Path original: media/${req.file.filename}`);
-                    console.log(`   → Path convertido: ${relativePath}`);
-                    console.log(`   → MimeType: ${finalMimeType}`);
                 }
             } catch (conversionError) {
-                console.error('❌ Error al convertir audio:', conversionError);
-                // Si falla la conversión, eliminar archivo y devolver error
+                console.error('❌ Error al convertir audio:', conversionError.message);
                 fs.unlinkSync(req.file.path);
                 return res.status(500).json({
-                    error: 'Error al convertir audio a formato compatible',
+                    error: 'Error al convertir audio',
                     details: conversionError.message
                 });
             }
@@ -583,16 +575,8 @@ router.post('/send-media', authMiddleware, async (req, res) => {
     try {
         const { phoneNumber, mediaPath, caption, mimeType, filename } = req.body;
 
-        console.log('📤 Enviando media:', { phoneNumber, mediaPath, caption, mimeType, filename });
-
-        if (!phoneNumber || !mediaPath) {
-            console.error('❌ Faltan parámetros:', { phoneNumber, mediaPath });
-            return res.status(400).json({ error: 'Faltan parámetros requeridos: phoneNumber y mediaPath' });
-        }
-
-        if (!mimeType) {
-            console.error('❌ Falta mimeType');
-            return res.status(400).json({ error: 'Falta parámetro requerido: mimeType' });
+        if (!phoneNumber || !mediaPath || !mimeType) {
+            return res.status(400).json({ error: 'Faltan parámetros requeridos' });
         }
 
         // Verificar que el usuario esté en modo asesor
@@ -602,7 +586,6 @@ router.post('/send-media', authMiddleware, async (req, res) => {
                             userSession?.state === 'WITH_ADVISOR';
 
         if (!isWithAdvisor) {
-            console.error('❌ Usuario no está en modo asesor:', phoneNumber, 'Estado:', userSession?.state);
             return res.status(403).json({
                 error: 'No se puede enviar archivo. El usuario no está en modo asesor.',
                 userState: userSession?.state || 'unknown'
@@ -613,16 +596,11 @@ router.post('/send-media', authMiddleware, async (req, res) => {
         const fullPath = mediaService.getMediaFullPath(mediaPath);
 
         if (!fs.existsSync(fullPath)) {
-            console.error('❌ Archivo no encontrado:', fullPath);
             return res.status(404).json({ error: 'Archivo no encontrado' });
         }
 
-        console.log('✅ Archivo encontrado, subiendo a WhatsApp...');
-
         // Subir archivo a WhatsApp y obtener media ID
         const mediaId = await whatsappService.uploadMediaToWhatsApp(fullPath, mimeType);
-
-        console.log('✅ Media ID obtenido:', mediaId);
 
         // Determinar tipo de mensaje
         let messageType;
@@ -636,24 +614,12 @@ router.post('/send-media', authMiddleware, async (req, res) => {
 
         // Enviar según el tipo
         if (messageType === 'image') {
-            console.log('📷 Enviando imagen a WhatsApp...');
             await whatsappService.sendImage(phoneNumber, mediaId, caption);
         } else if (messageType === 'audio') {
-            // Enviar audio M4A/AAC como mensaje de voz nativo
-            // FFmpeg convierte WebM → M4A (AAC codec) que es el formato nativo de WhatsApp
-            console.log('🎤 Enviando audio M4A/AAC como mensaje de voz nativo...');
-            console.log(`   → Número destino: ${phoneNumber}`);
-            console.log(`   → Media ID: ${mediaId}`);
-            console.log(`   → MIME type: ${mimeType}`);
-
-            const audioResult = await whatsappService.sendAudio(phoneNumber, mediaId);
-            console.log('✅ Audio enviado como voz nativa:', JSON.stringify(audioResult, null, 2));
+            await whatsappService.sendAudio(phoneNumber, mediaId);
         } else {
-            console.log('📄 Enviando documento a WhatsApp...');
             await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'documento', caption);
         }
-
-        console.log('✅ Mensaje enviado a WhatsApp, guardando en conversación...');
 
         // Guardar mensaje en la conversación (CON caption si fue proporcionado)
         conversationService.addMessage(phoneNumber, {

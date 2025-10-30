@@ -13,23 +13,12 @@ const path = require('path');
  */
 async function convertWebMToM4A(inputPath, outputPath) {
     return new Promise((resolve, reject) => {
-        console.log('🔄 Iniciando conversión de audio a M4A/AAC:');
-        console.log(`   → Entrada: ${inputPath}`);
-        console.log(`   → Salida: ${outputPath}`);
+        console.log('🔄 Convirtiendo audio a M4A/AAC...');
 
-        // Verificar que el archivo de entrada existe
         if (!fs.existsSync(inputPath)) {
             return reject(new Error(`Archivo de entrada no encontrado: ${inputPath}`));
         }
 
-        // FFmpeg comando para WhatsApp - AAC es el formato preferido
-        // -i input: archivo de entrada
-        // -c:a aac: codec AAC (nativo de WhatsApp/iPhone)
-        // -b:a 128k: bitrate 128kbps (calidad buena para voz)
-        // -ar 44100: sample rate 44.1kHz (estándar)
-        // -ac 1: mono (voz)
-        // -vn: no video
-        // -y: sobrescribir
         const args = [
             '-i', inputPath,
             '-c:a', 'aac',
@@ -41,48 +30,31 @@ async function convertWebMToM4A(inputPath, outputPath) {
             outputPath
         ];
 
-        console.log(`   → Comando FFmpeg: ${ffmpeg} ${args.join(' ')}`);
-
         const process = spawn(ffmpeg, args);
-
         let stderr = '';
-        let stdout = '';
 
-        process.stdout.on('data', (data) => {
-            stdout += data.toString();
-            console.log('[FFmpeg stdout]:', data.toString());
-        });
-
+        // Solo capturar stderr para errores (no mostrar todo el output de FFmpeg)
         process.stderr.on('data', (data) => {
             stderr += data.toString();
-            console.log('[FFmpeg stderr]:', data.toString());
         });
 
         process.on('close', (code) => {
             if (code === 0) {
-                // Conversión exitosa
-                console.log('✅ Conversión completada exitosamente');
-                console.log(`   → Archivo generado: ${outputPath}`);
-
-                // Verificar que el archivo de salida existe
                 if (fs.existsSync(outputPath)) {
                     const stats = fs.statSync(outputPath);
-                    console.log(`   → Tamaño: ${(stats.size / 1024).toFixed(2)} KB`);
+                    console.log(`✅ Audio convertido: ${(stats.size / 1024).toFixed(2)} KB`);
                     resolve(outputPath);
                 } else {
                     reject(new Error('Archivo de salida no fue creado'));
                 }
             } else {
-                // Error en conversión
-                console.error('❌ Error en conversión de audio:');
-                console.error(`   → Código de salida: ${code}`);
-                console.error(`   → FFmpeg stderr: ${stderr}`);
-                reject(new Error(`FFmpeg falló con código ${code}: ${stderr}`));
+                console.error('❌ Error en conversión:', stderr.slice(0, 200));
+                reject(new Error(`FFmpeg falló con código ${code}`));
             }
         });
 
         process.on('error', (error) => {
-            console.error('❌ Error al ejecutar FFmpeg:', error);
+            console.error('❌ Error al ejecutar FFmpeg:', error.message);
             reject(error);
         });
     });
@@ -97,20 +69,15 @@ async function convertWebMToM4A(inputPath, outputPath) {
  * @returns {Promise<{path: string, mimeType: string}>} - Info del archivo convertido
  */
 async function convertAudioForWhatsApp(inputPath, inputMimeType) {
-    // Si ya es M4A/AAC, no convertir
     const compatibleFormats = ['audio/mp4', 'audio/m4a', 'audio/aac', 'audio/mpeg', 'audio/mp3'];
 
     if (compatibleFormats.includes(inputMimeType)) {
-        console.log(`✅ Audio ya está en formato compatible: ${inputMimeType}`);
         return {
             path: inputPath,
             mimeType: inputMimeType,
             converted: false
         };
     }
-
-    // Convertir WebM/OGG a M4A (AAC) - formato nativo de WhatsApp
-    console.log(`🔄 Audio en formato no compatible (${inputMimeType}), convirtiendo a M4A (AAC)...`);
 
     const outputPath = inputPath.replace(/\.[^.]+$/, '_converted.m4a');
 
@@ -120,21 +87,19 @@ async function convertAudioForWhatsApp(inputPath, inputMimeType) {
         // Eliminar archivo original para ahorrar espacio
         if (fs.existsSync(inputPath)) {
             fs.unlinkSync(inputPath);
-            console.log(`🗑️ Archivo original eliminado: ${inputPath}`);
         }
 
         return {
             path: outputPath,
-            mimeType: 'audio/mp4', // M4A usa MIME type audio/mp4
+            mimeType: 'audio/mp4',
             converted: true
         };
     } catch (error) {
-        console.error('❌ Error en conversión de audio:', error);
+        console.error('❌ Error en conversión de audio:', error.message);
         throw error;
     }
 }
 
 module.exports = {
-    convertWebMToM4A,
     convertAudioForWhatsApp
 };
