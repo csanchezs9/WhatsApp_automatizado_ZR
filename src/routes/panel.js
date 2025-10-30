@@ -507,7 +507,13 @@ router.post('/upload-media', authMiddleware, upload.single('file'), async (req, 
 
                 if (converted.converted) {
                     // Actualizar path y mimeType con el archivo convertido
-                    relativePath = converted.path.replace(mediaService.getMediaFullPath(''), '').replace(/\\/g, '/');
+                    const mediaDir = mediaService.getMediaFullPath('');
+                    relativePath = converted.path.replace(mediaDir, '').replace(/\\/g, '/').replace(/^\/+/, '');
+                    // Asegurar que empiece con 'media/'
+                    if (!relativePath.startsWith('media/')) {
+                        relativePath = 'media/' + relativePath.split('/').pop();
+                    }
+
                     finalMimeType = converted.mimeType;
                     finalSize = fs.statSync(converted.path).size;
 
@@ -633,12 +639,11 @@ router.post('/send-media', authMiddleware, async (req, res) => {
             console.log('📷 Enviando imagen a WhatsApp...');
             await whatsappService.sendImage(phoneNumber, mediaId, caption);
         } else if (messageType === 'audio') {
-            console.log('🎤 Enviando audio a WhatsApp (convertido con FFmpeg)...');
-            console.log(`   → Número destino: ${phoneNumber}`);
-            console.log(`   → Media ID: ${mediaId}`);
-            console.log(`   → Tipo de mensaje: ${messageType}`);
-            const audioResult = await whatsappService.sendAudio(phoneNumber, mediaId, caption);
-            console.log('✅ Respuesta de WhatsApp para audio:', JSON.stringify(audioResult, null, 2));
+            // WhatsApp API error 131000: rechaza archivos OGG/audio type desde panel
+            // SOLUCIÓN: Enviar como documento - el cliente puede escucharlo perfectamente
+            console.log('🎤 Enviando audio como documento (WhatsApp API limitation)...');
+            console.log(`   → Nota: WhatsApp rechaza type "audio" desde API, enviando como documento`);
+            await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'audio.ogg', '🎤 Mensaje de voz');
         } else {
             console.log('📄 Enviando documento a WhatsApp...');
             await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'documento', caption);
