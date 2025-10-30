@@ -28,8 +28,8 @@ const INACTIVITY_TIMEOUT = parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '2
 const MAX_SESSION_AGE = 1 * 24 * 60 * 60 * 1000; // 1 día (24 horas)
 const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // Limpiar cada 24 horas
 
-// Ruta al archivo de promociones
-const PROMO_FILE_PATH = path.join(__dirname, '../data/promoMessage.json');
+// Ruta al archivo de promociones (en directorio persistente para Render)
+const PROMO_FILE_PATH = path.join(__dirname, '../data/persistent/promoMessage.json');
 
 /**
  * Lee el mensaje de promociones desde el archivo JSON
