@@ -147,8 +147,8 @@ const handleIncomingMessage = async (req, res) => {
           } else if (interactiveResponse.type === 'list_reply') {
             await handleMenuSelection(from, interactiveResponse.list_reply.id);
           }
-        } else if (['image', 'document', 'audio', 'video'].includes(messageType)) {
-          // Procesar archivos multimedia (solo cuando está con asesor)
+        } else if (['image', 'document', 'audio'].includes(messageType)) {
+          // Procesar archivos multimedia soportados (solo cuando está con asesor)
           const isWithAdvisor = isUserWithAdvisor(from);
 
           if (isWithAdvisor) {
@@ -186,18 +186,116 @@ const handleIncomingMessage = async (req, res) => {
                     filename: mediaInfo.filename,
                     timestamp: new Date()
                   },
-                  isWithAdvisor: isWithAdvisor, // Incluir estado de asesor para frontend
-                  userState: userSession?.state // Incluir estado del usuario
+                  isWithAdvisor: isWithAdvisor,
+                  userState: userSession?.state
                 });
               }
             } catch (error) {
               console.error(`❌ Error procesando ${messageType}:`, error);
-              // Notificar al cliente que hubo un error
               await sendWhatsAppMessage(from, '❌ Hubo un error procesando tu archivo. Por favor, intenta nuevamente.');
             }
           } else {
-            // Cliente no está con asesor, informar que no puede enviar archivos
             await sendWhatsAppMessage(from, '⚠️ Solo puedes enviar archivos cuando estás hablando con un asesor. Por favor, selecciona "Hablar con asesor" en el menú.');
+          }
+        } else if (['sticker', 'video', 'location', 'contacts', 'reaction', 'unknown'].includes(messageType)) {
+          // Tipos de mensajes NO soportados - mostrar indicador en panel
+          const isWithAdvisor = isUserWithAdvisor(from);
+
+          // Detectar si es GIF (viene como video pero tiene mime_type image/gif o es animado)
+          let isGif = false;
+          if (messageType === 'video' && message.video) {
+            const mimeType = message.video.mime_type || '';
+            isGif = mimeType.includes('gif') || message.video.animated === true;
+          }
+
+          // Mapear tipo de mensaje a texto descriptivo
+          const messageTypeLabels = {
+            'sticker': '[Sticker]',
+            'video': isGif ? '[GIF]' : '[Video]',
+            'location': '[Ubicación]',
+            'contacts': '[Contacto]',
+            'reaction': '[Reacción]',
+            'unknown': '[Mensaje no soportado]'
+          };
+
+          const descriptiveText = messageTypeLabels[messageType] || `[${messageType}]`;
+
+          console.log(`ℹ️ ${from} envió ${descriptiveText} - tipo no soportado`);
+
+          // Si está con asesor, guardar indicador en el panel
+          if (isWithAdvisor) {
+            addMessage(from, {
+              from: 'client',
+              type: 'text',
+              text: descriptiveText,
+              timestamp: new Date()
+            });
+
+            // Emitir por socket al panel
+            const io = req.app.get('io');
+            if (io) {
+              const { getUserSession } = require('../services/menuService');
+              const userSession = getUserSession(from);
+
+              io.emit('new_message', {
+                phoneNumber: from,
+                message: {
+                  from: 'client',
+                  type: 'text',
+                  text: descriptiveText,
+                  timestamp: new Date()
+                },
+                isWithAdvisor: isWithAdvisor,
+                userState: userSession?.state
+              });
+            }
+          }
+
+          // Informar al cliente que este tipo de mensaje no está soportado
+          if (messageType === 'video') {
+            if (isGif) {
+              await sendWhatsAppMessage(from, '⚠️ No procesamos GIFs. Por favor, envía un mensaje de texto o imagen.');
+            } else {
+              await sendWhatsAppMessage(from, '⚠️ No aceptamos videos en este momento. Por favor, envía imágenes o documentos.');
+            }
+          } else if (messageType === 'sticker') {
+            await sendWhatsAppMessage(from, '⚠️ No procesamos stickers. Por favor, envía un mensaje de texto.');
+          } else if (messageType === 'location') {
+            await sendWhatsAppMessage(from, '⚠️ No procesamos ubicaciones. Por favor, envía un mensaje de texto.');
+          } else {
+            await sendWhatsAppMessage(from, `⚠️ Este tipo de mensaje no está soportado. Por favor, envía texto, imágenes o documentos.`);
+          }
+        } else {
+          // Catch-all para cualquier otro tipo de mensaje no manejado
+          const isWithAdvisor = isUserWithAdvisor(from);
+
+          console.log(`⚠️ Tipo de mensaje desconocido: ${messageType}`);
+
+          if (isWithAdvisor) {
+            addMessage(from, {
+              from: 'client',
+              type: 'text',
+              text: `[Mensaje tipo: ${messageType}]`,
+              timestamp: new Date()
+            });
+
+            const io = req.app.get('io');
+            if (io) {
+              const { getUserSession } = require('../services/menuService');
+              const userSession = getUserSession(from);
+
+              io.emit('new_message', {
+                phoneNumber: from,
+                message: {
+                  from: 'client',
+                  type: 'text',
+                  text: `[Mensaje tipo: ${messageType}]`,
+                  timestamp: new Date()
+                },
+                isWithAdvisor: isWithAdvisor,
+                userState: userSession?.state
+              });
+            }
           }
         }
 
