@@ -322,14 +322,21 @@ function renderConversations(convs) {
         const isActive = currentConversation === conv.phoneNumber ? 'active' : '';
         const formattedPhone = formatPhoneNumber(conv.phoneNumber);
 
+        // Badge de no leídos
+        const unreadCount = conv.unreadCount || 0;
+        const hasUnread = unreadCount > 0;
+        const unreadBadge = hasUnread ? `<div class="unread-badge">${unreadCount}</div>` : '';
+        const timeClass = hasUnread ? 'unread-time' : '';
+
         return `
             <div class="conversation-item ${isActive}" onclick="selectConversation('${conv.phoneNumber}')">
                 <div class="conversation-phone">${formattedPhone}</div>
                 <div class="conversation-preview">${preview}${needsEllipsis ? '...' : ''}</div>
                 <div class="conversation-meta">
                     <span>${conv.messageCount} mensajes</span>
-                    <span>${time}</span>
+                    <span class="${timeClass}">${time}</span>
                 </div>
+                ${unreadBadge}
             </div>
         `;
     }).join('');
@@ -357,6 +364,10 @@ async function loadConversation(phoneNumber) {
 
         const data = await response.json();
         showConversation(data.conversation);
+
+        // Recargar lista de conversaciones para actualizar badge de no leídos
+        // (el backend marca como leído al abrir la conversación)
+        loadConversations();
     } catch (error) {
         console.error('Error al cargar conversación:', error);
     }

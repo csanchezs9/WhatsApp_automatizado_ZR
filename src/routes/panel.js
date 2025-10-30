@@ -93,7 +93,8 @@ router.get('/conversations', authMiddleware, (req, res) => {
                 lastMessage: conv.messages[conv.messages.length - 1],
                 startedAt: conv.startedAt,
                 lastActivity: conv.lastActivity,
-                status: conv.status
+                status: conv.status,
+                unreadCount: conv.unreadCount || 0
             }))
         });
     } catch (error) {
@@ -114,6 +115,9 @@ router.get('/conversations/:phoneNumber', authMiddleware, (req, res) => {
         if (!conversation) {
             return res.status(404).json({ error: 'Conversación no encontrada' });
         }
+
+        // Marcar conversación como leída cuando el asesor la abre
+        conversationService.markConversationAsRead(phoneNumber);
 
         // Verificar si el usuario está con asesor o esperando escribir consulta
         const userSession = menuService.getUserSession(phoneNumber);

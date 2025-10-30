@@ -76,7 +76,8 @@ function addMessage(phoneNumber, message) {
             startedAt: new Date(),
             status: 'active',
             lastActivity: new Date(),
-            isWithAdvisor: false
+            isWithAdvisor: false,
+            unreadCount: 0
         });
     }
 
@@ -86,6 +87,11 @@ function addMessage(phoneNumber, message) {
         timestamp: new Date()
     });
     conversation.lastActivity = new Date();
+
+    // Incrementar contador de no leídos si el mensaje es del cliente
+    if (message.from === 'client') {
+        conversation.unreadCount = (conversation.unreadCount || 0) + 1;
+    }
 
     // Auto-guardar en BD después de cada mensaje (asíncrono, no bloquea)
     saveConversationToDB(phoneNumber).catch(err => {
@@ -110,6 +116,18 @@ function addMessage(phoneNumber, message) {
  */
 function getActiveConversation(phoneNumber) {
     return activeConversations.get(phoneNumber);
+}
+
+/**
+ * Marcar conversación como leída (resetear contador de no leídos)
+ */
+function markConversationAsRead(phoneNumber) {
+    const conversation = activeConversations.get(phoneNumber);
+    if (conversation) {
+        conversation.unreadCount = 0;
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -861,6 +879,7 @@ module.exports = {
     addMessage,
     getActiveConversation,
     getAllActiveConversations,
+    markConversationAsRead,
     archiveConversation,
     deleteConversationPermanently,
     getConversationHistory,
