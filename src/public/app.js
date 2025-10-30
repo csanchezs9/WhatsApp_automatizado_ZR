@@ -288,7 +288,26 @@ function renderConversations(convs) {
 
     conversationList.innerHTML = convs.map(conv => {
         const lastMsg = conv.lastMessage || {};
-        const preview = lastMsg.text ? lastMsg.text.substring(0, 50) : 'Sin mensajes';
+
+        // Generar preview según tipo de mensaje
+        let preview = 'Sin mensajes';
+        let needsEllipsis = false;
+
+        if (lastMsg.text) {
+            preview = lastMsg.text.substring(0, 50);
+            needsEllipsis = lastMsg.text.length > 50;
+        } else if (lastMsg.type === 'audio') {
+            preview = '🎤 Audio';
+        } else if (lastMsg.type === 'image') {
+            preview = '📷 Imagen';
+        } else if (lastMsg.type === 'document') {
+            preview = '📄 Documento';
+        } else if (lastMsg.type === 'interactive_buttons') {
+            preview = '🔘 Botones interactivos';
+        } else if (lastMsg.type === 'interactive_list') {
+            preview = '📋 Lista interactiva';
+        }
+
         const time = lastMsg.timestamp ? formatTime(new Date(lastMsg.timestamp)) : '';
         const isActive = currentConversation === conv.phoneNumber ? 'active' : '';
         const formattedPhone = formatPhoneNumber(conv.phoneNumber);
@@ -296,7 +315,7 @@ function renderConversations(convs) {
         return `
             <div class="conversation-item ${isActive}" onclick="selectConversation('${conv.phoneNumber}')">
                 <div class="conversation-phone">${formattedPhone}</div>
-                <div class="conversation-preview">${preview}${lastMsg.text && lastMsg.text.length > 50 ? '...' : ''}</div>
+                <div class="conversation-preview">${preview}${needsEllipsis ? '...' : ''}</div>
                 <div class="conversation-meta">
                     <span>${conv.messageCount} mensajes</span>
                     <span>${time}</span>
