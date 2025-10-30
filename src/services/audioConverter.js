@@ -22,16 +22,20 @@ async function convertWebMToOgg(inputPath, outputPath) {
             return reject(new Error(`Archivo de entrada no encontrado: ${inputPath}`));
         }
 
-        // FFmpeg comando:
+        // FFmpeg comando para WhatsApp Business API:
         // -i input.webm: archivo de entrada
-        // -c:a libopus: codec de audio Opus (compatible con WhatsApp)
-        // -b:a 32k: bitrate de 32kbps (bueno para voz)
+        // -c:a libopus: codec de audio Opus
+        // -b:a 64k: bitrate de 64kbps (calidad aceptable para voz)
+        // -ar 48000: sample rate 48kHz (estándar Opus)
+        // -ac 1: mono (voz)
         // -vn: no video
-        // -y: sobrescribir archivo de salida si existe
+        // -y: sobrescribir archivo de salida
         const args = [
             '-i', inputPath,
             '-c:a', 'libopus',
-            '-b:a', '32k',
+            '-b:a', '64k',
+            '-ar', '48000',
+            '-ac', '1',
             '-vn',
             '-y',
             outputPath
@@ -42,9 +46,16 @@ async function convertWebMToOgg(inputPath, outputPath) {
         const process = spawn(ffmpeg, args);
 
         let stderr = '';
+        let stdout = '';
+
+        process.stdout.on('data', (data) => {
+            stdout += data.toString();
+            console.log('[FFmpeg stdout]:', data.toString());
+        });
 
         process.stderr.on('data', (data) => {
             stderr += data.toString();
+            console.log('[FFmpeg stderr]:', data.toString());
         });
 
         process.on('close', (code) => {
