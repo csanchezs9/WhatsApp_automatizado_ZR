@@ -34,9 +34,19 @@ db.serialize(() => {
             ended_at DATETIME,
             status TEXT DEFAULT 'active',
             advisor_notes TEXT,
+            unread_count INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
+
+    // Migración: Agregar columna unread_count si no existe
+    db.run(`
+        ALTER TABLE conversations ADD COLUMN unread_count INTEGER DEFAULT 0
+    `, (err) => {
+        if (err && !err.message.includes('duplicate column')) {
+            console.error('⚠️ Error en migración unread_count:', err.message);
+        }
+    });
 
     // Tabla de sesiones de usuario para persistir estado entre reinicios
     db.run(`
@@ -125,6 +135,12 @@ function markConversationAsRead(phoneNumber) {
     const conversation = activeConversations.get(phoneNumber);
     if (conversation) {
         conversation.unreadCount = 0;
+
+        // Persistir cambio en BD (asíncrono, no bloquea)
+        saveConversationToDB(phoneNumber).catch(err => {
+            console.error('⚠️ Error guardando lectura de conversación:', err.message);
+        });
+
         return true;
     }
     return false;
@@ -291,17 +307,20 @@ function saveConversationToDB(phoneNumber) {
 
     return new Promise((resolve, reject) => {
         const messagesJson = JSON.stringify(conversation.messages);
+        const unreadCount = conversation.unreadCount || 0;
 
         // Intentar UPDATE primero, si no existe hacer INSERT
         db.run(
             `UPDATE conversations
              SET messages = ?,
                  started_at = ?,
+                 unread_count = ?,
                  status = 'active'
              WHERE phone_number = ? AND status = 'active'`,
             [
                 messagesJson,
                 conversation.startedAt.toISOString(),
+                unreadCount,
                 phoneNumber
             ],
             function(err) {
@@ -310,12 +329,13 @@ function saveConversationToDB(phoneNumber) {
                 } else if (this.changes === 0) {
                     // No existía, hacer INSERT
                     db.run(
-                        `INSERT INTO conversations (phone_number, messages, started_at, status)
-                         VALUES (?, ?, ?, 'active')`,
+                        `INSERT INTO conversations (phone_number, messages, started_at, unread_count, status)
+                         VALUES (?, ?, ?, ?, 'active')`,
                         [
                             phoneNumber,
                             messagesJson,
-                            conversation.startedAt.toISOString()
+                            conversation.startedAt.toISOString(),
+                            unreadCount
                         ],
                         function(insertErr) {
                             if (insertErr) {
@@ -339,7 +359,7 @@ function saveConversationToDB(phoneNumber) {
 function loadActiveConversationsFromDB() {
     return new Promise((resolve, reject) => {
         db.all(
-            `SELECT phone_number, messages, started_at
+            `SELECT phone_number, messages, started_at, unread_count
              FROM conversations
              WHERE status = 'active'
              ORDER BY started_at DESC`,
@@ -363,7 +383,8 @@ function loadActiveConversationsFromDB() {
                             startedAt: new Date(row.started_at),
                             status: 'active',
                             lastActivity: lastMessage ? new Date(lastMessage.timestamp) : new Date(row.started_at),
-                            isWithAdvisor: messages.some(m => m.from === 'advisor') // Inferir si está con asesor
+                            isWithAdvisor: messages.some(m => m.from === 'advisor'), // Inferir si está con asesor
+                            unreadCount: row.unread_count || 0 // Restaurar contador de no leídos
                         });
                         loadedCount++;
                     } catch (parseError) {
