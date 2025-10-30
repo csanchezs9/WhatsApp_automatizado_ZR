@@ -21,6 +21,7 @@ const connectionStatus = document.getElementById('connection-status');
 const connectionText = document.getElementById('connection-text');
 const logoutBtn = document.getElementById('logout-btn');
 const finalizeBtn = document.getElementById('finalize-btn');
+const labelsBtn = document.getElementById('labels-btn');
 const searchInput = document.getElementById('search-input');
 const menuToggleBtn = document.getElementById('menu-toggle-btn');
 const dropdownMenu = document.getElementById('dropdown-menu');
@@ -338,19 +339,14 @@ function renderConversations(convs) {
             : '';
 
         return `
-            <div class="conversation-item ${isActive}" style="position: relative;">
-                <div onclick="selectConversation('${conv.phoneNumber}')">
-                    <div class="conversation-phone">${formattedPhone}</div>
-                    <div class="conversation-preview">${preview}${needsEllipsis ? '...' : ''}</div>
-                    <div class="conversation-meta">
-                        <span>${conv.messageCount} mensajes</span>
-                        <span class="${timeClass}">${time}</span>
-                    </div>
-                    ${labelsHTML}
+            <div class="conversation-item ${isActive}" onclick="selectConversation('${conv.phoneNumber}')">
+                <div class="conversation-phone">${formattedPhone}</div>
+                <div class="conversation-preview">${preview}${needsEllipsis ? '...' : ''}</div>
+                <div class="conversation-meta">
+                    <span>${conv.messageCount} mensajes</span>
+                    <span class="${timeClass}">${time}</span>
                 </div>
-                <button class="conversation-labels-btn" onclick="event.stopPropagation(); openConversationLabelsModal('${conv.phoneNumber}')">
-                    🏷️
-                </button>
+                ${labelsHTML}
                 ${unreadBadge}
             </div>
         `;
@@ -730,6 +726,15 @@ backToListBtn.addEventListener('click', () => {
     chatContainer.style.display = 'none';
     noConversationSelected.style.display = 'flex';
     currentConversation = null;
+});
+
+// Botón de etiquetas en header del chat
+labelsBtn.addEventListener('click', async () => {
+    if (!currentConversation) {
+        await showCustomAlert('Sin conversación', 'Por favor selecciona una conversación primero', '', 'warning');
+        return;
+    }
+    openConversationLabelsModal(currentConversation);
 });
 
 finalizeBtn.addEventListener('click', async () => {
@@ -1931,6 +1936,31 @@ window.closeVoiceModal = function() {
 let allLabels = [];
 let currentConversationForLabels = null;
 
+// Paleta de colores tipo post-it para generar random
+const LABEL_COLORS = [
+    '#FFD700', '#FF6B6B', '#4ECDC4', '#95E1D3', '#F38181',
+    '#AA96DA', '#FCBAD3', '#A8E6CF', '#FFD3B6', '#FFAAA5',
+    '#FFB6D9', '#D4A5A5', '#9EC1CF', '#E8A0BF', '#C9A0DC',
+    '#FFE66D', '#FF6F61', '#6A0572', '#AB83A1', '#E0BBE4',
+    '#FEC8D8', '#D291BC', '#957DAD', '#FFDFD3', '#B4E7CE',
+    '#A8D8EA', '#FFE5F7', '#FFCCBC', '#B2DFDB', '#C5E1A5'
+];
+
+/**
+ * Generar color random único (no repetir colores de etiquetas existentes)
+ */
+function generateUniqueRandomColor() {
+    const usedColors = allLabels.map(label => label.color.toUpperCase());
+    const availableColors = LABEL_COLORS.filter(color => !usedColors.includes(color.toUpperCase()));
+
+    if (availableColors.length === 0) {
+        // Si todos los colores están usados, generar uno completamente aleatorio
+        return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0').toUpperCase();
+    }
+
+    return availableColors[Math.floor(Math.random() * availableColors.length)];
+}
+
 /**
  * Cargar etiquetas desde el backend
  */
@@ -1962,6 +1992,11 @@ window.openLabelsModal = async function() {
     await loadLabels();
     renderLabelsList();
     updateLabelsCounter();
+
+    // Generar color random para preview
+    const randomColor = generateUniqueRandomColor();
+    document.getElementById('label-color').value = randomColor;
+    document.getElementById('color-preview').style.background = randomColor;
 
     document.getElementById('labels-modal').classList.add('show');
 };
@@ -2010,32 +2045,10 @@ function renderLabelsList() {
     `).join('');
 }
 
-/**
- * Configurar selector de colores
- */
-function setupColorPicker() {
-    const colorButtons = document.querySelectorAll('.color-option');
-    const colorInput = document.getElementById('label-color');
-
-    colorButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Remover selección anterior
-            colorButtons.forEach(b => b.classList.remove('selected'));
-
-            // Marcar como seleccionado
-            btn.classList.add('selected');
-
-            // Guardar color en input oculto
-            colorInput.value = btn.dataset.color;
-        });
-    });
-}
-
-// Configurar selector de colores al cargar
-document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('color-picker')) {
-        setupColorPicker();
-    }
+// Contador de caracteres para nombre de etiqueta
+document.getElementById('label-name')?.addEventListener('input', (e) => {
+    const count = e.target.value.length;
+    document.getElementById('label-name-count').textContent = count;
 });
 
 /**
@@ -2108,9 +2121,13 @@ window.cancelLabelForm = function() {
     document.getElementById('label-form-title').textContent = 'Crear Nueva Etiqueta';
     document.getElementById('label-submit-btn').textContent = 'Crear Etiqueta';
 
-    // Limpiar selección de color
-    document.querySelectorAll('.color-option').forEach(btn => btn.classList.remove('selected'));
-    document.getElementById('label-color').value = '';
+    // Generar nuevo color random
+    const randomColor = generateUniqueRandomColor();
+    document.getElementById('label-color').value = randomColor;
+    document.getElementById('color-preview').style.background = randomColor;
+
+    // Resetear contador
+    document.getElementById('label-name-count').textContent = '0';
 };
 
 /**
@@ -2123,14 +2140,11 @@ window.editLabel = function(id, name, color) {
     document.getElementById('label-form-title').textContent = 'Editar Etiqueta';
     document.getElementById('label-submit-btn').textContent = 'Guardar Cambios';
 
-    // Marcar color como seleccionado
-    document.querySelectorAll('.color-option').forEach(btn => {
-        if (btn.dataset.color === color) {
-            btn.classList.add('selected');
-        } else {
-            btn.classList.remove('selected');
-        }
-    });
+    // Mostrar color actual en preview
+    document.getElementById('color-preview').style.background = color;
+
+    // Actualizar contador
+    document.getElementById('label-name-count').textContent = name.length;
 
     // Scroll al formulario
     document.querySelector('.label-form-container').scrollIntoView({ behavior: 'smooth' });

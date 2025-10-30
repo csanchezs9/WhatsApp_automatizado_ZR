@@ -732,8 +732,8 @@ router.post('/labels', authMiddleware, async (req, res) => {
         }
 
         // Validar longitud de nombre
-        if (name.trim().length === 0 || name.trim().length > 30) {
-            return res.status(400).json({ error: 'El nombre debe tener entre 1 y 30 caracteres' });
+        if (name.trim().length === 0 || name.trim().length > 100) {
+            return res.status(400).json({ error: 'El nombre debe tener entre 1 y 100 caracteres' });
         }
 
         // Verificar límite de 10 etiquetas
@@ -776,8 +776,8 @@ router.put('/labels/:id', authMiddleware, async (req, res) => {
         }
 
         // Validar longitud de nombre
-        if (name.trim().length === 0 || name.trim().length > 30) {
-            return res.status(400).json({ error: 'El nombre debe tener entre 1 y 30 caracteres' });
+        if (name.trim().length === 0 || name.trim().length > 100) {
+            return res.status(400).json({ error: 'El nombre debe tener entre 1 y 100 caracteres' });
         }
 
         const label = await conversationService.updateLabel(parseInt(id), name, color);

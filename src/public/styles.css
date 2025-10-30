@@ -2740,44 +2740,35 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
     color: var(--text-primary);
 }
 
-/* Selector de colores en grid */
-.color-picker-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
+/* Vista previa de color random */
+.color-preview-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
     margin-top: 10px;
 }
 
-.color-option {
-    width: 100%;
-    aspect-ratio: 1;
+.color-preview {
+    width: 80px;
+    height: 80px;
     border-radius: 8px;
-    border: 3px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
 }
 
-.color-option:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.color-preview-text {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin: 0;
+    font-style: italic;
 }
 
-.color-option.selected {
-    border-color: var(--text-primary);
-    box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--primary-color);
-}
-
-.color-option.selected::after {
-    content: '✓';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: rgba(0, 0, 0, 0.6);
-    font-size: 20px;
-    font-weight: bold;
+/* Contador de caracteres */
+.char-counter {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: right;
 }
 
 /* Contenedor de lista de etiquetas */
@@ -2900,30 +2891,13 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
     white-space: nowrap;
 }
 
-/* Botón para agregar etiquetas en conversación */
-.conversation-labels-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: none;
+/* Botón de etiquetas en el header del chat */
+.action-btn.labels {
+    background: #7c3aed;
 }
 
-.conversation-item:hover .conversation-labels-btn {
-    display: block;
-}
-
-.conversation-labels-btn:hover {
-    background: #1565c0;
-    transform: translateY(-1px);
+.action-btn.labels:hover {
+    background: #6d28d9;
 }
 
 /* Modal selector de etiquetas (al asignar a conversación) */
@@ -2985,14 +2959,5 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
 
 /* Responsive */
 @media (max-width: 768px) {
-    .color-picker-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-
-    .conversation-labels-btn {
-        display: block;
-        position: static;
-        margin-top: 8px;
-        width: 100%;
-    }
+    /* Estilos responsive para etiquetas */
 }

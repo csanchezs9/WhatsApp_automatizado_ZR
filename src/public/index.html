@@ -165,6 +165,11 @@
                             <span id="chat-status" class="chat-status-badge">Activa</span>
                         </div>
                         <div class="chat-actions">
+                            <button id="labels-btn" class="action-btn labels">
+                                <span class="btn-icon">🏷️</span>
+                                <span class="btn-text-full">Etiquetas</span>
+                                <span class="btn-text-short">Etiquetas</span>
+                            </button>
                             <button id="finalize-btn" class="action-btn success">
                                 <span class="btn-icon">✓</span>
                                 <span class="btn-text-full">Finalizar Conversación</span>
@@ -397,25 +402,21 @@
                         <h3 id="label-form-title">Crear Nueva Etiqueta</h3>
                         <form id="label-form" class="label-form">
                             <input type="hidden" id="label-edit-id" value="">
+                            <input type="hidden" id="label-color" required>
                             <div class="form-group">
                                 <label for="label-name">Nombre de la etiqueta:</label>
-                                <input type="text" id="label-name" maxlength="30" placeholder="Ej: Urgente, Seguimiento, etc." required>
+                                <input type="text" id="label-name" maxlength="100" placeholder="Ej: Urgente, Seguimiento, Cliente importante, etc." required>
+                                <div class="char-counter">
+                                    <span id="label-name-count">0</span> / 100 caracteres
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label>Color de la etiqueta:</label>
-                                <div class="color-picker-grid" id="color-picker">
-                                    <button type="button" class="color-option" data-color="#FFD700" style="background: #FFD700;" title="Amarillo"></button>
-                                    <button type="button" class="color-option" data-color="#FF6B6B" style="background: #FF6B6B;" title="Rojo"></button>
-                                    <button type="button" class="color-option" data-color="#4ECDC4" style="background: #4ECDC4;" title="Turquesa"></button>
-                                    <button type="button" class="color-option" data-color="#95E1D3" style="background: #95E1D3;" title="Verde menta"></button>
-                                    <button type="button" class="color-option" data-color="#F38181" style="background: #F38181;" title="Rosa"></button>
-                                    <button type="button" class="color-option" data-color="#AA96DA" style="background: #AA96DA;" title="Púrpura"></button>
-                                    <button type="button" class="color-option" data-color="#FCBAD3" style="background: #FCBAD3;" title="Rosa claro"></button>
-                                    <button type="button" class="color-option" data-color="#A8E6CF" style="background: #A8E6CF;" title="Verde"></button>
-                                    <button type="button" class="color-option" data-color="#FFD3B6" style="background: #FFD3B6;" title="Naranja"></button>
-                                    <button type="button" class="color-option" data-color="#FFAAA5" style="background: #FFAAA5;" title="Coral"></button>
+                                <div class="color-preview-box">
+                                    <div id="color-preview" class="color-preview" style="background: #FFD700;">
+                                    </div>
+                                    <p class="color-preview-text">Se asignará un color aleatorio único</p>
                                 </div>
-                                <input type="hidden" id="label-color" required>
                             </div>
                             <div class="form-actions">
                                 <button type="button" class="btn-secondary" onclick="cancelLabelForm()">Cancelar</button>
