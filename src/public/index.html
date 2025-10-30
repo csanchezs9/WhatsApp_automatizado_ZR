@@ -2,9 +2,40 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1976d2">
     <title>Panel de Asesor - Zona Repuestera</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Forzar orientación vertical en móviles */
+        @media screen and (orientation: landscape) and (max-width: 768px) {
+            body::before {
+                content: "Por favor, gira tu dispositivo a modo vertical";
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: #1976d2;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                font-weight: 600;
+                text-align: center;
+                padding: 20px;
+                z-index: 99999;
+            }
+
+            body > * {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <div id="login-screen" class="login-container">
@@ -128,8 +159,16 @@
                             <span id="chat-status" class="chat-status-badge">Activa</span>
                         </div>
                         <div class="chat-actions">
-                            <button id="finalize-btn" class="action-btn success">Finalizar Conversación</button>
-                            <button id="delete-btn" class="action-btn danger">Eliminar Conversación</button>
+                            <button id="finalize-btn" class="action-btn success">
+                                <span class="btn-icon">✓</span>
+                                <span class="btn-text-full">Finalizar Conversación</span>
+                                <span class="btn-text-short">Finalizar</span>
+                            </button>
+                            <button id="delete-btn" class="action-btn danger">
+                                <span class="btn-icon">🗑</span>
+                                <span class="btn-text-full">Eliminar Conversación</span>
+                                <span class="btn-text-short">Eliminar</span>
+                            </button>
                         </div>
                     </div>
 
