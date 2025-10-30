@@ -506,7 +506,7 @@ body {
 
 .dropdown-item {
     width: 100%;
-    padding: 12px 16px;
+    padding: 14px 20px;
     background: transparent;
     border: none;
     text-align: left;
@@ -533,7 +533,7 @@ body {
 .dropdown-divider {
     height: 1px;
     background: var(--divider-color);
-    margin: 4px 0;
+    margin: 8px 0;
 }
 
 /* Toggle de tema */
