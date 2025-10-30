@@ -123,7 +123,11 @@ function getAllActiveConversations(onlyWithAdvisor = false) {
     if (onlyWithAdvisor) {
         const { isUserWithAdvisor } = require('./menuService');
         conversations = conversations.filter(conv => {
-            return isUserWithAdvisor(conv.phoneNumber);
+            // Verificar AMBOS:
+            // 1. Estado actual en menuService (si existe sesión activa)
+            // 2. Flag isWithAdvisor de la conversación (inferido de mensajes)
+            // Esto asegura que funcione tanto en runtime como al cargar desde BD
+            return isUserWithAdvisor(conv.phoneNumber) || conv.isWithAdvisor;
         });
     }
 
