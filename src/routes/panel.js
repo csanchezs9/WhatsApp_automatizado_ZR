@@ -270,6 +270,69 @@ router.post('/conversations/:phoneNumber/finalize', authMiddleware, async (req, 
 });
 
 /**
+ * DELETE /api/conversations/:phoneNumber
+ * Elimina permanentemente una conversación de la base de datos y todos sus archivos multimedia
+ */
+router.delete('/conversations/:phoneNumber', authMiddleware, async (req, res) => {
+    try {
+        const { phoneNumber } = req.params;
+
+        // Verificar si existe conversación activa
+        const conversation = conversationService.getActiveConversation(phoneNumber);
+
+        if (!conversation) {
+            return res.status(404).json({
+                error: 'Conversación no encontrada'
+            });
+        }
+
+        // Si el usuario está con asesor, desactivar modo asesor primero
+        if (menuService.isUserWithAdvisor(phoneNumber)) {
+            menuService.deactivateAdvisorMode(phoneNumber);
+            console.log(`🔓 Modo asesor desactivado para ${phoneNumber} antes de eliminar`);
+        }
+
+        // Obtener todos los archivos multimedia antes de eliminar la conversación
+        const mediaFiles = conversation.messages
+            .filter(msg => msg.mediaPath && (msg.type === 'image' || msg.type === 'document' || msg.type === 'audio' || msg.type === 'video'))
+            .map(msg => msg.mediaPath);
+
+        // Eliminar archivos multimedia del sistema de archivos
+        const { deleteMedia } = require('../services/mediaService');
+        let deletedFilesCount = 0;
+        for (const mediaPath of mediaFiles) {
+            try {
+                deleteMedia(mediaPath);
+                deletedFilesCount++;
+            } catch (error) {
+                console.error(`⚠️ Error eliminando archivo ${mediaPath}:`, error.message);
+            }
+        }
+
+        // Archivar conversación en BD (esto la elimina de memoria)
+        await conversationService.archiveConversation(phoneNumber, 'Eliminada por asesor');
+
+        console.log(`🗑️ Conversación eliminada: ${phoneNumber}`);
+        console.log(`📎 Archivos multimedia eliminados: ${deletedFilesCount}`);
+
+        res.json({
+            success: true,
+            message: 'Conversación eliminada permanentemente',
+            deletedFiles: deletedFilesCount,
+            messageCount: conversation.messages.length
+        });
+
+        // Emitir evento WebSocket para notificar al panel
+        if (req.app.get('io')) {
+            req.app.get('io').emit('conversation_deleted', { phoneNumber });
+        }
+    } catch (error) {
+        console.error('Error al eliminar conversación:', error);
+        res.status(500).json({ error: 'Error al eliminar conversación' });
+    }
+});
+
+/**
  * GET /api/search
  * Buscar conversaciones por número o texto
  */

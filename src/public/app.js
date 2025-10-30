@@ -682,11 +682,26 @@ deleteBtn.addEventListener('click', async () => {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Error al eliminar');
+            let errorMessage = 'Error al eliminar';
+            try {
+                const error = await response.json();
+                errorMessage = error.error || errorMessage;
+            } catch (parseError) {
+                // Si no es JSON, obtener el texto plano
+                const errorText = await response.text();
+                console.error('Error response (not JSON):', errorText);
+                errorMessage = `Error ${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
         }
 
-        const result = await response.json();
+        let result;
+        try {
+            result = await response.json();
+        } catch (parseError) {
+            console.error('Error parsing success response:', parseError);
+            throw new Error('Error al procesar la respuesta del servidor');
+        }
 
         await showCustomAlert(
             'Conversación Eliminada',
