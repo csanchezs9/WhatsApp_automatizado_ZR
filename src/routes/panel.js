@@ -4,6 +4,7 @@ const conversationService = require('../services/conversationService');
 const whatsappService = require('../services/whatsappService');
 const menuService = require('../services/menuService');
 const mediaService = require('../services/mediaService');
+const audioConverter = require('../services/audioConverter');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -487,34 +488,55 @@ router.post('/upload-media', authMiddleware, upload.single('file'), async (req, 
             return res.status(400).json({ error: 'Número de teléfono requerido' });
         }
 
-        const relativePath = `media/${req.file.filename}`;
+        let relativePath = `media/${req.file.filename}`;
+        let finalMimeType = req.file.mimetype;
+        let finalSize = req.file.size;
 
         // Determinar tipo de archivo
         let fileType;
-        let normalizedMimeType = req.file.mimetype;
 
         if (req.file.mimetype.startsWith('image/')) {
             fileType = 'image';
         } else if (req.file.mimetype.startsWith('audio/')) {
             fileType = 'audio';
-            // IMPORTANTE: WhatsApp Business API solo acepta ciertos formatos de audio
-            // Normalizar audio/webm a audio/ogg (ambos usan codec opus)
-            if (req.file.mimetype.includes('webm')) {
-                normalizedMimeType = 'audio/ogg; codecs=opus';
-                console.log(`🔄 Normalizando ${req.file.mimetype} -> ${normalizedMimeType}`);
+
+            // CONVERSIÓN REAL: Convertir audio a formato compatible con WhatsApp
+            try {
+                const fullPath = mediaService.getMediaFullPath(relativePath);
+                const converted = await audioConverter.convertAudioForWhatsApp(fullPath, req.file.mimetype);
+
+                if (converted.converted) {
+                    // Actualizar path y mimeType con el archivo convertido
+                    relativePath = converted.path.replace(mediaService.getMediaFullPath(''), '').replace(/\\/g, '/');
+                    finalMimeType = converted.mimeType;
+                    finalSize = fs.statSync(converted.path).size;
+
+                    console.log(`✅ Audio convertido exitosamente:`);
+                    console.log(`   → Path original: media/${req.file.filename}`);
+                    console.log(`   → Path convertido: ${relativePath}`);
+                    console.log(`   → MimeType: ${finalMimeType}`);
+                }
+            } catch (conversionError) {
+                console.error('❌ Error al convertir audio:', conversionError);
+                // Si falla la conversión, eliminar archivo y devolver error
+                fs.unlinkSync(req.file.path);
+                return res.status(500).json({
+                    error: 'Error al convertir audio a formato compatible',
+                    details: conversionError.message
+                });
             }
         } else {
             fileType = 'document';
         }
 
-        console.log(`✅ Archivo subido desde panel: ${req.file.filename} (tipo: ${fileType}, mime original: ${req.file.mimetype}, normalizado: ${normalizedMimeType})`);
+        console.log(`✅ Archivo procesado: ${relativePath} (tipo: ${fileType}, mime: ${finalMimeType}, tamaño: ${(finalSize/1024).toFixed(2)}KB)`);
 
         res.json({
             success: true,
             mediaPath: relativePath,
             filename: req.file.originalname,
-            mimeType: normalizedMimeType, // Usar mimeType normalizado
-            size: req.file.size,
+            mimeType: finalMimeType,
+            size: finalSize,
             type: fileType
         });
     } catch (error) {
@@ -611,14 +633,12 @@ router.post('/send-media', authMiddleware, async (req, res) => {
             console.log('📷 Enviando imagen a WhatsApp...');
             await whatsappService.sendImage(phoneNumber, mediaId, caption);
         } else if (messageType === 'audio') {
-            // WORKAROUND TEMPORAL: Enviar audio como documento
-            // WhatsApp rechaza audio/webm convertido a .ogg (error 131000)
-            // Necesita conversión real con FFmpeg o codec nativo
-            console.log('🎤 Enviando audio como DOCUMENTO (workaround temporal)...');
+            console.log('🎤 Enviando audio a WhatsApp (convertido con FFmpeg)...');
             console.log(`   → Número destino: ${phoneNumber}`);
             console.log(`   → Media ID: ${mediaId}`);
-            console.log(`   → Nota: Enviando como documento porque WebM no es soportado por WhatsApp`);
-            await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'audio.ogg', '🎤 Mensaje de voz del asesor');
+            console.log(`   → Tipo de mensaje: ${messageType}`);
+            const audioResult = await whatsappService.sendAudio(phoneNumber, mediaId, caption);
+            console.log('✅ Respuesta de WhatsApp para audio:', JSON.stringify(audioResult, null, 2));
         } else {
             console.log('📄 Enviando documento a WhatsApp...');
             await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'documento', caption);
