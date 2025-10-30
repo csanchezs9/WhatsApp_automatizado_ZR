@@ -175,29 +175,89 @@ function archiveConversation(phoneNumber, advisorNotes = null) {
  * Esta función elimina COMPLETAMENTE la conversación, no la archiva
  */
 function deleteConversationPermanently(phoneNumber) {
-    return new Promise((resolve, reject) => {
-        // Primero eliminar de memoria
-        const wasInMemory = activeConversations.has(phoneNumber);
-        activeConversations.delete(phoneNumber);
+    return new Promise(async (resolve, reject) => {
+        try {
+            let conversation = null;
+            let deletedFilesCount = 0;
 
-        // Luego eliminar de la BD (todas las entradas con ese número)
-        db.run(
-            `DELETE FROM conversations WHERE phone_number = ?`,
-            [phoneNumber],
-            function(err) {
-                if (err) {
-                    console.error(`❌ Error al eliminar conversación de BD: ${phoneNumber}`, err.message);
-                    reject(err);
-                } else {
-                    const deletedRows = this.changes;
-                    console.log(`🗑️ Conversación eliminada PERMANENTEMENTE de BD: ${phoneNumber} (${deletedRows} registros borrados)`);
-                    if (wasInMemory) {
-                        console.log(`   ✅ También eliminada de memoria activa`);
-                    }
-                    resolve(deletedRows);
+            // 1. Obtener conversación de memoria O de BD
+            if (activeConversations.has(phoneNumber)) {
+                conversation = activeConversations.get(phoneNumber);
+                console.log(`🔍 Conversación encontrada en memoria: ${phoneNumber}`);
+            } else {
+                // Buscar en BD si no está en memoria
+                conversation = await new Promise((res, rej) => {
+                    db.get(
+                        `SELECT messages FROM conversations WHERE phone_number = ? ORDER BY started_at DESC LIMIT 1`,
+                        [phoneNumber],
+                        (err, row) => {
+                            if (err) return rej(err);
+                            if (!row) return res(null);
+
+                            try {
+                                const messages = JSON.parse(row.messages);
+                                res({ messages });
+                            } catch (parseErr) {
+                                console.error('⚠️ Error parseando mensajes:', parseErr.message);
+                                res(null);
+                            }
+                        }
+                    );
+                });
+
+                if (conversation) {
+                    console.log(`🔍 Conversación encontrada en BD: ${phoneNumber}`);
                 }
             }
-        );
+
+            // 2. Eliminar archivos multimedia si la conversación existe
+            if (conversation && conversation.messages) {
+                const mediaFiles = conversation.messages
+                    .filter(msg => msg.mediaPath && ['image', 'document', 'audio', 'video'].includes(msg.type))
+                    .map(msg => msg.mediaPath);
+
+                for (const mediaPath of mediaFiles) {
+                    try {
+                        deleteMedia(mediaPath);
+                        deletedFilesCount++;
+                    } catch (error) {
+                        console.error(`⚠️ Error eliminando archivo ${mediaPath}:`, error.message);
+                    }
+                }
+
+                if (deletedFilesCount > 0) {
+                    console.log(`📎 Archivos multimedia eliminados: ${deletedFilesCount}`);
+                }
+            }
+
+            // 3. Eliminar de memoria
+            const wasInMemory = activeConversations.has(phoneNumber);
+            activeConversations.delete(phoneNumber);
+
+            // 4. Eliminar de BD (todas las entradas con ese número)
+            db.run(
+                `DELETE FROM conversations WHERE phone_number = ?`,
+                [phoneNumber],
+                function(err) {
+                    if (err) {
+                        console.error(`❌ Error al eliminar conversación de BD: ${phoneNumber}`, err.message);
+                        reject(err);
+                    } else {
+                        const deletedRows = this.changes;
+                        console.log(`🗑️ Conversación eliminada PERMANENTEMENTE: ${phoneNumber}`);
+                        console.log(`   ├─ Registros de BD eliminados: ${deletedRows}`);
+                        console.log(`   ├─ Archivos multimedia eliminados: ${deletedFilesCount}`);
+                        if (wasInMemory) {
+                            console.log(`   └─ Eliminada de memoria activa`);
+                        }
+                        resolve({ deletedRows, deletedFilesCount });
+                    }
+                }
+            );
+        } catch (error) {
+            console.error(`❌ Error en deleteConversationPermanently: ${phoneNumber}`, error);
+            reject(error);
+        }
     });
 }
 

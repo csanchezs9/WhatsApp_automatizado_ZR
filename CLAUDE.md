@@ -90,7 +90,7 @@ The bot has a dual-mode system:
 - Real-time conversation management via browser
 - View all active conversations
 - Respond to messages directly from panel
-- Access 90-day conversation history
+- Access 20-day conversation history
 - Archive conversations with notes
 - WebSocket-based live updates
 - Basic Auth security (username/password)
@@ -104,8 +104,8 @@ The bot has a dual-mode system:
 - Frontend: HTML/CSS/JS vanilla (served from `src/public/`)
 - Backend API: Express routes in `src/routes/panel.js`
 - Real-time: Socket.io WebSocket
-- Storage: SQLite on Render Disk (1GB at `/opt/render/project/src/data/persistent/`)
-- History: 90 days, auto-rotation every 24 hours
+- Storage: SQLite on Render Disk (2GB at `/opt/render/project/src/data/persistent/`)
+- History: 20 days, auto-rotation every 24 hours
 
 See `PANEL-ASESOR.md` for complete panel documentation.
 

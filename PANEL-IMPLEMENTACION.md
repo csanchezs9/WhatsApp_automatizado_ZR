@@ -18,15 +18,15 @@ Panel web donde el asesor puede ver y responder todas las conversaciones desde e
 
 #### **conversationService.js** - Gestión de conversaciones
 - Almacenamiento en memoria para conversaciones activas (máx 100)
-- Persistencia en SQLite (Render Disk 1GB)
-- Rotación automática de historial (90 días)
+- Persistencia en SQLite (Render Disk 2GB)
+- Rotación automática de historial (20 días)
 - Limpieza automática cada 24 horas
 - Funciones: addMessage, getActiveConversation, archiveConversation, getConversationHistory
 
 #### **panel.js** - Rutas API REST
 - `GET /api/conversations` - Lista de conversaciones activas
 - `GET /api/conversations/:phone` - Conversación específica
-- `GET /api/conversations/:phone/history` - Historial de 90 días
+- `GET /api/conversations/:phone/history` - Historial de 20 días
 - `POST /api/send-message` - Enviar mensaje al cliente
 - `POST /api/conversations/:phone/archive` - Archivar conversación
 - `GET /api/search` - Búsqueda por número/texto
@@ -106,7 +106,7 @@ PANEL_PASSWORD=zonarepuestera2025
 ```
 
 #### **Render Disk configurado**
-- Tamaño: 1 GB
+- Tamaño: 2 GB
 - Mount Path: `/opt/render/project/src/data/persistent`
 - Costo: $1/mes
 
@@ -149,7 +149,7 @@ PANEL_PASSWORD=zonarepuestera2025
 │  │ • Ver conversaciones activas                          │  │
 │  │ • Recibir notificaciones en tiempo real              │  │
 │  │ • Responder mensajes                                  │  │
-│  │ • Ver historial (90 días)                            │  │
+│  │ • Ver historial (20 días)                            │  │
 │  │ • Archivar conversaciones                            │  │
 │  └───────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
@@ -165,8 +165,8 @@ PANEL_PASSWORD=zonarepuestera2025
 ### Almacenamiento (Render Disk - SQLite)
 - **Por mensaje:** ~500 bytes
 - **Conversación promedio:** 20 mensajes = 10 KB
-- **50 conversaciones/día durante 90 días:** 50 × 90 × 10 KB = **45 MB**
-- **Espacio disponible:** 1 GB (suficiente para ~22,000 conversaciones)
+- **50 conversaciones/día durante 20 días:** 50 × 90 × 10 KB = **45 MB**
+- **Espacio disponible:** 2 GB (suficiente para ~22,000 conversaciones)
 
 ### Tráfico de Red
 - **Webhook entrante:** ~1-2 KB por mensaje
@@ -179,7 +179,7 @@ PANEL_PASSWORD=zonarepuestera2025
 | Concepto | Costo Mensual |
 |----------|---------------|
 | Render Starter Plan | $7.00 |
-| Render Disk 1GB | $1.00 |
+| Render Disk 2GB | $1.00 |
 | **Total** | **$8.00** |
 
 ## Próximos Pasos
@@ -247,12 +247,12 @@ Logs → Tail Logs
 ## Características Destacadas
 
 ✅ **Sin costo adicional de infraestructura compleja**
-✅ **Historial persistente de 90 días**
+✅ **Historial persistente de 20 días**
 ✅ **Tiempo real mediante WebSocket**
 ✅ **Simple de usar (interfaz intuitiva)**
 ✅ **Seguro (autenticación Basic Auth)**
 ✅ **Escalable (hasta 100 conversaciones simultáneas)**
-✅ **Mantenimiento automático (rotación de 90 días)**
+✅ **Mantenimiento automático (rotación de 20 días)**
 ✅ **Todo en un solo servidor ($8/mes)**
 
 ## Conclusión

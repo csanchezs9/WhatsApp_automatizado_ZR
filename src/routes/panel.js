@@ -296,14 +296,9 @@ router.delete('/conversations/:phoneNumber', authMiddleware, async (req, res) =>
     try {
         const { phoneNumber } = req.params;
 
-        // Verificar si existe conversación activa
+        // Verificar si existe conversación (en memoria o BD)
         const conversation = conversationService.getActiveConversation(phoneNumber);
-
-        if (!conversation) {
-            return res.status(404).json({
-                error: 'Conversación no encontrada'
-            });
-        }
+        const messageCount = conversation?.messages?.length || 0;
 
         // Si el usuario está con asesor, desactivar modo asesor primero
         if (menuService.isUserWithAdvisor(phoneNumber)) {
@@ -311,34 +306,16 @@ router.delete('/conversations/:phoneNumber', authMiddleware, async (req, res) =>
             console.log(`🔓 Modo asesor desactivado para ${phoneNumber} antes de eliminar`);
         }
 
-        // Obtener todos los archivos multimedia antes de eliminar la conversación
-        const mediaFiles = conversation.messages
-            .filter(msg => msg.mediaPath && (msg.type === 'image' || msg.type === 'document' || msg.type === 'audio' || msg.type === 'video'))
-            .map(msg => msg.mediaPath);
-
-        // Eliminar archivos multimedia del sistema de archivos
-        const { deleteMedia } = require('../services/mediaService');
-        let deletedFilesCount = 0;
-        for (const mediaPath of mediaFiles) {
-            try {
-                deleteMedia(mediaPath);
-                deletedFilesCount++;
-            } catch (error) {
-                console.error(`⚠️ Error eliminando archivo ${mediaPath}:`, error.message);
-            }
-        }
-
-        // Eliminar conversación PERMANENTEMENTE de BD y memoria
-        await conversationService.deleteConversationPermanently(phoneNumber);
-
-        console.log(`🗑️ Conversación eliminada: ${phoneNumber}`);
-        console.log(`📎 Archivos multimedia eliminados: ${deletedFilesCount}`);
+        // Eliminar conversación PERMANENTEMENTE (BD, memoria Y archivos multimedia)
+        // La función deleteConversationPermanently() ahora maneja TODO automáticamente
+        const result = await conversationService.deleteConversationPermanently(phoneNumber);
 
         res.json({
             success: true,
             message: 'Conversación eliminada permanentemente',
-            deletedFiles: deletedFilesCount,
-            messageCount: conversation.messages.length
+            deletedFiles: result.deletedFilesCount || 0,
+            deletedRows: result.deletedRows || 0,
+            messageCount: messageCount
         });
 
         // Emitir evento WebSocket para notificar al panel

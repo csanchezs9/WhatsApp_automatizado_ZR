@@ -14,7 +14,7 @@
 - ✅ **8 de 10** aspectos críticos funcionan perfectamente
 - ⚠️ **2 ajustes menores** recomendados (no bloquean producción)
 - 🔒 **Seguridad**: Todas las validaciones implementadas correctamente
-- 💾 **Uso de disco**: Actualmente 36KB (0.004% del límite de 1GB)
+- 💾 **Uso de disco**: Actualmente 36KB (0.002% del límite de 2GB)
 - 🚀 **Performance**: Limpieza automática funcionando correctamente
 
 ---
@@ -104,7 +104,7 @@
 Base de Datos:     36 KB
 Archivos multimedia: 0 KB
 Total:             36 KB
-Uso del disco:     0.004% (de 1GB disponible)
+Uso del disco:     0.002% (de 2GB disponible)
 ```
 
 ### Estimación con Uso Real (20 días de retención)
@@ -113,7 +113,13 @@ Escenario conservador:
 - 50 conversaciones/día con asesor
 - 30% incluyen multimedia
 - Uso estimado: 120 MB en 20 días
-- Sobra: 88% del disco (880 MB)
+- Sobra: 94% del disco (1.88 GB)
+
+Escenario alto:
+- 100 conversaciones/día con asesor
+- 50% incluyen multimedia
+- Uso estimado: 380 MB en 20 días
+- Sobra: 81% del disco (1.62 GB)
 ```
 
 ### Límites Configurados

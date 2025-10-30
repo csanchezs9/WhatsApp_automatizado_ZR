@@ -13,8 +13,8 @@ Panel web profesional para que los asesores de Zona Repuestera gestionen convers
 - Actualización automática cada 10 segundos
 
 ✅ **Historial Persistente**
-- Historial de conversaciones de los últimos 90 días
-- Almacenamiento en SQLite (Render Disk 1GB)
+- Historial de conversaciones de los últimos 20 días
+- Almacenamiento en SQLite (Render Disk 2GB)
 - Búsqueda por número de teléfono
 - Ver conversaciones pasadas de clientes recurrentes
 
@@ -85,7 +85,7 @@ La conversación se guardará en la base de datos y se eliminará de las convers
 - **Backend:** Node.js, Express
 - **Tiempo Real:** Socket.io
 - **Base de Datos:** SQLite (almacenada en Render Disk)
-- **Hosting:** Render.com (Starter Plan $7/mes + Disk 1GB $1/mes)
+- **Hosting:** Render.com (Starter Plan $7/mes + Disk 2GB $2/mes)
 
 ### Flujo de Datos
 
@@ -247,7 +247,7 @@ NODE_ENV=production
 2. Settings → Disks → Add Disk
 3. Configuración:
    - **Name:** `chatbot-data`
-   - **Size:** 1 GB
+   - **Size:** 2 GB
    - **Mount Path:** `/opt/render/project/src/data/persistent`
 4. Guardar y redesplegar
 

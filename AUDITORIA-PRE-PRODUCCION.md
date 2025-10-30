@@ -33,29 +33,21 @@
 
 ## 🚨 PROBLEMAS CRÍTICOS ENCONTRADOS
 
-### ❌ BUG #1: Inconsistencia en retención de historial (DOCUMENTACIÓN)
-**Ubicación**: `CLAUDE.md` vs código real
-**Problema**:
-- La documentación dice "90 días de historial"
-- El código elimina conversaciones después de 20 días
-- Inconsistencia crítica para el cliente
+### ✅ RESUELTO: Retención de historial confirmada en 20 días
+**Ubicación**: `CLAUDE.md` y código
+**Estado**: ✅ CONFIRMADO Y ACTUALIZADO
+**Decisión del cliente**: Mantener 20 días de retención
 
-**Archivos afectados**:
-- `src/services/conversationService.js:390` - `datetime('now', '-20 days')`
-- `CLAUDE.md` - dice "90 days"
+**Archivos actualizados**:
+- `src/services/conversationService.js:390` - `datetime('now', '-20 days')` ✅
+- `CLAUDE.md` - Actualizado a "20 days" ✅
 
-**Impacto**: MEDIO
-- El cliente esperará 90 días de historial pero solo tendrá 20 días
-- Podría causar pérdida de datos de clientes
+**Beneficios de 20 días**:
+- Optimiza uso de disco (2GB disponible)
+- Limpieza más frecuente = mejor performance
+- Suficiente para resolver casos de soporte
 
-**Solución recomendada**:
-```javascript
-// Cambiar de:
-`SELECT messages FROM conversations WHERE started_at < datetime('now', '-20 days')`
-
-// A:
-`SELECT messages FROM conversations WHERE started_at < datetime('now', '-90 days')`
-```
+**Nota**: Si en el futuro se necesita más retención, cambiar a 30 o 60 días es trivial (1 línea de código)
 
 ---
 
@@ -131,7 +123,7 @@ const upload = multer({
 
 ---
 
-## 💾 ANÁLISIS DE USO DE DISCO (1GB disponible en Render)
+## 💾 ANÁLISIS DE USO DE DISCO (2GB disponible en Render)
 
 ### Estimación de uso:
 ```
@@ -151,16 +143,19 @@ ESCENARIO CONSERVADOR (20 días retención):
 - 5 imágenes/día * 200KB = 1MB/día
 - Total: ~6MB/día * 20 días = 120MB
 
-ESCENARIO PESADO (90 días retención):
-- 100 conversaciones/día
-- 50% multimedia
-- Total estimado: ~500MB en 90 días
+ESCENARIO ALTO (20 días retención):
+- 100 conversaciones/día con asesor
+- 50% incluyen multimedia (50/día)
+- 30 audios/día * 500KB = 15MB/día
+- 20 imágenes/día * 200KB = 4MB/día
+- Total: ~19MB/día * 20 días = 380MB
 ```
 
-**Conclusión**: Con 1GB, tienes espacio suficiente PERO:
-- Debes mantener limpieza automática activa
-- Monitorear uso de disco regularmente
-- Si cambias a 90 días de retención, necesitas monitoreo más estricto
+**Conclusión**: Con 2GB, tienes espacio MÁS QUE SUFICIENTE:
+- Escenario conservador: 120MB (~6% del disco)
+- Escenario alto: 380MB (~19% del disco)
+- Sobra 81-94% del disco incluso en uso intenso
+- Limpieza automática cada 20 días mantiene todo optimizado
 
 ---
 
