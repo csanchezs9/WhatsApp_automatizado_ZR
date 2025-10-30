@@ -2917,7 +2917,7 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
     font-weight: 500;
     color: rgba(0, 0, 0, 0.75);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    max-width: 100px;
+    max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2974,6 +2974,7 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
 .label-selector-item.assigned {
     background: var(--hover-bg);
     border-color: var(--primary-color);
+    border-width: 2px;
 }
 
 .label-selector-item.assigned::after {
@@ -2981,6 +2982,16 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
     margin-left: auto;
     font-weight: bold;
     color: var(--primary-color);
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    flex-shrink: 0;
 }
 
 .label-selector-color {
