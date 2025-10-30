@@ -454,9 +454,14 @@ function addMessageToChat(message) {
         const audioDiv = document.createElement('div');
         audioDiv.className = 'message-audio';
 
+        // Ícono de onda de sonido SVG minimalista
         const iconDiv = document.createElement('div');
         iconDiv.className = 'message-audio-icon';
-        iconDiv.textContent = '🎤';
+        iconDiv.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5V19M8 9V15M16 9V15M4 11V13M20 11V13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+        `;
 
         const audioPlayer = document.createElement('audio');
         audioPlayer.className = 'message-audio-player';
