@@ -841,12 +841,82 @@ window.confirmSendImage = async function() {
     }
 };
 
+// ============================================
+// FILE UPLOAD LOADER
+// ============================================
+
+function showFileLoader(filename, filesize) {
+    const loader = document.getElementById('file-upload-loader');
+    const loaderTitle = document.getElementById('loader-title');
+    const loaderDescription = document.getElementById('loader-description');
+    const loaderFileInfo = document.getElementById('loader-file-info');
+    const progressFill = document.getElementById('loader-progress-fill');
+    const progressText = document.getElementById('loader-progress-text');
+
+    // Formatear tamaño del archivo
+    const sizeMB = (filesize / (1024 * 1024)).toFixed(2);
+
+    loaderTitle.textContent = 'Subiendo archivo...';
+    loaderDescription.textContent = 'Por favor espera, esto puede tomar unos segundos';
+    loaderFileInfo.textContent = `${filename} (${sizeMB} MB)`;
+    progressFill.style.width = '0%';
+    progressText.textContent = '0%';
+
+    loader.style.display = 'flex';
+
+    // Simular progreso (ya que fetch no da progreso real sin XMLHttpRequest)
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90; // No llegar a 100% hasta que termine
+        progressFill.style.width = `${progress}%`;
+        progressText.textContent = `${Math.floor(progress)}%`;
+    }, 300);
+
+    return interval;
+}
+
+function updateLoaderStatus(title, description) {
+    const loaderTitle = document.getElementById('loader-title');
+    const loaderDescription = document.getElementById('loader-description');
+    const progressFill = document.getElementById('loader-progress-fill');
+    const progressText = document.getElementById('loader-progress-text');
+
+    loaderTitle.textContent = title;
+    loaderDescription.textContent = description;
+    progressFill.style.width = '95%';
+    progressText.textContent = '95%';
+}
+
+function completeLoader() {
+    const progressFill = document.getElementById('loader-progress-fill');
+    const progressText = document.getElementById('loader-progress-text');
+    const loaderTitle = document.getElementById('loader-title');
+
+    progressFill.style.width = '100%';
+    progressText.textContent = '100%';
+    loaderTitle.textContent = 'Archivo enviado';
+}
+
+function hideFileLoader(interval) {
+    if (interval) clearInterval(interval);
+    const loader = document.getElementById('file-upload-loader');
+    setTimeout(() => {
+        loader.style.display = 'none';
+    }, 800);
+}
+
 // Función auxiliar para enviar archivos
 async function sendFileImmediately(file, caption = '') {
+    let progressInterval = null;
+
     try {
         attachBtn.disabled = true;
 
         console.log('📤 Iniciando upload:', { name: file.name, size: file.size, type: file.type });
+
+        // Mostrar loader
+        progressInterval = showFileLoader(file.name, file.size);
 
         const formData = new FormData();
         formData.append('file', file);
@@ -869,6 +939,9 @@ async function sendFileImmediately(file, caption = '') {
 
         const uploadData = await uploadResponse.json();
         console.log('✅ Upload exitoso:', uploadData);
+
+        // Actualizar loader: enviando a WhatsApp
+        updateLoaderStatus('Enviando a WhatsApp...', 'El archivo se está enviando al cliente');
 
         // Send file to WhatsApp
         const sendResponse = await fetch('/api/send-media', {
@@ -893,6 +966,14 @@ async function sendFileImmediately(file, caption = '') {
         }
 
         console.log('✅ Archivo enviado correctamente');
+
+        // Completar loader
+        completeLoader();
+
+        // Ocultar loader después de 800ms
+        setTimeout(() => {
+            hideFileLoader(progressInterval);
+        }, 800);
     } catch (error) {
         console.error('❌ Error enviando archivo:', error);
         console.error('Detalles:', {
@@ -901,6 +982,7 @@ async function sendFileImmediately(file, caption = '') {
             type: file?.type,
             caption: caption
         });
+        hideFileLoader(progressInterval);
         throw error;
     } finally {
         attachBtn.disabled = false;
