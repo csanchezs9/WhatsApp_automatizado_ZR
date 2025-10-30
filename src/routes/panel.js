@@ -401,7 +401,9 @@ router.get('/statistics', authMiddleware, async (req, res) => {
  */
 router.get('/promotions', authMiddleware, (req, res) => {
     try {
-        const PROMO_FILE_PATH = path.join(__dirname, '../data/persistent/promoMessage.json');
+        const PROMO_FILE_PATH = process.env.NODE_ENV === 'production'
+            ? '/opt/render/project/src/data/persistent/promoMessage.json'
+            : path.join(__dirname, '../data/persistent/promoMessage.json');
 
         if (fs.existsSync(PROMO_FILE_PATH)) {
             const data = fs.readFileSync(PROMO_FILE_PATH, 'utf8');
@@ -444,7 +446,9 @@ router.post('/promotions', authMiddleware, async (req, res) => {
             });
         }
 
-        const PROMO_FILE_PATH = path.join(__dirname, '../data/persistent/promoMessage.json');
+        const PROMO_FILE_PATH = process.env.NODE_ENV === 'production'
+            ? '/opt/render/project/src/data/persistent/promoMessage.json'
+            : path.join(__dirname, '../data/persistent/promoMessage.json');
         const promoData = {
             message: message,
             lastUpdated: new Date().toISOString(),

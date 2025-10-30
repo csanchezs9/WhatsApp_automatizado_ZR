@@ -29,7 +29,9 @@ const MAX_SESSION_AGE = 1 * 24 * 60 * 60 * 1000; // 1 día (24 horas)
 const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // Limpiar cada 24 horas
 
 // Ruta al archivo de promociones (en directorio persistente para Render)
-const PROMO_FILE_PATH = path.join(__dirname, '../data/persistent/promoMessage.json');
+const PROMO_FILE_PATH = process.env.NODE_ENV === 'production'
+    ? '/opt/render/project/src/data/persistent/promoMessage.json'
+    : path.join(__dirname, '../data/persistent/promoMessage.json');
 
 // Mensaje por defecto
 const DEFAULT_PROMO_MESSAGE = '🔥 *PROMOCIONES Y DESCUENTOS*\n\nActualmente no hay promociones activas.\n\nMantente atento a nuestras redes sociales.';
