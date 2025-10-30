@@ -611,12 +611,14 @@ router.post('/send-media', authMiddleware, async (req, res) => {
             console.log('📷 Enviando imagen a WhatsApp...');
             await whatsappService.sendImage(phoneNumber, mediaId, caption);
         } else if (messageType === 'audio') {
-            console.log('🎤 Enviando audio a WhatsApp...');
+            // WORKAROUND TEMPORAL: Enviar audio como documento
+            // WhatsApp rechaza audio/webm convertido a .ogg (error 131000)
+            // Necesita conversión real con FFmpeg o codec nativo
+            console.log('🎤 Enviando audio como DOCUMENTO (workaround temporal)...');
             console.log(`   → Número destino: ${phoneNumber}`);
             console.log(`   → Media ID: ${mediaId}`);
-            console.log(`   → Tipo de mensaje: ${messageType}`);
-            const audioResult = await whatsappService.sendAudio(phoneNumber, mediaId, caption);
-            console.log('✅ Respuesta de WhatsApp para audio:', JSON.stringify(audioResult, null, 2));
+            console.log(`   → Nota: Enviando como documento porque WebM no es soportado por WhatsApp`);
+            await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'audio.ogg', '🎤 Mensaje de voz del asesor');
         } else {
             console.log('📄 Enviando documento a WhatsApp...');
             await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'documento', caption);
