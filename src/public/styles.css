@@ -546,6 +546,12 @@ body {
     background: var(--conversation-hover);
 }
 
+.theme-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
 .theme-switch {
     position: relative;
     width: 44px;

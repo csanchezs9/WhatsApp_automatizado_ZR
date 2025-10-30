@@ -28,6 +28,7 @@ const promotionsModal = document.getElementById('promotions-modal');
 const promoMessage = document.getElementById('promo-message');
 const charCount = document.getElementById('char-count');
 const themeToggleCheckbox = document.getElementById('theme-toggle-checkbox');
+const themeLabel = document.getElementById('theme-label');
 const backToListBtn = document.getElementById('back-to-list-btn');
 const sidebar = document.querySelector('.sidebar');
 const chatArea = document.querySelector('.chat-area');
@@ -103,11 +104,19 @@ document.addEventListener('click', (e) => {
 // ============================================
 // THEME TOGGLE (Light/Dark Mode)
 // ============================================
+function updateThemeLabel() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    // Si está en modo claro, el botón dice "Dark" (para cambiar a oscuro)
+    // Si está en modo oscuro, el botón dice "Light" (para cambiar a claro)
+    themeLabel.textContent = currentTheme === 'light' ? 'Dark' : 'Light';
+}
+
 function initTheme() {
     // Cargar tema guardado o usar claro por defecto
     const savedTheme = localStorage.getItem('panelTheme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     themeToggleCheckbox.checked = savedTheme === 'dark';
+    updateThemeLabel();
 }
 
 function toggleTheme() {
@@ -117,6 +126,7 @@ function toggleTheme() {
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('panelTheme', newTheme);
     themeToggleCheckbox.checked = newTheme === 'dark';
+    updateThemeLabel();
 }
 
 // Event listener para el toggle
