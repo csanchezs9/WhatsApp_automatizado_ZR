@@ -359,13 +359,21 @@ const activateAdvisorMode = async (userPhone, userQuery = '', consultationType =
   await sendInteractiveButtons(userPhone, clientMessage, buttons);
   console.log(`👤 Usuario ${userPhone} ahora está en modo asesor con consulta: "${userQuery}"`);
 
+  // CREAR mensaje de sistema con el tipo de consulta en el panel
+  const systemMessage = `${consultaIcon} *Tipo de consulta:* ${consultaType}`;
+  conversationService.addMessage(userPhone, {
+    from: 'system',
+    text: systemMessage,
+    type: 'text'
+  });
+
   // CREAR conversación en el panel con la consulta inicial
   conversationService.addMessage(userPhone, {
     from: 'client',
     text: userQuery,
     type: 'text'
   });
-  console.log(`💾 Conversación creada en panel para ${userPhone} con consulta inicial`);
+  console.log(`💾 Conversación creada en panel para ${userPhone} con tipo: ${consultaType}`);
 
   // Cambiar estado de la sesión para que no procese más mensajes como nueva consulta
   if (userSessions[userPhone]) {
