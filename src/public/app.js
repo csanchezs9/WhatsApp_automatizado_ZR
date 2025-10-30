@@ -1339,6 +1339,209 @@ function showCustomAlert(title, message, description, type = 'info') {
     });
 }
 
+// ============================================
+// VOICE RECORDING
+// ============================================
+
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingTimer = null;
+let recordingStartTime = 0;
+let recordedAudioBlob = null;
+
+const voiceBtn = document.getElementById('voice-btn');
+const voiceModal = document.getElementById('voice-modal');
+const voiceStopBtn = document.getElementById('voice-stop-btn');
+const voiceSendBtn = document.getElementById('voice-send-btn');
+const voiceTimer = document.getElementById('voice-timer');
+const voiceRecordingView = document.getElementById('voice-recording-view');
+const voicePreviewView = document.getElementById('voice-preview-view');
+const voicePreviewPlayer = document.getElementById('voice-preview-player');
+const voicePreviewDuration = document.getElementById('voice-preview-duration');
+
+voiceBtn.addEventListener('click', async () => {
+    if (!currentConversation) {
+        alert('Selecciona una conversación primero');
+        return;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        startRecording(stream);
+        voiceModal.classList.add('show');
+    } catch (error) {
+        console.error('Error al acceder al micrófono:', error);
+        alert('No se pudo acceder al micrófono. Verifica los permisos del navegador.');
+    }
+});
+
+function startRecording(stream) {
+    audioChunks = [];
+    recordedAudioBlob = null;
+
+    // Configurar MediaRecorder
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            audioChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = () => {
+        const mimeType = mediaRecorder.mimeType;
+        recordedAudioBlob = new Blob(audioChunks, { type: mimeType });
+
+        // Detener el stream
+        stream.getTracks().forEach(track => track.stop());
+
+        // Mostrar preview
+        showVoicePreview(recordedAudioBlob);
+    };
+
+    // Iniciar grabación
+    mediaRecorder.start();
+    recordingStartTime = Date.now();
+
+    // Mostrar vista de grabación
+    voiceRecordingView.style.display = 'block';
+    voicePreviewView.style.display = 'none';
+    voiceStopBtn.style.display = 'inline-block';
+    voiceSendBtn.style.display = 'none';
+
+    // Iniciar timer
+    recordingTimer = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        voiceTimer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+        // Límite de 2 minutos
+        if (elapsed >= 120) {
+            stopRecording();
+        }
+    }, 100);
+}
+
+window.stopRecording = function() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        clearInterval(recordingTimer);
+    }
+};
+
+function showVoicePreview(blob) {
+    const url = URL.createObjectURL(blob);
+    voicePreviewPlayer.src = url;
+
+    // Calcular duración
+    const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    voicePreviewDuration.textContent = `Duración: ${minutes}:${String(seconds).padStart(2, '0')}`;
+
+    // Cambiar vista
+    voiceRecordingView.style.display = 'none';
+    voicePreviewView.style.display = 'block';
+    voiceStopBtn.style.display = 'none';
+    voiceSendBtn.style.display = 'inline-block';
+}
+
+window.sendVoiceMessage = async function() {
+    if (!recordedAudioBlob || !currentConversation) return;
+
+    try {
+        voiceSendBtn.disabled = true;
+        voiceSendBtn.textContent = 'Enviando...';
+
+        // Crear FormData
+        const formData = new FormData();
+        const filename = `audio_${Date.now()}.webm`;
+        formData.append('file', recordedAudioBlob, filename);
+        formData.append('phoneNumber', currentConversation);
+
+        // Mostrar loader
+        closeVoiceModal();
+        const progressInterval = showFileLoader(filename, recordedAudioBlob.size);
+
+        // Upload audio
+        const uploadResponse = await fetch('/api/upload-media', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${currentAuth}`
+            },
+            body: formData
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error('Error al subir audio');
+        }
+
+        const uploadData = await uploadResponse.json();
+
+        // Actualizar loader
+        updateLoaderStatus('Enviando audio...', 'El audio se está enviando al cliente');
+
+        // Enviar audio a WhatsApp
+        const sendResponse = await fetch('/api/send-media', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${currentAuth}`
+            },
+            body: JSON.stringify({
+                phoneNumber: currentConversation,
+                mediaPath: uploadData.mediaPath,
+                mimeType: uploadData.mimeType,
+                filename: filename
+            })
+        });
+
+        if (!sendResponse.ok) {
+            throw new Error('Error al enviar audio');
+        }
+
+        // Completar loader
+        completeLoader();
+        setTimeout(() => {
+            hideFileLoader(progressInterval);
+        }, 800);
+
+        console.log('✅ Audio enviado correctamente');
+    } catch (error) {
+        console.error('Error al enviar audio:', error);
+        alert('Error al enviar el audio. Intenta nuevamente.');
+    } finally {
+        voiceSendBtn.disabled = false;
+        voiceSendBtn.textContent = 'Enviar Audio';
+    }
+};
+
+window.closeVoiceModal = function() {
+    // Detener grabación si está activa
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        clearInterval(recordingTimer);
+    }
+
+    // Limpiar
+    audioChunks = [];
+    recordedAudioBlob = null;
+    voiceTimer.textContent = '00:00';
+
+    // Ocultar modal
+    voiceModal.classList.remove('show');
+
+    // Resetear vistas
+    setTimeout(() => {
+        voiceRecordingView.style.display = 'block';
+        voicePreviewView.style.display = 'none';
+        voiceStopBtn.style.display = 'none';
+        voiceSendBtn.style.display = 'none';
+    }, 300);
+};
+
 // Auto-login si hay credenciales guardadas
 window.addEventListener('load', () => {
     const savedAuth = localStorage.getItem('panelAuth');
