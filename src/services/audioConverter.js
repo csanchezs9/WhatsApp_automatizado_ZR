@@ -4,16 +4,16 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Convertir archivo de audio WebM a OGG (Opus codec)
- * para compatibilidad con WhatsApp Business API
+ * Convertir archivo de audio WebM a M4A (AAC codec)
+ * WhatsApp prefiere AAC sobre Opus para mensajes de voz nativos
  *
  * @param {string} inputPath - Ruta del archivo WebM de entrada
- * @param {string} outputPath - Ruta del archivo OGG de salida
+ * @param {string} outputPath - Ruta del archivo M4A de salida
  * @returns {Promise<string>} - Ruta del archivo convertido
  */
-async function convertWebMToOgg(inputPath, outputPath) {
+async function convertWebMToM4A(inputPath, outputPath) {
     return new Promise((resolve, reject) => {
-        console.log('🔄 Iniciando conversión de audio:');
+        console.log('🔄 Iniciando conversión de audio a M4A/AAC:');
         console.log(`   → Entrada: ${inputPath}`);
         console.log(`   → Salida: ${outputPath}`);
 
@@ -22,19 +22,19 @@ async function convertWebMToOgg(inputPath, outputPath) {
             return reject(new Error(`Archivo de entrada no encontrado: ${inputPath}`));
         }
 
-        // FFmpeg comando para WhatsApp Business API:
-        // -i input.webm: archivo de entrada
-        // -c:a libopus: codec de audio Opus
-        // -b:a 64k: bitrate de 64kbps (calidad aceptable para voz)
-        // -ar 48000: sample rate 48kHz (estándar Opus)
+        // FFmpeg comando para WhatsApp - AAC es el formato preferido
+        // -i input: archivo de entrada
+        // -c:a aac: codec AAC (nativo de WhatsApp/iPhone)
+        // -b:a 128k: bitrate 128kbps (calidad buena para voz)
+        // -ar 44100: sample rate 44.1kHz (estándar)
         // -ac 1: mono (voz)
         // -vn: no video
-        // -y: sobrescribir archivo de salida
+        // -y: sobrescribir
         const args = [
             '-i', inputPath,
-            '-c:a', 'libopus',
-            '-b:a', '64k',
-            '-ar', '48000',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-ar', '44100',
             '-ac', '1',
             '-vn',
             '-y',
@@ -97,8 +97,8 @@ async function convertWebMToOgg(inputPath, outputPath) {
  * @returns {Promise<{path: string, mimeType: string}>} - Info del archivo convertido
  */
 async function convertAudioForWhatsApp(inputPath, inputMimeType) {
-    // Si ya es un formato compatible, no convertir
-    const compatibleFormats = ['audio/ogg', 'audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/m4a'];
+    // Si ya es M4A/AAC, no convertir
+    const compatibleFormats = ['audio/mp4', 'audio/m4a', 'audio/aac', 'audio/mpeg', 'audio/mp3'];
 
     if (compatibleFormats.includes(inputMimeType)) {
         console.log(`✅ Audio ya está en formato compatible: ${inputMimeType}`);
@@ -109,13 +109,13 @@ async function convertAudioForWhatsApp(inputPath, inputMimeType) {
         };
     }
 
-    // Si es WebM o formato no compatible, convertir a OGG
-    console.log(`🔄 Audio en formato no compatible (${inputMimeType}), convirtiendo a OGG...`);
+    // Convertir WebM/OGG a M4A (AAC) - formato nativo de WhatsApp
+    console.log(`🔄 Audio en formato no compatible (${inputMimeType}), convirtiendo a M4A (AAC)...`);
 
-    const outputPath = inputPath.replace(/\.[^.]+$/, '_converted.ogg');
+    const outputPath = inputPath.replace(/\.[^.]+$/, '_converted.m4a');
 
     try {
-        await convertWebMToOgg(inputPath, outputPath);
+        await convertWebMToM4A(inputPath, outputPath);
 
         // Eliminar archivo original para ahorrar espacio
         if (fs.existsSync(inputPath)) {
@@ -125,7 +125,7 @@ async function convertAudioForWhatsApp(inputPath, inputMimeType) {
 
         return {
             path: outputPath,
-            mimeType: 'audio/ogg',
+            mimeType: 'audio/mp4', // M4A usa MIME type audio/mp4
             converted: true
         };
     } catch (error) {
@@ -135,6 +135,6 @@ async function convertAudioForWhatsApp(inputPath, inputMimeType) {
 }
 
 module.exports = {
-    convertWebMToOgg,
+    convertWebMToM4A,
     convertAudioForWhatsApp
 };

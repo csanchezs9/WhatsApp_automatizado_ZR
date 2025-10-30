@@ -639,11 +639,15 @@ router.post('/send-media', authMiddleware, async (req, res) => {
             console.log('📷 Enviando imagen a WhatsApp...');
             await whatsappService.sendImage(phoneNumber, mediaId, caption);
         } else if (messageType === 'audio') {
-            // WhatsApp API error 131000: rechaza archivos OGG/audio type desde panel
-            // SOLUCIÓN: Enviar como documento - el cliente puede escucharlo perfectamente
-            console.log('🎤 Enviando audio como documento (WhatsApp API limitation)...');
-            console.log(`   → Nota: WhatsApp rechaza type "audio" desde API, enviando como documento`);
-            await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'audio.ogg', '🎤 Mensaje de voz');
+            // Enviar audio M4A/AAC como mensaje de voz nativo
+            // FFmpeg convierte WebM → M4A (AAC codec) que es el formato nativo de WhatsApp
+            console.log('🎤 Enviando audio M4A/AAC como mensaje de voz nativo...');
+            console.log(`   → Número destino: ${phoneNumber}`);
+            console.log(`   → Media ID: ${mediaId}`);
+            console.log(`   → MIME type: ${mimeType}`);
+
+            const audioResult = await whatsappService.sendAudio(phoneNumber, mediaId);
+            console.log('✅ Audio enviado como voz nativa:', JSON.stringify(audioResult, null, 2));
         } else {
             console.log('📄 Enviando documento a WhatsApp...');
             await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'documento', caption);
