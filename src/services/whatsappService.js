@@ -442,6 +442,43 @@ const sendDocument = async (to, mediaId, filename = null, caption = null) => {
   }
 };
 
+/**
+ * Enviar audio/voz a través de WhatsApp
+ */
+const sendAudio = async (to, mediaId, caption = null) => {
+  try {
+    const payload = {
+      messaging_product: 'whatsapp',
+      to: to,
+      type: 'audio',
+      audio: {
+        id: mediaId
+      }
+    };
+
+    // Los audios NO soportan caption en WhatsApp Business API
+    // Si se proporciona caption, se ignora silenciosamente
+
+    const response = await retryRequest(() => axios.post(
+      WHATSAPP_API_URL,
+      payload,
+      {
+        headers: {
+          'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      }
+    ));
+
+    console.log('✅ Audio enviado:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error enviando audio:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
 module.exports = {
   sendTextMessage,
   sendInteractiveButtons,
@@ -450,5 +487,6 @@ module.exports = {
   sendRawInteractiveButtons,
   uploadMediaToWhatsApp,
   sendImage,
-  sendDocument
+  sendDocument,
+  sendAudio
 };

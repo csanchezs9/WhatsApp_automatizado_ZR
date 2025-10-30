@@ -598,7 +598,18 @@ async function sendMessage() {
         });
 
         if (!response.ok) {
-            throw new Error('Error al enviar mensaje');
+            const errorData = await response.json().catch(() => ({}));
+
+            // Mensajes de error específicos
+            if (response.status === 403) {
+                alert('⚠️ No se puede enviar mensaje.\n\nEl cliente no está en modo asesor. Debe seleccionar "Hablar con asesor" primero desde el menú de WhatsApp.');
+            } else {
+                alert(`❌ Error al enviar mensaje: ${errorData.error || 'Error desconocido'}`);
+            }
+
+            // Restaurar el mensaje en el input
+            messageInput.value = messageToSend;
+            return; // Salir sin continuar
         }
 
         // NO agregar mensaje localmente - esperar evento WebSocket message_sent
@@ -606,7 +617,7 @@ async function sendMessage() {
 
     } catch (error) {
         console.error('Error al enviar mensaje:', error);
-        alert('Error al enviar mensaje');
+        alert(`❌ Error al enviar mensaje:\n\n${error.message}`);
         // Si hay error, restaurar el mensaje en el input
         messageInput.value = messageToSend;
     } finally {
@@ -862,7 +873,7 @@ window.confirmSendImage = async function() {
         await sendFileImmediately(fileToSend, caption);
     } catch (error) {
         console.error('Error al enviar imagen:', error);
-        alert('Error al enviar la imagen. Intenta nuevamente.');
+        // El error ya se mostró en sendFileImmediately, no mostrar alert duplicado
     } finally {
         attachBtn.disabled = false;
     }
@@ -988,8 +999,19 @@ async function sendFileImmediately(file, caption = '') {
 
         if (!sendResponse.ok) {
             const errorData = await sendResponse.json().catch(() => ({}));
-            const errorMsg = errorData.details || errorData.error || 'Error desconocido';
-            throw new Error(`Error al enviar archivo: ${errorMsg}`);
+
+            // Cerrar loader antes de mostrar error
+            hideFileLoader(progressInterval);
+
+            // Mensajes de error específicos
+            if (sendResponse.status === 403) {
+                alert('⚠️ No se puede enviar archivo.\n\nEl cliente no está en modo asesor. Debe seleccionar "Hablar con asesor" primero desde el menú de WhatsApp.');
+            } else {
+                const errorMsg = errorData.details || errorData.error || 'Error desconocido';
+                alert(`❌ Error al enviar archivo:\n\n${errorMsg}`);
+            }
+
+            throw new Error(`Error al enviar archivo: ${errorData.error || 'Error desconocido'}`);
         }
 
         console.log('✅ Archivo enviado correctamente');
@@ -1009,7 +1031,17 @@ async function sendFileImmediately(file, caption = '') {
             type: file?.type,
             caption: caption
         });
-        hideFileLoader(progressInterval);
+
+        // Asegurarse de cerrar el loader
+        if (progressInterval) {
+            hideFileLoader(progressInterval);
+        }
+
+        // No volver a mostrar alert aquí si ya se mostró arriba
+        if (!error.message.includes('Error al enviar archivo')) {
+            alert(`❌ Error:\n\n${error.message}`);
+        }
+
         throw error;
     } finally {
         attachBtn.disabled = false;
@@ -1475,7 +1507,8 @@ window.sendVoiceMessage = async function() {
         });
 
         if (!uploadResponse.ok) {
-            throw new Error('Error al subir audio');
+            const errorData = await uploadResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Error al subir audio');
         }
 
         const uploadData = await uploadResponse.json();
@@ -1499,7 +1532,22 @@ window.sendVoiceMessage = async function() {
         });
 
         if (!sendResponse.ok) {
-            throw new Error('Error al enviar audio');
+            const errorData = await sendResponse.json().catch(() => ({}));
+
+            // Cerrar loader antes de mostrar error
+            hideFileLoader(progressInterval);
+
+            // Mensajes de error específicos
+            if (sendResponse.status === 403) {
+                alert('⚠️ No se puede enviar audio.\n\nEl cliente no está en modo asesor. Debe seleccionar "Hablar con asesor" primero desde el menú de WhatsApp.');
+            } else {
+                alert(`❌ Error al enviar audio: ${errorData.error || 'Error desconocido'}`);
+            }
+
+            // Resetear botón
+            voiceSendBtn.disabled = false;
+            voiceSendBtn.textContent = 'Enviar Audio';
+            return; // Salir sin continuar
         }
 
         // Completar loader
@@ -1511,7 +1559,8 @@ window.sendVoiceMessage = async function() {
         console.log('✅ Audio enviado correctamente');
     } catch (error) {
         console.error('Error al enviar audio:', error);
-        alert('Error al enviar el audio. Intenta nuevamente.');
+        hideFileLoader(progressInterval);
+        alert(`❌ Error al enviar el audio:\n\n${error.message}`);
     } finally {
         voiceSendBtn.disabled = false;
         voiceSendBtn.textContent = 'Enviar Audio';

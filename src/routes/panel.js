@@ -165,6 +165,19 @@ router.post('/send-message', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'phoneNumber y message son requeridos' });
         }
 
+        // Verificar que el usuario esté en modo asesor
+        const userSession = menuService.getUserSession(phoneNumber);
+        const isWithAdvisor = menuService.isUserWithAdvisor(phoneNumber) ||
+                            userSession?.state === 'WAITING_ADVISOR_QUERY' ||
+                            userSession?.state === 'WITH_ADVISOR';
+
+        if (!isWithAdvisor) {
+            return res.status(403).json({
+                error: 'No se puede enviar mensaje. El usuario no está en modo asesor.',
+                userState: userSession?.state || 'unknown'
+            });
+        }
+
         // Enviar mensaje por WhatsApp (SIN registrar - usamos RAW)
         await whatsappService.sendRawTextMessage(phoneNumber, message);
 
@@ -533,6 +546,20 @@ router.post('/send-media', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'Falta parámetro requerido: mimeType' });
         }
 
+        // Verificar que el usuario esté en modo asesor
+        const userSession = menuService.getUserSession(phoneNumber);
+        const isWithAdvisor = menuService.isUserWithAdvisor(phoneNumber) ||
+                            userSession?.state === 'WAITING_ADVISOR_QUERY' ||
+                            userSession?.state === 'WITH_ADVISOR';
+
+        if (!isWithAdvisor) {
+            console.error('❌ Usuario no está en modo asesor:', phoneNumber, 'Estado:', userSession?.state);
+            return res.status(403).json({
+                error: 'No se puede enviar archivo. El usuario no está en modo asesor.',
+                userState: userSession?.state || 'unknown'
+            });
+        }
+
         // Obtener path completo del archivo
         const fullPath = mediaService.getMediaFullPath(mediaPath);
 
@@ -548,10 +575,23 @@ router.post('/send-media', authMiddleware, async (req, res) => {
 
         console.log('✅ Media ID obtenido:', mediaId);
 
-        // Enviar según el tipo
+        // Determinar tipo de mensaje
+        let messageType;
         if (mimeType.startsWith('image/')) {
+            messageType = 'image';
+        } else if (mimeType.startsWith('audio/')) {
+            messageType = 'audio';
+        } else {
+            messageType = 'document';
+        }
+
+        // Enviar según el tipo
+        if (messageType === 'image') {
             console.log('📷 Enviando imagen a WhatsApp...');
             await whatsappService.sendImage(phoneNumber, mediaId, caption);
+        } else if (messageType === 'audio') {
+            console.log('🎤 Enviando audio a WhatsApp...');
+            await whatsappService.sendAudio(phoneNumber, mediaId, caption);
         } else {
             console.log('📄 Enviando documento a WhatsApp...');
             await whatsappService.sendDocument(phoneNumber, mediaId, filename || 'documento', caption);
@@ -562,10 +602,10 @@ router.post('/send-media', authMiddleware, async (req, res) => {
         // Guardar mensaje en la conversación (CON caption si fue proporcionado)
         conversationService.addMessage(phoneNumber, {
             from: 'advisor',
-            type: mimeType.startsWith('image/') ? 'image' : 'document',
+            type: messageType,
             mediaPath: mediaPath,
             mimeType: mimeType,
-            caption: caption || null,
+            caption: messageType !== 'audio' ? (caption || null) : null, // Audio no soporta caption
             filename: filename || 'archivo',
             size: fs.statSync(fullPath).size
         });
@@ -585,10 +625,10 @@ router.post('/send-media', authMiddleware, async (req, res) => {
                 phoneNumber: phoneNumber,
                 message: {
                     from: 'advisor',
-                    type: mimeType.startsWith('image/') ? 'image' : 'document',
+                    type: messageType,
                     mediaPath: mediaPath,
                     mimeType: mimeType,
-                    caption: caption,
+                    caption: messageType !== 'audio' ? caption : null,
                     filename: filename,
                     timestamp: new Date()
                 },
