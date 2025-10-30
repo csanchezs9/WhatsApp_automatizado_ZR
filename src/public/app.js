@@ -1077,6 +1077,10 @@ window.confirmSendImage = async function() {
 // FILE UPLOAD LOADER
 // ============================================
 
+// Variable global para controlar el progreso
+let currentProgress = 0;
+let progressInterval = null;
+
 function showFileLoader(filename, filesize) {
     const loader = document.getElementById('file-upload-loader');
     const loaderTitle = document.getElementById('loader-title');
@@ -1091,26 +1095,30 @@ function showFileLoader(filename, filesize) {
     loaderTitle.textContent = 'Subiendo archivo...';
     loaderDescription.textContent = 'Por favor espera, esto puede tomar unos segundos';
     loaderFileInfo.textContent = `${filename} (${sizeMB} MB)`;
+
+    // Resetear progreso
+    currentProgress = 0;
     progressFill.style.width = '0%';
     progressText.textContent = '0%';
 
     loader.style.display = 'flex';
 
-    // Simular progreso lineal y suave
-    let progress = 0;
-    const interval = setInterval(() => {
-        // Incremento progresivo que disminuye cerca del final (más realista)
-        const increment = progress < 50 ? 3 : progress < 70 ? 2 : progress < 85 ? 1.5 : 0.5;
-        progress += increment;
+    // Limpiar intervalo anterior si existe
+    if (progressInterval) clearInterval(progressInterval);
 
-        // No pasar del 90% hasta que termine
-        if (progress > 90) progress = 90;
+    // Simular progreso lineal y suave - FASE 1: Subida (0% -> 70%)
+    progressInterval = setInterval(() => {
+        if (currentProgress < 70) {
+            // Incremento constante hasta 70%
+            currentProgress += 2;
+            if (currentProgress > 70) currentProgress = 70;
 
-        progressFill.style.width = `${progress}%`;
-        progressText.textContent = `${Math.floor(progress)}%`;
-    }, 200);
+            progressFill.style.width = `${currentProgress}%`;
+            progressText.textContent = `${Math.floor(currentProgress)}%`;
+        }
+    }, 150);
 
-    return interval;
+    return progressInterval;
 }
 
 function updateLoaderStatus(title, description) {
@@ -1121,8 +1129,22 @@ function updateLoaderStatus(title, description) {
 
     loaderTitle.textContent = title;
     loaderDescription.textContent = description;
-    progressFill.style.width = '95%';
-    progressText.textContent = '95%';
+
+    // Limpiar intervalo anterior
+    if (progressInterval) clearInterval(progressInterval);
+
+    // FASE 2: Enviando a WhatsApp (70% -> 95%) - MÁS LENTO
+    progressInterval = setInterval(() => {
+        if (currentProgress < 95) {
+            currentProgress += 0.5; // Muy lento
+            if (currentProgress > 95) currentProgress = 95;
+
+            progressFill.style.width = `${currentProgress}%`;
+            progressText.textContent = `${Math.floor(currentProgress)}%`;
+        } else {
+            clearInterval(progressInterval);
+        }
+    }, 150);
 }
 
 function completeLoader() {
@@ -1130,22 +1152,42 @@ function completeLoader() {
     const progressText = document.getElementById('loader-progress-text');
     const loaderTitle = document.getElementById('loader-title');
 
-    progressFill.style.width = '100%';
-    progressText.textContent = '100%';
     loaderTitle.textContent = 'Archivo enviado';
+
+    // Limpiar intervalo anterior
+    if (progressInterval) clearInterval(progressInterval);
+
+    // FASE 3: Completar (95% -> 100%) - RÁPIDO
+    progressInterval = setInterval(() => {
+        if (currentProgress < 100) {
+            currentProgress += 2;
+            if (currentProgress > 100) currentProgress = 100;
+
+            progressFill.style.width = `${currentProgress}%`;
+            progressText.textContent = `${Math.floor(currentProgress)}%`;
+        } else {
+            clearInterval(progressInterval);
+        }
+    }, 50);
 }
 
-function hideFileLoader(interval) {
-    if (interval) clearInterval(interval);
+function hideFileLoader() {
+    // Limpiar intervalo
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+
     const loader = document.getElementById('file-upload-loader');
     setTimeout(() => {
         loader.style.display = 'none';
+        currentProgress = 0; // Reset para la próxima vez
     }, 800);
 }
 
 // Función auxiliar para enviar archivos
 async function sendFileImmediately(file, caption = '') {
-    let progressInterval = null;
+    // Usar la variable global progressInterval
 
     try {
         attachBtn.disabled = true;
@@ -1200,7 +1242,7 @@ async function sendFileImmediately(file, caption = '') {
             const errorData = await sendResponse.json().catch(() => ({}));
 
             // Cerrar loader antes de mostrar error
-            hideFileLoader(progressInterval);
+            hideFileLoader();
 
             // Mensajes de error específicos
             if (sendResponse.status === 403) {
@@ -1220,7 +1262,7 @@ async function sendFileImmediately(file, caption = '') {
 
         // Ocultar loader después de 800ms
         setTimeout(() => {
-            hideFileLoader(progressInterval);
+            hideFileLoader();
         }, 800);
     } catch (error) {
         console.error('❌ Error enviando archivo:', error);
@@ -1233,7 +1275,7 @@ async function sendFileImmediately(file, caption = '') {
 
         // Asegurarse de cerrar el loader
         if (progressInterval) {
-            hideFileLoader(progressInterval);
+            hideFileLoader();
         }
 
         // No volver a mostrar alert aquí si ya se mostró arriba
@@ -1713,7 +1755,7 @@ window.sendVoiceMessage = async function() {
     const extension = 'ogg';
     const filename = `audio_${Date.now()}.${extension}`;
 
-    let progressInterval = null;
+    // Usar la variable global progressInterval
 
     try {
         voiceSendBtn.disabled = true;
@@ -1768,7 +1810,7 @@ window.sendVoiceMessage = async function() {
             const errorData = await sendResponse.json().catch(() => ({}));
 
             // Cerrar loader antes de mostrar error
-            hideFileLoader(progressInterval);
+            hideFileLoader();
 
             // Mensajes de error específicos
             if (sendResponse.status === 403) {
@@ -1786,7 +1828,7 @@ window.sendVoiceMessage = async function() {
         // Completar loader
         completeLoader();
         setTimeout(() => {
-            hideFileLoader(progressInterval);
+            hideFileLoader();
         }, 800);
 
         console.log('✅ Audio enviado correctamente');
@@ -1795,7 +1837,7 @@ window.sendVoiceMessage = async function() {
 
         // Cerrar loader solo si se creó
         if (progressInterval) {
-            hideFileLoader(progressInterval);
+            hideFileLoader();
         }
 
         alert(`❌ Error al enviar el audio:\n\n${error.message}`);
