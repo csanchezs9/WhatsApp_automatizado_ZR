@@ -439,6 +439,33 @@ function addMessageToChat(message) {
             captionDiv.textContent = message.caption;
             messageDiv.appendChild(captionDiv);
         }
+    } else if (message.type === 'audio') {
+        const mediaDiv = document.createElement('div');
+        mediaDiv.className = 'message-media';
+
+        const audioDiv = document.createElement('div');
+        audioDiv.className = 'message-audio';
+
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'message-audio-icon';
+        iconDiv.textContent = '🎤';
+
+        const audioPlayer = document.createElement('audio');
+        audioPlayer.className = 'message-audio-player';
+        audioPlayer.controls = true;
+        audioPlayer.src = `/api/media/${message.mediaPath.split('/')[1]}`;
+
+        audioDiv.appendChild(iconDiv);
+        audioDiv.appendChild(audioPlayer);
+        mediaDiv.appendChild(audioDiv);
+        messageDiv.appendChild(mediaDiv);
+
+        if (message.caption) {
+            const captionDiv = document.createElement('div');
+            captionDiv.className = 'message-caption';
+            captionDiv.textContent = message.caption;
+            messageDiv.appendChild(captionDiv);
+        }
     } else {
         // Mensaje de texto normal
         const textDiv = document.createElement('div');

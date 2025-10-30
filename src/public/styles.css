@@ -2111,3 +2111,68 @@ body {
         font-size: 11px;
     }
 }
+
+/* ============================================
+   AUDIO MESSAGES
+   ============================================ */
+.message-audio {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--message-bg-other);
+    border-radius: 12px;
+    min-width: 280px;
+    max-width: 400px;
+}
+
+.message.client .message-audio {
+    background: var(--message-bg-client);
+}
+
+.message-audio-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(33, 150, 243, 0.1);
+    border-radius: 50%;
+}
+
+.message-audio-player {
+    flex: 1;
+    height: 32px;
+    outline: none;
+}
+
+.message-audio-player::-webkit-media-controls-panel {
+    background: transparent;
+}
+
+.message-audio-player::-webkit-media-controls-play-button,
+.message-audio-player::-webkit-media-controls-current-time-display,
+.message-audio-player::-webkit-media-controls-time-remaining-display {
+    color: var(--text-primary);
+}
+
+.message-audio-player::-webkit-media-controls-timeline {
+    background: var(--border-color);
+    border-radius: 10px;
+}
+
+/* Responsive para audio */
+@media (max-width: 480px) {
+    .message-audio {
+        min-width: 220px;
+        max-width: 100%;
+    }
+
+    .message-audio-icon {
+        font-size: 24px;
+        width: 36px;
+        height: 36px;
+    }
+}
