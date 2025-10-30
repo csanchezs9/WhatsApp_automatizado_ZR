@@ -614,6 +614,9 @@ router.post('/send-media', authMiddleware, async (req, res) => {
             size: fs.statSync(fullPath).size
         });
 
+        // Marcar que el asesor ha respondido (para evitar mensajes recordatorios innecesarios)
+        menuService.markAdvisorResponse(phoneNumber);
+
         console.log('✅ Mensaje guardado en conversación');
 
         // Emitir por WebSocket al panel
