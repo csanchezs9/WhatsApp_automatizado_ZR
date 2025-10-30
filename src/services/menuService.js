@@ -285,8 +285,9 @@ const isUserWithAdvisor = (userPhone) => {
 
 /**
  * Activa el modo asesor para un usuario
+ * @param {string} consultationType - Tipo de consulta: 'cotizacion', 'garantia', 'general'
  */
-const activateAdvisorMode = async (userPhone, userQuery = '') => {
+const activateAdvisorMode = async (userPhone, userQuery = '', consultationType = 'general') => {
   // Verificar si estamos dentro del horario de atención
   if (!isWithinBusinessHours()) {
     const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
@@ -315,8 +316,21 @@ const activateAdvisorMode = async (userPhone, userQuery = '') => {
   };
   usersWithAdvisor.set(userPhone, advisorSessionData);
 
+  // Determinar emoji y texto según tipo de consulta
+  let consultaIcon = '💬';
+  let consultaType = 'ATENCIÓN GENERAL';
+
+  if (consultationType === 'cotizacion') {
+    consultaIcon = '🚗';
+    consultaType = 'COTIZACIÓN DE REPUESTO';
+  } else if (consultationType === 'garantia') {
+    consultaIcon = '🛡️';
+    consultaType = 'SOLICITUD DE GARANTÍA';
+  }
+
   // Notificar al asesor con la consulta del usuario
   const advisorMessage = `🔔 *NUEVA SOLICITUD DE ATENCIÓN*\n\n` +
+    `${consultaIcon} *Tipo:* ${consultaType}\n` +
     `📱 Cliente: +${userPhone}\n` +
     `⏰ Hora: ${new Date().toLocaleString('es-CO')}\n\n` +
     `💬 *Consulta del cliente:*\n"${userQuery}"\n\n` +
@@ -1046,7 +1060,7 @@ const handleMenuSelection = async (userPhone, message) => {
       
       case 'WAITING_ADVISOR_QUERY':
         // El usuario escribió su consulta, ahora activar modo asesor con esa consulta
-        await activateAdvisorMode(userPhone, message);
+        await activateAdvisorMode(userPhone, message, 'general');
         break;
 
       case 'WAITING_WARRANTY_REQUEST':
@@ -1057,7 +1071,7 @@ const handleMenuSelection = async (userPhone, message) => {
           `Un asesor revisará tu caso y se contactará contigo de inmediato. 💬`
         );
         // Activar modo asesor con los datos de garantía
-        await activateAdvisorMode(userPhone, message);
+        await activateAdvisorMode(userPhone, message, 'garantia');
         break;
 
       case 'WAITING_QUOTE_DATA_FOR_ADVISOR':
@@ -1068,7 +1082,7 @@ const handleMenuSelection = async (userPhone, message) => {
           `Un asesor estará contigo en breve.`
         );
         // Activar modo asesor con los datos de cotización
-        await activateAdvisorMode(userPhone, message);
+        await activateAdvisorMode(userPhone, message, 'cotizacion');
         break;
 
       case 'WAITING_EMAIL_FOR_ORDERS':
