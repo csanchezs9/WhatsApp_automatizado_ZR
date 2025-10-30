@@ -7,7 +7,10 @@ const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const WHATSAPP_API_URL = 'https://graph.facebook.com/v21.0';
 
 // Directorio para guardar archivos multimedia
-const MEDIA_DIR = path.join(__dirname, '../../src/data/persistent/media');
+// Usar process.cwd() en lugar de __dirname para evitar problemas con rutas relativas
+const MEDIA_DIR = process.env.NODE_ENV === 'production'
+    ? '/opt/render/project/src/data/persistent/media'
+    : path.join(process.cwd(), 'src/data/persistent/media');
 
 // Crear directorio si no existe
 if (!fs.existsSync(MEDIA_DIR)) {
@@ -126,7 +129,12 @@ async function processMediaMessage(message) {
  * @returns {string} - Path absoluto
  */
 function getMediaFullPath(relativePath) {
-    return path.join(__dirname, '../../src/data/persistent', relativePath);
+    // Usar rutas absolutas correctas según el entorno
+    const baseDir = process.env.NODE_ENV === 'production'
+        ? '/opt/render/project/src/data/persistent'
+        : path.join(process.cwd(), 'src/data/persistent');
+
+    return path.join(baseDir, relativePath);
 }
 
 /**
