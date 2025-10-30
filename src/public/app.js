@@ -1121,7 +1121,7 @@ function showCustomConfirm(title, message, description, confirmText, cancelText,
             const hint = document.getElementById('confirm-hint');
 
             input.addEventListener('input', (e) => {
-                const value = e.target.value.trim();
+                const value = e.target.value.trim().toUpperCase(); // Convertir a mayúsculas para comparar
 
                 if (value === requireText) {
                     confirmBtn.disabled = false;

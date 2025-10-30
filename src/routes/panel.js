@@ -309,8 +309,8 @@ router.delete('/conversations/:phoneNumber', authMiddleware, async (req, res) =>
             }
         }
 
-        // Archivar conversación en BD (esto la elimina de memoria)
-        await conversationService.archiveConversation(phoneNumber, 'Eliminada por asesor');
+        // Eliminar conversación PERMANENTEMENTE de BD y memoria
+        await conversationService.deleteConversationPermanently(phoneNumber);
 
         console.log(`🗑️ Conversación eliminada: ${phoneNumber}`);
         console.log(`📎 Archivos multimedia eliminados: ${deletedFilesCount}`);

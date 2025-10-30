@@ -157,6 +157,37 @@ function archiveConversation(phoneNumber, advisorNotes = null) {
 }
 
 /**
+ * Eliminar conversación PERMANENTEMENTE de la base de datos y memoria
+ * Esta función elimina COMPLETAMENTE la conversación, no la archiva
+ */
+function deleteConversationPermanently(phoneNumber) {
+    return new Promise((resolve, reject) => {
+        // Primero eliminar de memoria
+        const wasInMemory = activeConversations.has(phoneNumber);
+        activeConversations.delete(phoneNumber);
+
+        // Luego eliminar de la BD (todas las entradas con ese número)
+        db.run(
+            `DELETE FROM conversations WHERE phone_number = ?`,
+            [phoneNumber],
+            function(err) {
+                if (err) {
+                    console.error(`❌ Error al eliminar conversación de BD: ${phoneNumber}`, err.message);
+                    reject(err);
+                } else {
+                    const deletedRows = this.changes;
+                    console.log(`🗑️ Conversación eliminada PERMANENTEMENTE de BD: ${phoneNumber} (${deletedRows} registros borrados)`);
+                    if (wasInMemory) {
+                        console.log(`   ✅ También eliminada de memoria activa`);
+                    }
+                    resolve(deletedRows);
+                }
+            }
+        );
+    });
+}
+
+/**
  * Guardar conversación activa en BD sin eliminarla de memoria
  * Se usa para persistencia durante reinicios del servidor
  */
@@ -618,6 +649,7 @@ module.exports = {
     getActiveConversation,
     getAllActiveConversations,
     archiveConversation,
+    deleteConversationPermanently,
     getConversationHistory,
     searchConversations,
     cleanupOldConversations,
