@@ -117,6 +117,9 @@
                         <button class="dropdown-item" onclick="openPromotionsModal()">
                             🔥 Actualizar Promociones
                         </button>
+                        <button class="dropdown-item" onclick="openLabelsModal()">
+                            🏷️ Gestionar Etiquetas
+                        </button>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-item theme-toggle-item">
                             <span id="theme-label" class="theme-label">Dark</span>
@@ -368,6 +371,66 @@
                     <button id="voice-send-btn" class="btn-primary" onclick="sendVoiceMessage()" style="display: none;">
                         Enviar Audio
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de gestión de etiquetas -->
+        <div id="labels-modal" class="modal">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2>🏷️ Gestionar Etiquetas</h2>
+                    <button class="close-modal" onclick="closeLabelsModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-description">
+                        Crea hasta 10 etiquetas personalizadas con colores tipo post-it para organizar tus conversaciones.
+                    </p>
+
+                    <!-- Contador de etiquetas -->
+                    <div class="labels-counter">
+                        <span id="labels-count">0</span> / 10 etiquetas creadas
+                    </div>
+
+                    <!-- Formulario para crear/editar etiqueta -->
+                    <div class="label-form-container">
+                        <h3 id="label-form-title">Crear Nueva Etiqueta</h3>
+                        <form id="label-form" class="label-form">
+                            <input type="hidden" id="label-edit-id" value="">
+                            <div class="form-group">
+                                <label for="label-name">Nombre de la etiqueta:</label>
+                                <input type="text" id="label-name" maxlength="30" placeholder="Ej: Urgente, Seguimiento, etc." required>
+                            </div>
+                            <div class="form-group">
+                                <label>Color de la etiqueta:</label>
+                                <div class="color-picker-grid" id="color-picker">
+                                    <button type="button" class="color-option" data-color="#FFD700" style="background: #FFD700;" title="Amarillo"></button>
+                                    <button type="button" class="color-option" data-color="#FF6B6B" style="background: #FF6B6B;" title="Rojo"></button>
+                                    <button type="button" class="color-option" data-color="#4ECDC4" style="background: #4ECDC4;" title="Turquesa"></button>
+                                    <button type="button" class="color-option" data-color="#95E1D3" style="background: #95E1D3;" title="Verde menta"></button>
+                                    <button type="button" class="color-option" data-color="#F38181" style="background: #F38181;" title="Rosa"></button>
+                                    <button type="button" class="color-option" data-color="#AA96DA" style="background: #AA96DA;" title="Púrpura"></button>
+                                    <button type="button" class="color-option" data-color="#FCBAD3" style="background: #FCBAD3;" title="Rosa claro"></button>
+                                    <button type="button" class="color-option" data-color="#A8E6CF" style="background: #A8E6CF;" title="Verde"></button>
+                                    <button type="button" class="color-option" data-color="#FFD3B6" style="background: #FFD3B6;" title="Naranja"></button>
+                                    <button type="button" class="color-option" data-color="#FFAAA5" style="background: #FFAAA5;" title="Coral"></button>
+                                </div>
+                                <input type="hidden" id="label-color" required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" onclick="cancelLabelForm()">Cancelar</button>
+                                <button type="submit" class="btn-primary" id="label-submit-btn">Crear Etiqueta</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Lista de etiquetas existentes -->
+                    <div class="labels-list-container">
+                        <h3>Etiquetas Existentes</h3>
+                        <div id="labels-list" class="labels-list">
+                            <p class="empty-message">No hay etiquetas creadas aún.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

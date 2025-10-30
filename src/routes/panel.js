@@ -80,22 +80,32 @@ function authMiddleware(req, res, next) {
  * GET /api/conversations
  * Obtener todas las conversaciones activas (se mantienen visibles hasta eliminación automática en 20 días)
  */
-router.get('/conversations', authMiddleware, (req, res) => {
+router.get('/conversations', authMiddleware, async (req, res) => {
     try {
         // Mostrar TODAS las conversaciones activas, no solo las que están actualmente con asesor
         const conversations = conversationService.getAllActiveConversations(false);
+
+        // Obtener etiquetas para cada conversación
+        const conversationsWithLabels = await Promise.all(
+            conversations.map(async (conv) => {
+                const labels = await conversationService.getConversationLabels(conv.phoneNumber);
+                return {
+                    phoneNumber: conv.phoneNumber,
+                    messageCount: conv.messages.length,
+                    lastMessage: conv.messages[conv.messages.length - 1],
+                    startedAt: conv.startedAt,
+                    lastActivity: conv.lastActivity,
+                    status: conv.status,
+                    unreadCount: conv.unreadCount || 0,
+                    labels: labels || []
+                };
+            })
+        );
+
         res.json({
             success: true,
-            total: conversations.length,
-            conversations: conversations.map(conv => ({
-                phoneNumber: conv.phoneNumber,
-                messageCount: conv.messages.length,
-                lastMessage: conv.messages[conv.messages.length - 1],
-                startedAt: conv.startedAt,
-                lastActivity: conv.lastActivity,
-                status: conv.status,
-                unreadCount: conv.unreadCount || 0
-            }))
+            total: conversationsWithLabels.length,
+            conversations: conversationsWithLabels
         });
     } catch (error) {
         console.error('Error al obtener conversaciones:', error);
@@ -678,6 +688,206 @@ router.post('/send-media', authMiddleware, async (req, res) => {
             error: 'Error al enviar archivo',
             details: error.message
         });
+    }
+});
+
+/**
+ * ============================================
+ * ENDPOINTS DE ETIQUETAS
+ * ============================================
+ */
+
+/**
+ * GET /api/labels
+ * Obtener todas las etiquetas disponibles
+ */
+router.get('/labels', authMiddleware, async (req, res) => {
+    try {
+        const labels = await conversationService.getAllLabels();
+        res.json({
+            success: true,
+            labels
+        });
+    } catch (error) {
+        console.error('Error al obtener etiquetas:', error);
+        res.status(500).json({ error: 'Error al obtener etiquetas' });
+    }
+});
+
+/**
+ * POST /api/labels
+ * Crear nueva etiqueta
+ */
+router.post('/labels', authMiddleware, async (req, res) => {
+    try {
+        const { name, color } = req.body;
+
+        if (!name || !color) {
+            return res.status(400).json({ error: 'Nombre y color son requeridos' });
+        }
+
+        // Validar formato de color (hex)
+        if (!/^#[0-9A-F]{6}$/i.test(color)) {
+            return res.status(400).json({ error: 'Color debe ser un código hexadecimal válido (ej: #FF5733)' });
+        }
+
+        // Validar longitud de nombre
+        if (name.trim().length === 0 || name.trim().length > 30) {
+            return res.status(400).json({ error: 'El nombre debe tener entre 1 y 30 caracteres' });
+        }
+
+        // Verificar límite de 10 etiquetas
+        const existingLabels = await conversationService.getAllLabels();
+        if (existingLabels.length >= 10) {
+            return res.status(400).json({ error: 'Límite de 10 etiquetas alcanzado. Elimina una etiqueta existente primero.' });
+        }
+
+        const label = await conversationService.createLabel(name, color);
+        res.json({
+            success: true,
+            label
+        });
+    } catch (error) {
+        console.error('Error al crear etiqueta:', error);
+        if (error.message.includes('Ya existe una etiqueta')) {
+            res.status(409).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Error al crear etiqueta' });
+        }
+    }
+});
+
+/**
+ * PUT /api/labels/:id
+ * Actualizar etiqueta existente
+ */
+router.put('/labels/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, color } = req.body;
+
+        if (!name || !color) {
+            return res.status(400).json({ error: 'Nombre y color son requeridos' });
+        }
+
+        // Validar formato de color (hex)
+        if (!/^#[0-9A-F]{6}$/i.test(color)) {
+            return res.status(400).json({ error: 'Color debe ser un código hexadecimal válido (ej: #FF5733)' });
+        }
+
+        // Validar longitud de nombre
+        if (name.trim().length === 0 || name.trim().length > 30) {
+            return res.status(400).json({ error: 'El nombre debe tener entre 1 y 30 caracteres' });
+        }
+
+        const label = await conversationService.updateLabel(parseInt(id), name, color);
+        res.json({
+            success: true,
+            label
+        });
+    } catch (error) {
+        console.error('Error al actualizar etiqueta:', error);
+        if (error.message.includes('Ya existe una etiqueta') || error.message.includes('no encontrada')) {
+            res.status(409).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Error al actualizar etiqueta' });
+        }
+    }
+});
+
+/**
+ * DELETE /api/labels/:id
+ * Eliminar etiqueta
+ */
+router.delete('/labels/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await conversationService.deleteLabel(parseInt(id));
+        res.json({
+            success: true,
+            message: 'Etiqueta eliminada correctamente'
+        });
+    } catch (error) {
+        console.error('Error al eliminar etiqueta:', error);
+        if (error.message.includes('no encontrada')) {
+            res.status(404).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Error al eliminar etiqueta' });
+        }
+    }
+});
+
+/**
+ * GET /api/conversations/:phoneNumber/labels
+ * Obtener etiquetas de una conversación específica
+ */
+router.get('/conversations/:phoneNumber/labels', authMiddleware, async (req, res) => {
+    try {
+        const { phoneNumber } = req.params;
+        const labels = await conversationService.getConversationLabels(phoneNumber);
+        res.json({
+            success: true,
+            labels
+        });
+    } catch (error) {
+        console.error('Error al obtener etiquetas de conversación:', error);
+        res.status(500).json({ error: 'Error al obtener etiquetas' });
+    }
+});
+
+/**
+ * POST /api/conversations/:phoneNumber/labels/:labelId
+ * Asignar etiqueta a conversación
+ */
+router.post('/conversations/:phoneNumber/labels/:labelId', authMiddleware, async (req, res) => {
+    try {
+        const { phoneNumber, labelId } = req.params;
+        await conversationService.assignLabelToConversation(phoneNumber, parseInt(labelId));
+        res.json({
+            success: true,
+            message: 'Etiqueta asignada correctamente'
+        });
+
+        // Emitir evento WebSocket para actualizar el panel en tiempo real
+        if (req.app.get('io')) {
+            req.app.get('io').emit('label_assigned', {
+                phoneNumber,
+                labelId: parseInt(labelId)
+            });
+        }
+    } catch (error) {
+        console.error('Error al asignar etiqueta:', error);
+        if (error.message.includes('no encontrada')) {
+            res.status(404).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Error al asignar etiqueta' });
+        }
+    }
+});
+
+/**
+ * DELETE /api/conversations/:phoneNumber/labels/:labelId
+ * Remover etiqueta de conversación
+ */
+router.delete('/conversations/:phoneNumber/labels/:labelId', authMiddleware, async (req, res) => {
+    try {
+        const { phoneNumber, labelId } = req.params;
+        await conversationService.removeLabelFromConversation(phoneNumber, parseInt(labelId));
+        res.json({
+            success: true,
+            message: 'Etiqueta removida correctamente'
+        });
+
+        // Emitir evento WebSocket para actualizar el panel en tiempo real
+        if (req.app.get('io')) {
+            req.app.get('io').emit('label_removed', {
+                phoneNumber,
+                labelId: parseInt(labelId)
+            });
+        }
+    } catch (error) {
+        console.error('Error al remover etiqueta:', error);
+        res.status(500).json({ error: 'Error al remover etiqueta' });
     }
 });
 

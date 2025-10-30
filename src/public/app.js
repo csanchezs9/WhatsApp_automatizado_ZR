@@ -328,14 +328,29 @@ function renderConversations(convs) {
         const unreadBadge = hasUnread ? `<div class="unread-badge">${unreadCount}</div>` : '';
         const timeClass = hasUnread ? 'unread-time' : '';
 
+        // Renderizar etiquetas de la conversación
+        const labelsHTML = (conv.labels && conv.labels.length > 0)
+            ? `<div class="conversation-labels">
+                ${conv.labels.map(label =>
+                    `<span class="conversation-label-tag" style="background: ${label.color};" title="${label.name}">${label.name}</span>`
+                ).join('')}
+              </div>`
+            : '';
+
         return `
-            <div class="conversation-item ${isActive}" onclick="selectConversation('${conv.phoneNumber}')">
-                <div class="conversation-phone">${formattedPhone}</div>
-                <div class="conversation-preview">${preview}${needsEllipsis ? '...' : ''}</div>
-                <div class="conversation-meta">
-                    <span>${conv.messageCount} mensajes</span>
-                    <span class="${timeClass}">${time}</span>
+            <div class="conversation-item ${isActive}" style="position: relative;">
+                <div onclick="selectConversation('${conv.phoneNumber}')">
+                    <div class="conversation-phone">${formattedPhone}</div>
+                    <div class="conversation-preview">${preview}${needsEllipsis ? '...' : ''}</div>
+                    <div class="conversation-meta">
+                        <span>${conv.messageCount} mensajes</span>
+                        <span class="${timeClass}">${time}</span>
+                    </div>
+                    ${labelsHTML}
                 </div>
+                <button class="conversation-labels-btn" onclick="event.stopPropagation(); openConversationLabelsModal('${conv.phoneNumber}')">
+                    🏷️
+                </button>
                 ${unreadBadge}
             </div>
         `;
@@ -1907,6 +1922,400 @@ window.closeVoiceModal = function() {
         voiceSendBtn.style.display = 'none';
     }, 300);
 };
+
+// ============================================
+// SISTEMA DE ETIQUETAS (LABELS)
+// ============================================
+
+// Estado global de etiquetas
+let allLabels = [];
+let currentConversationForLabels = null;
+
+/**
+ * Cargar etiquetas desde el backend
+ */
+async function loadLabels() {
+    try {
+        const response = await fetch('/api/labels', {
+            headers: {
+                'Authorization': `Basic ${currentAuth}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            allLabels = data.labels || [];
+            return allLabels;
+        }
+    } catch (error) {
+        console.error('Error al cargar etiquetas:', error);
+    }
+    return [];
+}
+
+/**
+ * Abrir modal de gestión de etiquetas
+ */
+window.openLabelsModal = async function() {
+    dropdownMenu.classList.remove('show');
+
+    await loadLabels();
+    renderLabelsList();
+    updateLabelsCounter();
+
+    document.getElementById('labels-modal').classList.add('show');
+};
+
+/**
+ * Cerrar modal de gestión de etiquetas
+ */
+window.closeLabelsModal = function() {
+    document.getElementById('labels-modal').classList.remove('show');
+    cancelLabelForm();
+};
+
+/**
+ * Actualizar contador de etiquetas
+ */
+function updateLabelsCounter() {
+    document.getElementById('labels-count').textContent = allLabels.length;
+}
+
+/**
+ * Renderizar lista de etiquetas existentes
+ */
+function renderLabelsList() {
+    const labelsList = document.getElementById('labels-list');
+
+    if (allLabels.length === 0) {
+        labelsList.innerHTML = '<p class="empty-message">No hay etiquetas creadas aún.</p>';
+        return;
+    }
+
+    labelsList.innerHTML = allLabels.map(label => `
+        <div class="label-item">
+            <div class="label-item-info">
+                <div class="label-color-badge" style="background: ${label.color};"></div>
+                <div class="label-item-name">${label.name}</div>
+            </div>
+            <div class="label-item-actions">
+                <button class="label-edit-btn" onclick="editLabel(${label.id}, '${label.name.replace(/'/g, "\\'")}', '${label.color}')">
+                    Editar
+                </button>
+                <button class="label-delete-btn" onclick="deleteLabel(${label.id}, '${label.name.replace(/'/g, "\\'")}')">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+/**
+ * Configurar selector de colores
+ */
+function setupColorPicker() {
+    const colorButtons = document.querySelectorAll('.color-option');
+    const colorInput = document.getElementById('label-color');
+
+    colorButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remover selección anterior
+            colorButtons.forEach(b => b.classList.remove('selected'));
+
+            // Marcar como seleccionado
+            btn.classList.add('selected');
+
+            // Guardar color en input oculto
+            colorInput.value = btn.dataset.color;
+        });
+    });
+}
+
+// Configurar selector de colores al cargar
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('color-picker')) {
+        setupColorPicker();
+    }
+});
+
+/**
+ * Manejar envío del formulario de etiquetas
+ */
+document.getElementById('label-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById('label-name').value.trim();
+    const color = document.getElementById('label-color').value;
+    const editId = document.getElementById('label-edit-id').value;
+
+    if (!name || !color) {
+        await showCustomAlert('Campos incompletos', 'Por favor completa todos los campos', 'Debes seleccionar un nombre y un color para la etiqueta.', 'warning');
+        return;
+    }
+
+    try {
+        let response;
+
+        if (editId) {
+            // Editar etiqueta existente
+            response = await fetch(`/api/labels/${editId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Basic ${currentAuth}`
+                },
+                body: JSON.stringify({ name, color })
+            });
+        } else {
+            // Crear nueva etiqueta
+            response = await fetch('/api/labels', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Basic ${currentAuth}`
+                },
+                body: JSON.stringify({ name, color })
+            });
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al guardar etiqueta');
+        }
+
+        await showCustomAlert('¡Éxito!', editId ? 'Etiqueta actualizada' : 'Etiqueta creada', 'Los cambios se han guardado correctamente.', 'success');
+
+        // Recargar lista
+        await loadLabels();
+        renderLabelsList();
+        updateLabelsCounter();
+        cancelLabelForm();
+
+        // Recargar conversaciones para actualizar etiquetas
+        loadConversations();
+    } catch (error) {
+        console.error('Error al guardar etiqueta:', error);
+        await showCustomAlert('Error', 'No se pudo guardar la etiqueta', error.message, 'error');
+    }
+});
+
+/**
+ * Cancelar formulario de etiqueta
+ */
+window.cancelLabelForm = function() {
+    document.getElementById('label-form').reset();
+    document.getElementById('label-edit-id').value = '';
+    document.getElementById('label-form-title').textContent = 'Crear Nueva Etiqueta';
+    document.getElementById('label-submit-btn').textContent = 'Crear Etiqueta';
+
+    // Limpiar selección de color
+    document.querySelectorAll('.color-option').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById('label-color').value = '';
+};
+
+/**
+ * Editar etiqueta existente
+ */
+window.editLabel = function(id, name, color) {
+    document.getElementById('label-edit-id').value = id;
+    document.getElementById('label-name').value = name;
+    document.getElementById('label-color').value = color;
+    document.getElementById('label-form-title').textContent = 'Editar Etiqueta';
+    document.getElementById('label-submit-btn').textContent = 'Guardar Cambios';
+
+    // Marcar color como seleccionado
+    document.querySelectorAll('.color-option').forEach(btn => {
+        if (btn.dataset.color === color) {
+            btn.classList.add('selected');
+        } else {
+            btn.classList.remove('selected');
+        }
+    });
+
+    // Scroll al formulario
+    document.querySelector('.label-form-container').scrollIntoView({ behavior: 'smooth' });
+};
+
+/**
+ * Eliminar etiqueta
+ */
+window.deleteLabel = async function(id, name) {
+    const confirmed = await showCustomConfirm(
+        'Eliminar Etiqueta',
+        `¿Estás seguro de eliminar la etiqueta "${name}"?`,
+        'Esta etiqueta se eliminará de todas las conversaciones que la tengan asignada. Esta acción no se puede deshacer.',
+        'Eliminar',
+        'Cancelar',
+        true
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`/api/labels/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Basic ${currentAuth}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al eliminar etiqueta');
+        }
+
+        await showCustomAlert('Etiqueta eliminada', `La etiqueta "${name}" ha sido eliminada`, 'Se removió de todas las conversaciones.', 'success');
+
+        // Recargar lista
+        await loadLabels();
+        renderLabelsList();
+        updateLabelsCounter();
+
+        // Recargar conversaciones para actualizar etiquetas
+        loadConversations();
+    } catch (error) {
+        console.error('Error al eliminar etiqueta:', error);
+        await showCustomAlert('Error', 'No se pudo eliminar la etiqueta', error.message, 'error');
+    }
+};
+
+/**
+ * Abrir modal para asignar etiquetas a una conversación
+ */
+window.openConversationLabelsModal = async function(phoneNumber) {
+    currentConversationForLabels = phoneNumber;
+
+    // Cargar etiquetas disponibles y las asignadas a esta conversación
+    await loadLabels();
+
+    try {
+        const response = await fetch(`/api/conversations/${phoneNumber}/labels`, {
+            headers: {
+                'Authorization': `Basic ${currentAuth}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al cargar etiquetas de conversación');
+        }
+
+        const data = await response.json();
+        const assignedLabels = data.labels || [];
+        const assignedLabelIds = assignedLabels.map(l => l.id);
+
+        // Crear modal dinámicamente
+        const overlay = document.createElement('div');
+        overlay.className = 'custom-modal-overlay';
+        overlay.id = 'conversation-labels-overlay';
+
+        const modal = document.createElement('div');
+        modal.className = 'custom-modal labels-selector-modal';
+
+        const labelsListHTML = allLabels.length === 0
+            ? '<p class="modal-description" style="text-align: center; padding: 40px 20px;">No hay etiquetas creadas. Ve a "Gestionar Etiquetas" para crear nuevas etiquetas.</p>'
+            : `<div class="labels-selector-list">${allLabels.map(label => {
+                const isAssigned = assignedLabelIds.includes(label.id);
+                return `
+                    <div class="label-selector-item ${isAssigned ? 'assigned' : ''}" onclick="toggleConversationLabel('${phoneNumber}', ${label.id}, this)">
+                        <div class="label-selector-color" style="background: ${label.color};"></div>
+                        <div class="label-selector-name">${label.name}</div>
+                    </div>
+                `;
+            }).join('')}</div>`;
+
+        modal.innerHTML = `
+            <div class="custom-modal-header">
+                <h3>Etiquetas de Conversación</h3>
+            </div>
+            <div class="custom-modal-body">
+                <p class="modal-description">
+                    Haz clic en una etiqueta para asignarla o removerla de esta conversación.
+                </p>
+                ${labelsListHTML}
+            </div>
+            <div class="custom-modal-footer">
+                <button class="custom-modal-btn custom-modal-btn-primary" onclick="closeConversationLabelsModal()">Cerrar</button>
+            </div>
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // Animar entrada
+        setTimeout(() => {
+            overlay.classList.add('show');
+        }, 10);
+    } catch (error) {
+        console.error('Error al abrir modal de etiquetas:', error);
+        await showCustomAlert('Error', 'No se pudieron cargar las etiquetas', error.message, 'error');
+    }
+};
+
+/**
+ * Cerrar modal de etiquetas de conversación
+ */
+window.closeConversationLabelsModal = function() {
+    const overlay = document.getElementById('conversation-labels-overlay');
+    if (overlay) {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 200);
+    }
+    currentConversationForLabels = null;
+
+    // Recargar conversaciones para actualizar etiquetas visibles
+    loadConversations();
+};
+
+/**
+ * Asignar/Remover etiqueta de conversación (toggle)
+ */
+window.toggleConversationLabel = async function(phoneNumber, labelId, element) {
+    const isAssigned = element.classList.contains('assigned');
+
+    try {
+        let response;
+
+        if (isAssigned) {
+            // Remover etiqueta
+            response = await fetch(`/api/conversations/${phoneNumber}/labels/${labelId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Basic ${currentAuth}`
+                }
+            });
+        } else {
+            // Asignar etiqueta
+            response = await fetch(`/api/conversations/${phoneNumber}/labels/${labelId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Basic ${currentAuth}`
+                }
+            });
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al actualizar etiqueta');
+        }
+
+        // Toggle clase assigned
+        element.classList.toggle('assigned');
+    } catch (error) {
+        console.error('Error al actualizar etiqueta:', error);
+        await showCustomAlert('Error', 'No se pudo actualizar la etiqueta', error.message, 'error');
+    }
+};
+
+// Escuchar eventos WebSocket de etiquetas
+socket?.on('label_assigned', (data) => {
+    console.log('Etiqueta asignada:', data);
+    loadConversations();
+});
+
+socket?.on('label_removed', (data) => {
+    console.log('Etiqueta removida:', data);
+    loadConversations();
+});
 
 // Auto-login si hay credenciales guardadas
 window.addEventListener('load', () => {

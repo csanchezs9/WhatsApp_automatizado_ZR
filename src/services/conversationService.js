@@ -59,14 +59,38 @@ db.serialize(() => {
         )
     `);
 
+    // Tabla de etiquetas
+    db.run(`
+        CREATE TABLE IF NOT EXISTS labels (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            color TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Tabla de relación conversación-etiquetas (many-to-many)
+    db.run(`
+        CREATE TABLE IF NOT EXISTS conversation_labels (
+            conversation_phone TEXT NOT NULL,
+            label_id INTEGER NOT NULL,
+            assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (conversation_phone, label_id),
+            FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE CASCADE
+        )
+    `);
+
     // Crear índice para búsquedas rápidas
     db.run(`CREATE INDEX IF NOT EXISTS idx_phone_number ON conversations(phone_number)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_status ON conversations(status)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_started_at ON conversations(started_at)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_session_activity ON user_sessions(last_activity)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_conversation_labels_phone ON conversation_labels(conversation_phone)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_conversation_labels_label ON conversation_labels(label_id)`);
 
     console.log('✅ Tabla de conversaciones inicializada');
     console.log('✅ Tabla de sesiones de usuario inicializada');
+    console.log('✅ Tabla de etiquetas inicializada');
 });
 
 // Conversaciones activas en memoria (para rendimiento)
@@ -910,6 +934,218 @@ function getSystemInfo() {
     });
 }
 
+// ============================================
+// FUNCIONES DE ETIQUETAS (LABELS)
+// ============================================
+
+/**
+ * Crear nueva etiqueta
+ */
+function createLabel(name, color) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `INSERT INTO labels (name, color) VALUES (?, ?)`,
+            [name.trim(), color],
+            function(err) {
+                if (err) {
+                    if (err.message.includes('UNIQUE constraint failed')) {
+                        reject(new Error('Ya existe una etiqueta con ese nombre'));
+                    } else {
+                        reject(err);
+                    }
+                } else {
+                    console.log(`✅ Etiqueta creada: ${name} (ID: ${this.lastID})`);
+                    resolve({
+                        id: this.lastID,
+                        name: name.trim(),
+                        color
+                    });
+                }
+            }
+        );
+    });
+}
+
+/**
+ * Obtener todas las etiquetas
+ */
+function getAllLabels() {
+    return new Promise((resolve, reject) => {
+        db.all(
+            `SELECT id, name, color, created_at FROM labels ORDER BY name ASC`,
+            [],
+            (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows || []);
+                }
+            }
+        );
+    });
+}
+
+/**
+ * Actualizar etiqueta
+ */
+function updateLabel(id, name, color) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `UPDATE labels SET name = ?, color = ? WHERE id = ?`,
+            [name.trim(), color, id],
+            function(err) {
+                if (err) {
+                    if (err.message.includes('UNIQUE constraint failed')) {
+                        reject(new Error('Ya existe una etiqueta con ese nombre'));
+                    } else {
+                        reject(err);
+                    }
+                } else if (this.changes === 0) {
+                    reject(new Error('Etiqueta no encontrada'));
+                } else {
+                    console.log(`✅ Etiqueta actualizada: ${name} (ID: ${id})`);
+                    resolve({ id, name: name.trim(), color });
+                }
+            }
+        );
+    });
+}
+
+/**
+ * Eliminar etiqueta
+ */
+function deleteLabel(id) {
+    return new Promise((resolve, reject) => {
+        // La tabla conversation_labels tiene ON DELETE CASCADE,
+        // por lo que se eliminarán automáticamente las asignaciones
+        db.run(
+            `DELETE FROM labels WHERE id = ?`,
+            [id],
+            function(err) {
+                if (err) {
+                    reject(err);
+                } else if (this.changes === 0) {
+                    reject(new Error('Etiqueta no encontrada'));
+                } else {
+                    console.log(`✅ Etiqueta eliminada (ID: ${id})`);
+                    resolve({ deleted: true, id });
+                }
+            }
+        );
+    });
+}
+
+/**
+ * Asignar etiqueta a conversación
+ */
+function assignLabelToConversation(phoneNumber, labelId) {
+    return new Promise((resolve, reject) => {
+        // Primero verificar que la etiqueta existe
+        db.get(
+            `SELECT id FROM labels WHERE id = ?`,
+            [labelId],
+            (err, label) => {
+                if (err) {
+                    reject(err);
+                } else if (!label) {
+                    reject(new Error('Etiqueta no encontrada'));
+                } else {
+                    // Insertar relación
+                    db.run(
+                        `INSERT OR IGNORE INTO conversation_labels (conversation_phone, label_id) VALUES (?, ?)`,
+                        [phoneNumber, labelId],
+                        function(err) {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                console.log(`✅ Etiqueta ${labelId} asignada a ${phoneNumber}`);
+                                resolve({ success: true, phoneNumber, labelId });
+                            }
+                        }
+                    );
+                }
+            }
+        );
+    });
+}
+
+/**
+ * Remover etiqueta de conversación
+ */
+function removeLabelFromConversation(phoneNumber, labelId) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `DELETE FROM conversation_labels WHERE conversation_phone = ? AND label_id = ?`,
+            [phoneNumber, labelId],
+            function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    console.log(`✅ Etiqueta ${labelId} removida de ${phoneNumber}`);
+                    resolve({ success: true, phoneNumber, labelId });
+                }
+            }
+        );
+    });
+}
+
+/**
+ * Obtener etiquetas de una conversación
+ */
+function getConversationLabels(phoneNumber) {
+    return new Promise((resolve, reject) => {
+        db.all(
+            `SELECT l.id, l.name, l.color, cl.assigned_at
+             FROM labels l
+             INNER JOIN conversation_labels cl ON l.id = cl.label_id
+             WHERE cl.conversation_phone = ?
+             ORDER BY l.name ASC`,
+            [phoneNumber],
+            (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows || []);
+                }
+            }
+        );
+    });
+}
+
+/**
+ * Obtener todas las conversaciones con sus etiquetas
+ * (Usado para el panel para mostrar etiquetas en la lista)
+ */
+function getAllConversationsWithLabels() {
+    return new Promise((resolve, reject) => {
+        // Esta query es compleja, vamos a hacerlo en dos pasos:
+        // 1. Obtener todas las conversaciones activas de memoria
+        // 2. Para cada una, obtener sus etiquetas de la BD
+
+        const conversations = getAllActiveConversations(false);
+
+        // Array de promesas para obtener etiquetas de cada conversación
+        const promises = conversations.map(conv => {
+            return getConversationLabels(conv.phoneNumber)
+                .then(labels => ({
+                    ...conv,
+                    labels: labels
+                }))
+                .catch(err => {
+                    console.error(`Error obteniendo etiquetas para ${conv.phoneNumber}:`, err);
+                    return {
+                        ...conv,
+                        labels: []
+                    };
+                });
+        });
+
+        Promise.all(promises)
+            .then(conversationsWithLabels => resolve(conversationsWithLabels))
+            .catch(reject);
+    });
+}
+
 module.exports = {
     addMessage,
     getActiveConversation,
@@ -929,5 +1165,14 @@ module.exports = {
     loadUserSession,
     loadAllUserSessions,
     deleteUserSession,
-    cleanupOldUserSessions
+    cleanupOldUserSessions,
+    // Funciones de etiquetas
+    createLabel,
+    getAllLabels,
+    updateLabel,
+    deleteLabel,
+    assignLabelToConversation,
+    removeLabelFromConversation,
+    getConversationLabels,
+    getAllConversationsWithLabels
 };
