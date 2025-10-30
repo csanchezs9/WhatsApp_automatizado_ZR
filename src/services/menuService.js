@@ -184,8 +184,14 @@ const normalizeText = (text) => {
  * Sábados: 8:00 AM - 12:40 PM
  * Domingos: Cerrado
  * Zona horaria: Colombia (America/Bogota, UTC-5)
+ *
+ * ⚠️ TEMPORALMENTE DESHABILITADO PARA PRUEBAS ⚠️
  */
 const isWithinBusinessHours = () => {
+  // ⚠️ COMENTADO TEMPORALMENTE PARA PRUEBAS - DESCOMENTAR EN PRODUCCIÓN
+  return true; // Siempre retorna true para permitir pruebas fuera de horario
+
+  /* DESCOMENTAR ESTE BLOQUE PARA ACTIVAR VALIDACIÓN DE HORARIO EN PRODUCCIÓN
   // Obtener fecha y hora en zona horaria de Colombia
   const nowInColombia = new Date().toLocaleString('en-US', {
     timeZone: 'America/Bogota',
@@ -214,6 +220,7 @@ const isWithinBusinessHours = () => {
   }
 
   return false;
+  */
 };
 
 /**
