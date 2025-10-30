@@ -2923,11 +2923,19 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
     border: 1px solid var(--border-color);
     cursor: pointer;
     transition: all 0.2s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .label-selector-item:hover {
     background: var(--hover-bg);
     transform: translateX(4px);
+}
+
+.label-selector-item:active {
+    transform: translateX(2px);
 }
 
 .label-selector-item.assigned {
