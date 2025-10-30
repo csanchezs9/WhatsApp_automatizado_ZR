@@ -895,17 +895,18 @@ const handleMenuSelection = async (userPhone, message) => {
       await sendInteractiveButtons(userPhone, mensaje, buttons);
       return;
     } else if (menuOption === 'garantias') {
-      userSessions[userPhone].state = 'VIEWING_INFO';
+      userSessions[userPhone].state = 'WAITING_WARRANTY_REQUEST';
       const mensaje = `🛡️ *GARANTÍAS Y DEVOLUCIONES*\n\n` +
         `🧾 *Todos nuestros productos cuentan con garantía de 3 meses*, excepto la línea de eléctricos originales.\n\n` +
         `⚠️ *Importante:* Los productos eléctricos originales tienen garantía *solo si presentan fallas de fábrica en el momento de la instalación*.\n\n` +
         `Después de instalados y en funcionamiento, no aplica garantía por daños causados por mal uso, voltajes incorrectos u otras manipulaciones.\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `Si presentas algún inconveniente con tu repuesto, escríbenos con:\n\n` +
+        `📝 *¿Necesitas hacer una solicitud de garantía?*\n\n` +
+        `Por favor escríbenos en un solo mensaje los siguientes datos:\n\n` +
         `✔ Número de pedido\n` +
         `✔ Nombre del producto\n` +
-        `✔ Breve descripción del caso\n\n` +
-        `Nuestro equipo revisará tu solicitud y te responderá lo antes posible.`;
+        `✔ Breve descripción del problema\n\n` +
+        `💬 *Un asesor revisará tu caso y se contactará contigo de inmediato.*`;
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
@@ -1045,6 +1046,17 @@ const handleMenuSelection = async (userPhone, message) => {
       
       case 'WAITING_ADVISOR_QUERY':
         // El usuario escribió su consulta, ahora activar modo asesor con esa consulta
+        await activateAdvisorMode(userPhone, message);
+        break;
+
+      case 'WAITING_WARRANTY_REQUEST':
+        // El usuario proporcionó los datos de garantía, activar modo asesor
+        await sendTextMessage(
+          userPhone,
+          `✅ *Solicitud de garantía recibida*\n\n` +
+          `Un asesor revisará tu caso y se contactará contigo de inmediato. 💬`
+        );
+        // Activar modo asesor con los datos de garantía
         await activateAdvisorMode(userPhone, message);
         break;
 
