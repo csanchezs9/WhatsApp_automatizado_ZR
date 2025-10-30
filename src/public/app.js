@@ -194,16 +194,21 @@ function connectWebSocket() {
         connectionText.textContent = 'Desconectado';
     });
 
-    socket.on('new_message', (data) => {
+    socket.on('new_message', async (data) => {
         console.log('📨 Nuevo mensaje recibido:', data);
 
         // NO notificar si es el botón "volver_menu" (después de finalizar conversación)
         const isVolverMenu = data.messageId === 'volver_menu';
 
+        // Verificar si estamos viendo esta conversación activamente
+        const isViewingThisConversation = currentConversation === data.phoneNumber;
+
         // Solo notificar si el mensaje es del cliente Y está en modo WITH_ADVISOR Y NO es volver_menu
+        // Y NO estamos viendo activamente esta conversación
         const shouldNotify = data.message.from === 'client' &&
                            (data.userState === 'WITH_ADVISOR' || data.userState === 'WAITING_ADVISOR_QUERY') &&
-                           !isVolverMenu;
+                           !isVolverMenu &&
+                           !isViewingThisConversation;
 
         if (shouldNotify) {
             // Reproducir sonido de notificación
@@ -220,13 +225,22 @@ function connectWebSocket() {
         }
 
         // Actualizar estado del textarea si estamos viendo esta conversación
-        if (currentConversation === data.phoneNumber) {
+        if (isViewingThisConversation) {
             // IMPORTANTE: Solo actualizar el estado del textarea si el campo isWithAdvisor está presente
             // Esto previene deshabilitar accidentalmente el textarea cuando se reciben mensajes multimedia
             if (data.hasOwnProperty('isWithAdvisor')) {
                 updateTextareaState(data.isWithAdvisor);
             }
             addMessageToChat(data.message);
+
+            // Marcar como leído inmediatamente (llamando al endpoint que marca como leído)
+            try {
+                await fetch(`/api/conversations/${data.phoneNumber}`, {
+                    headers: { 'Authorization': `Basic ${currentAuth}` }
+                });
+            } catch (error) {
+                console.error('Error al marcar conversación como leída:', error);
+            }
         }
 
         loadConversations();
