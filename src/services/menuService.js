@@ -610,7 +610,7 @@ const handleMenuSelection = async (userPhone, message) => {
       userSessions[userPhone].state = 'VIEWING_INFO';
       const mensaje = `📮 *INFORMACIÓN SOBRE TIEMPOS DE ENVÍO Y PAGOS*\n\n` +
         `📮 Realizamos envíos a todo Colombia.\n\n` +
-        `🚚 *Tiempo estimado:* 1 a 3 días hábiles\n\n` +
+        `🚚 *Tiempo estimado:* 1 a 3 días hábiles en ciudades principales\n\n` +
         `💳 *Métodos de pago:* Wompi, Addi, transferencia, contra entrega (según zona)\n\n` +
         `📦 Empacamos con cuidado para garantizar que tus repuestos lleguen en perfecto estado.`;
       const buttons = [

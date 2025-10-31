@@ -1,15 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git restore:*)",
-      "Bash(git pull:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push)",
-      "Bash(curl:*)",
-      "WebSearch",
-      "Bash(node tests/queueStressTest.js:*)",
-      "Bash(node:*)"
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
