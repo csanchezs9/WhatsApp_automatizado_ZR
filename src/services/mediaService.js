@@ -2,7 +2,6 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const mime = require('mime-types');
-const rateLimitMonitor = require('./rateLimitMonitor');
 
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const WHATSAPP_API_URL = 'https://graph.facebook.com/v21.0';
@@ -26,8 +25,8 @@ if (!fs.existsSync(MEDIA_DIR)) {
  */
 async function getMediaUrl(mediaId) {
     try {
-        // Registrar llamada API
-        rateLimitMonitor.trackCall('media_download');
+        // NO registrar: GET /{media-id} NO cuenta para rate limit según Meta
+        // Solo POST /messages y POST /media cuentan para el límite
 
         const response = await axios.get(`${WHATSAPP_API_URL}/${mediaId}`, {
             headers: {
@@ -50,8 +49,8 @@ async function getMediaUrl(mediaId) {
  */
 async function downloadMedia(mediaUrl, mimeType) {
     try {
-        // Registrar llamada API
-        rateLimitMonitor.trackCall('media_download');
+        // NO registrar: GET de URL de media NO cuenta para rate limit según Meta
+        // Solo POST /messages y POST /media cuentan para el límite
 
         const response = await axios.get(mediaUrl, {
             headers: {
