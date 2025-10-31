@@ -2,6 +2,7 @@ const axios = require('axios');
 const conversationService = require('./conversationService');
 const FormData = require('form-data');
 const fs = require('fs');
+const rateLimitMonitor = require('./rateLimitMonitor');
 
 const WHATSAPP_API_URL = `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`;
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
@@ -58,6 +59,9 @@ const retryRequest = async (requestFn, retries = MAX_RETRIES) => {
  */
 const sendTextMessage = async (to, text) => {
   try {
+    // Registrar llamada API
+    rateLimitMonitor.trackCall('send_message');
+
     const response = await retryRequest(() => axios.post(
       WHATSAPP_API_URL,
       {
@@ -120,6 +124,9 @@ const sendTextMessage = async (to, text) => {
  */
 const sendInteractiveButtons = async (to, bodyText, buttons) => {
   try {
+    // Registrar llamada API
+    rateLimitMonitor.trackCall('send_message');
+
     const response = await retryRequest(() => axios.post(
       WHATSAPP_API_URL,
       {
@@ -192,6 +199,9 @@ const sendInteractiveButtons = async (to, bodyText, buttons) => {
  */
 const sendInteractiveList = async (to, bodyText, buttonText, sections) => {
   try {
+    // Registrar llamada API
+    rateLimitMonitor.trackCall('send_message');
+
     const response = await retryRequest(() => axios.post(
       WHATSAPP_API_URL,
       {
@@ -260,6 +270,9 @@ const sendInteractiveList = async (to, bodyText, buttonText, sections) => {
  */
 const sendRawTextMessage = async (to, text) => {
   try {
+    // Registrar llamada API
+    rateLimitMonitor.trackCall('send_message');
+
     const response = await retryRequest(() => axios.post(
       WHATSAPP_API_URL,
       {
@@ -298,6 +311,9 @@ const sendRawTextMessage = async (to, text) => {
  */
 const sendRawInteractiveButtons = async (to, bodyText, buttons) => {
   try {
+    // Registrar llamada API
+    rateLimitMonitor.trackCall('send_message');
+
     const response = await retryRequest(() => axios.post(
       WHATSAPP_API_URL,
       {
@@ -340,6 +356,9 @@ const sendRawInteractiveButtons = async (to, bodyText, buttons) => {
  */
 const uploadMediaToWhatsApp = async (filePath, mimeType) => {
   try {
+    // Registrar llamada API
+    rateLimitMonitor.trackCall('media_upload');
+
     const uploadUrl = `https://graph.facebook.com/v21.0/${process.env.WHATSAPP_PHONE_ID}/media`;
     const cleanMimeType = mimeType.split(';')[0].trim();
 
@@ -368,6 +387,9 @@ const uploadMediaToWhatsApp = async (filePath, mimeType) => {
  */
 const sendImage = async (to, mediaId, caption = null) => {
   try {
+    // Registrar llamada API
+    rateLimitMonitor.trackCall('send_message');
+
     const payload = {
       messaging_product: 'whatsapp',
       to: to,
@@ -406,6 +428,9 @@ const sendImage = async (to, mediaId, caption = null) => {
  */
 const sendDocument = async (to, mediaId, filename = null, caption = null) => {
   try {
+    // Registrar llamada API
+    rateLimitMonitor.trackCall('send_message');
+
     const payload = {
       messaging_product: 'whatsapp',
       to: to,
@@ -448,6 +473,9 @@ const sendDocument = async (to, mediaId, filename = null, caption = null) => {
  */
 const sendAudio = async (to, mediaId, caption = null) => {
   try {
+    // Registrar llamada API
+    rateLimitMonitor.trackCall('send_message');
+
     const payload = {
       messaging_product: 'whatsapp',
       to: to,

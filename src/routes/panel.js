@@ -5,6 +5,7 @@ const whatsappService = require('../services/whatsappService');
 const menuService = require('../services/menuService');
 const mediaService = require('../services/mediaService');
 const audioConverter = require('../services/audioConverter');
+const rateLimitMonitor = require('../services/rateLimitMonitor');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -888,6 +889,23 @@ router.delete('/conversations/:phoneNumber/labels/:labelId', authMiddleware, asy
     } catch (error) {
         console.error('Error al remover etiqueta:', error);
         res.status(500).json({ error: 'Error al remover etiqueta' });
+    }
+});
+
+/**
+ * GET /api/rate-limit-stats
+ * Obtener estadísticas de uso de Rate Limits de WhatsApp API
+ */
+router.get('/rate-limit-stats', authMiddleware, (req, res) => {
+    try {
+        const stats = rateLimitMonitor.getStats();
+        res.json({
+            success: true,
+            stats
+        });
+    } catch (error) {
+        console.error('Error al obtener estadísticas de rate limit:', error);
+        res.status(500).json({ error: 'Error al obtener estadísticas' });
     }
 });
 
