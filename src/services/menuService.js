@@ -328,23 +328,6 @@ const activateAdvisorMode = async (userPhone, userQuery = '', consultationType =
     consultaType = 'SOLICITUD DE GARANTÍA';
   }
 
-  // Notificar al asesor con la consulta del usuario
-  const advisorMessage = `🔔 *NUEVA SOLICITUD DE ATENCIÓN*\n\n` +
-    `${consultaIcon} *Tipo:* ${consultaType}\n` +
-    `📱 Cliente: +${userPhone}\n` +
-    `⏰ Hora: ${new Date().toLocaleString('es-CO')}\n\n` +
-    `💬 *Consulta del cliente:*\n"${userQuery}"\n\n` +
-    `Por favor responde desde el panel web o WhatsApp Business.\n\n` +
-    `📌 *Para finalizar la conversación:*\n` +
-    `Escribe "/finalizar" en este chat del bot o usa el botón "Finalizar" en el panel web.`;
-
-  try {
-    await sendTextMessage(ADVISOR_PHONE, advisorMessage);
-    console.log(`✅ Notificación enviada al asesor para cliente ${userPhone}`);
-  } catch (error) {
-    console.error('❌ Error notificando al asesor:', error);
-  }
-
   // Mensaje al cliente
   const clientMessage = `✅ *Solicitud enviada al asesor*\n\n` +
     `Hemos recibido tu consulta:\n"${userQuery}"\n\n` +
@@ -431,154 +414,6 @@ const markAdvisorResponse = (userPhone) => {
 };
 
 /**
- * Finaliza la conversación desde el lado del asesor
- * Si hay 1 cliente: cierra directamente
- * Si hay varios: muestra menú para elegir
- * Si no hay ninguno: notifica
- */
-const finalizeAdvisorConversation = async (advisorPhone) => {
-  console.log(`🔍 Buscando conversaciones activas para asesor ${advisorPhone}...`);
-  
-  // Obtener todos los clientes activos con asesor
-  const activeClients = Array.from(usersWithAdvisor.entries());
-  
-  if (activeClients.length === 0) {
-    // No hay clientes activos
-    await sendTextMessage(
-      advisorPhone,
-      `⚠️ *No hay conversaciones activas*\n\n` +
-      `No se encontró ningún cliente en conversación con asesor en este momento.`
-    );
-    return false;
-  }
-  
-  if (activeClients.length === 1) {
-    // Solo 1 cliente: cerrar directamente
-    const [clientPhone, clientData] = activeClients[0];
-    await closeClientConversation(clientPhone, advisorPhone);
-    return true;
-  }
-  
-  // Múltiples clientes: mostrar menú para elegir
-  await showClientSelectionMenu(advisorPhone, activeClients);
-  return true;
-};
-
-/**
- * Muestra un menú interactivo con los clientes activos para que el asesor elija cuál cerrar
- */
-const showClientSelectionMenu = async (advisorPhone, activeClients) => {
-  console.log(`📋 Mostrando menú de selección con ${activeClients.length} clientes activos`);
-  
-  // Crear botones (máximo 3 por limitación de WhatsApp)
-  if (activeClients.length <= 3) {
-    // Usar botones interactivos
-    const buttons = activeClients.map(([clientPhone, clientData], index) => {
-      const timeAgo = Math.floor((Date.now() - clientData.startTime) / 60000); // minutos
-      return {
-        id: `finalizar_${clientPhone}`,
-        title: `Cliente ${index + 1} (${timeAgo}m)`
-      };
-    });
-    
-    let bodyText = `🔚 *Selecciona qué conversación finalizar:*\n\n`;
-    activeClients.forEach(([clientPhone, clientData], index) => {
-      const timeAgo = Math.floor((Date.now() - clientData.startTime) / 60000);
-      const query = clientData.userQuery || 'Sin consulta';
-      const shortQuery = query.length > 30 ? query.substring(0, 30) + '...' : query;
-      bodyText += `${index + 1}. +${clientPhone}\n`;
-      bodyText += `   ⏱️ Hace ${timeAgo} min\n`;
-      bodyText += `   💬 "${shortQuery}"\n\n`;
-    });
-    
-    await sendInteractiveButtons(advisorPhone, bodyText, buttons);
-    
-  } else if (activeClients.length <= 10) {
-    // Entre 4 y 10 clientes: usar lista interactiva
-    const rows = activeClients.map(([clientPhone, clientData], index) => {
-      const timeAgo = Math.floor((Date.now() - clientData.startTime) / 60000);
-      const query = clientData.userQuery || 'Sin consulta';
-      const shortQuery = query.length > 20 ? query.substring(0, 20) + '...' : query;
-      
-      return {
-        id: `finalizar_${clientPhone}`,
-        title: `+${clientPhone}`,
-        description: `Hace ${timeAgo}m: ${shortQuery}`
-      };
-    });
-    
-    const sections = [{
-      title: 'Conversaciones activas',
-      rows: rows
-    }];
-    
-    await sendInteractiveList(
-      advisorPhone,
-      `🔚 *Tienes ${activeClients.length} conversaciones activas*\n\nSelecciona cuál deseas finalizar:`,
-      'Ver conversaciones',
-      sections
-    );
-  } else {
-    // Más de 10 clientes: usar mensaje de texto con números
-    let message = `🔚 *Tienes ${activeClients.length} conversaciones activas*\n\n`;
-    message += `Escribe el *número* del cliente que deseas finalizar:\n\n`;
-    
-    activeClients.forEach(([clientPhone, clientData], index) => {
-      const timeAgo = Math.floor((Date.now() - clientData.startTime) / 60000);
-      const query = clientData.userQuery || 'Sin consulta';
-      const shortQuery = query.length > 40 ? query.substring(0, 40) + '...' : query;
-      
-      message += `*${index + 1}.* +${clientPhone}\n`;
-      message += `   ⏱️ Hace ${timeAgo} min\n`;
-      message += `   💬 "${shortQuery}"\n\n`;
-    });
-    
-    message += `_Ejemplo: Escribe *1* para finalizar la primera conversación_`;
-    
-    await sendTextMessage(advisorPhone, message);
-    
-    // Guardar el estado para procesar la respuesta numérica
-    if (!userSessions[advisorPhone]) {
-      userSessions[advisorPhone] = {};
-    }
-    userSessions[advisorPhone].state = 'SELECTING_CLIENT_TO_FINALIZE';
-    userSessions[advisorPhone].clientList = activeClients;
-    
-  }
-};
-
-/**
- * Cierra la conversación con un cliente específico
- */
-const closeClientConversation = async (clientPhone, advisorPhone) => {
-  console.log(`✅ Finalizando conversación con cliente ${clientPhone}`);
-  
-  // Desactivar modo asesor para ese cliente
-  deactivateAdvisorMode(clientPhone);
-  
-  // Notificar al cliente que la conversación finalizó
-  const mensaje = `✅ *Conversación finalizada*\n\n` +
-    `El asesor ha finalizado la atención.\n\n` +
-    `Gracias por contactarnos. Si necesitas más ayuda:`;
-
-  const buttons = [
-    { id: 'volver_menu', title: '🏠 Volver al menú' }
-  ];
-
-  await sendInteractiveButtons(clientPhone, mensaje, buttons);
-  
-  // NO mostramos el menú automáticamente, esperamos a que el cliente presione el botón
-  
-  // Confirmar al asesor
-  await sendTextMessage(
-    advisorPhone,
-    `✅ *Conversación finalizada correctamente*\n\n` +
-    `Cliente: +${clientPhone}\n` +
-    `El bot ha sido reactivado para este cliente.`
-  );
-};
-
-/**
  * Maneja la selección del menú según el mensaje del usuario
  */
 const handleMenuSelection = async (userPhone, message) => {
@@ -640,159 +475,11 @@ const handleMenuSelection = async (userPhone, message) => {
       }
     }
 
-  // COMANDO /FINALIZAR DESDE EL ASESOR
-  if (messageText === '/finalizar' && userPhone === ADVISOR_PHONE) {
-    console.log(`🔚 Comando /finalizar recibido del asesor`);
-    await finalizeAdvisorConversation(userPhone);
-    return;
-  }
 
-  // SELECCIÓN NUMÉRICA DE CLIENTE (cuando hay más de 10 clientes)
-  if (userPhone === ADVISOR_PHONE && 
-      userSessions[userPhone]?.state === 'SELECTING_CLIENT_TO_FINALIZE') {
-    const selectedNumber = parseInt(messageText);
-    const clientList = userSessions[userPhone].clientList;
-    
-    if (isNaN(selectedNumber) || selectedNumber < 1 || selectedNumber > clientList.length) {
-      await sendTextMessage(
-        userPhone,
-        `❌ *Número inválido*\n\nPor favor escribe un número entre 1 y ${clientList.length}`
-      );
-      return;
-    }
-    
-    // Obtener el cliente seleccionado (índice empieza en 0)
-    const [clientPhone, clientData] = clientList[selectedNumber - 1];
-    console.log(`🔚 Asesor seleccionó finalizar conversación con ${clientPhone} (opción ${selectedNumber})`);
-    
-    // Limpiar el estado
-    delete userSessions[userPhone].state;
-    delete userSessions[userPhone].clientList;
-    
-    
-    // Verificar que el cliente todavía está activo
-    if (usersWithAdvisor.has(clientPhone)) {
-      await closeClientConversation(clientPhone, userPhone);
-    } else {
-      await sendTextMessage(
-        userPhone,
-        `❌ *Error*\n\nEse cliente ya no está en conversación activa.`
-      );
-    }
-    return;
-  }
 
-  // SELECCIÓN DE CLIENTE PARA FINALIZAR (desde menú interactivo)
-  if (userPhone === ADVISOR_PHONE && messageText.startsWith('finalizar_')) {
-    const clientPhone = messageText.replace('finalizar_', '');
-    console.log(`🔚 Asesor seleccionó finalizar conversación con ${clientPhone}`);
-    
-    // Verificar que el cliente está realmente en conversación con asesor
-    if (usersWithAdvisor.has(clientPhone)) {
-      await closeClientConversation(clientPhone, userPhone);
-    } else {
-      await sendTextMessage(
-        userPhone,
-        `❌ *Error*\n\nEse cliente ya no está en conversación activa.`
-      );
-    }
-    return;
-  }
 
-  // COMANDO ESPECIAL: /comandos (solo asesor)
-  if (messageText === '/comandos' && userPhone === ADVISOR_PHONE) {
-    const comandosMsg = `🤖 *COMANDOS DE ADMINISTRADOR*\n\n` +
-      `Estos son los comandos especiales disponibles:\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `� *Finalizar conversaciones*\n` +
-      `   Finaliza conversaciones activas con clientes\n` +
-      `   📝 También puedes escribir: */finalizar*\n` +
-      `   • 1 sesión: Finaliza automáticamente\n` +
-      `   • 2-3 sesiones: Muestra botones\n` +
-      `   • 4-10 sesiones: Muestra lista\n` +
-      `   • +10 sesiones: Selección numérica\n\n` +
-      `🔥 *Actualizar promociones*\n` +
-      `   Actualiza el mensaje de promociones\n` +
-      `   📝 También puedes escribir: */actualizar_promo*\n` +
-      `   El bot te pedirá el nuevo texto\n` +
-      `   📏 Límite: 4000 caracteres\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `💡 *Selecciona un comando o escríbelo:*`;
-    
-    await sendInteractiveButtons(
-      userPhone,
-      comandosMsg,
-      [
-        { id: 'cmd_finalizar', title: '🔚 Finalizar' },
-        { id: 'cmd_promo', title: '🔥 Actualizar Promo' }
-      ],
-      'Comandos Admin'
-    );
-    return;
-  }
 
-  // BOTONES DEL MENÚ DE COMANDOS (solo asesor)
-  if (userPhone === ADVISOR_PHONE && messageText === 'cmd_finalizar') {
-    console.log(`🔚 Asesor presionó botón de /finalizar`);
-    await finalizeAdvisorConversation(userPhone);
-    return;
-  }
 
-  if (userPhone === ADVISOR_PHONE && messageText === 'cmd_promo') {
-    console.log(`🔥 Asesor presionó botón de /actualizar_promo`);
-    // Inicializar sesión si no existe
-    if (!userSessions[userPhone]) {
-      await initializeUserSession(userPhone);
-    }
-
-    // Cambiar estado para esperar el nuevo mensaje de promoción
-    userSessions[userPhone].state = 'UPDATING_PROMO';
-    
-    await sendTextMessage(
-      userPhone,
-      `📝 *ACTUALIZAR MENSAJE DE PROMOCIONES*\n\n` +
-      `Por favor, escribe el *nuevo mensaje* que aparecerá en la opción "Promociones y Descuentos".\n\n` +
-      `💡 *Puedes usar formato:*\n` +
-      `• *Negritas* con asteriscos\n` +
-      `• _Cursivas_ con guiones bajos\n` +
-      `• Emojis 🔥😎🎉\n` +
-      `• Saltos de línea para organizar\n\n` +
-      `📏 *Límite:* Máximo 4000 caracteres\n\n` +
-      `Escribe tu mensaje ahora:`
-    );
-    return;
-  }
-
-  // COMANDO ESPECIAL: /actualizar_promo (solo asesor)
-  if (messageText.startsWith('/actualizar_promo')) {
-    // Verificar que sea el asesor
-    if (userPhone !== ADVISOR_PHONE) {
-      await sendTextMessage(userPhone, '❌ Este comando solo está disponible para el administrador.');
-      return;
-    }
-
-    // Inicializar sesión si no existe
-    if (!userSessions[userPhone]) {
-      await initializeUserSession(userPhone);
-    }
-
-    // Cambiar estado para esperar el nuevo mensaje de promoción
-    userSessions[userPhone].state = 'UPDATING_PROMO';
-    
-    await sendTextMessage(
-      userPhone,
-      `📝 *ACTUALIZAR MENSAJE DE PROMOCIONES*\n\n` +
-      `Por favor, escribe el *nuevo mensaje* que aparecerá en la opción "Promociones y Descuentos".\n\n` +
-      `💡 *Puedes usar formato:*\n` +
-      `• *Negritas* con asteriscos\n` +
-      `• _Cursivas_ con guiones bajos\n` +
-      `• Emojis 🔥😎🎉\n` +
-      `• Saltos de línea para organizar\n\n` +
-      `📏 *Límite:* Máximo 4000 caracteres\n\n` +
-      `Escribe tu mensaje ahora:`
-    );
-    return;
-  }
 
   // BOTONES DEL MENÚ PRINCIPAL (respuestas interactivas)
   // Manejar botón "Volver al menú"
@@ -1101,40 +788,6 @@ const handleMenuSelection = async (userPhone, message) => {
       case 'VIEWING_ORDER_DETAILS':
         // El usuario seleccionó un pedido para ver detalles
         await handleOrderSelection(userPhone, messageText);
-        break;
-      
-      case 'UPDATING_PROMO':
-        // El asesor está actualizando el mensaje de promociones
-        // Validar longitud del mensaje (límite de WhatsApp: 4096, dejamos margen)
-        if (message.length > 4000) {
-          await sendTextMessage(
-            userPhone,
-            `❌ *Mensaje demasiado largo*\n\n` +
-            `Tu mensaje tiene *${message.length} caracteres*.\n` +
-            `El límite es *4000 caracteres*.\n\n` +
-            `Por favor, acorta el mensaje e intenta nuevamente con /actualizar_promo`
-          );
-          userSessions[userPhone].state = 'MAIN_MENU';
-          break;
-        }
-
-        const success = updatePromoMessage(message, userPhone);
-        if (success) {
-          await sendTextMessage(
-            userPhone,
-            `✅ *Mensaje de promociones actualizado correctamente*\n\n` +
-            `El nuevo mensaje ya está disponible para todos los usuarios.\n\n` +
-            `📊 Longitud: ${message.length} caracteres\n\n` +
-            `Vista previa:\n━━━━━━━━━━━━━━━━━━━━\n${message}`
-          );
-        } else {
-          await sendTextMessage(
-            userPhone,
-            `❌ Error al actualizar el mensaje.\n\nIntenta de nuevo con /actualizar_promo`
-          );
-        }
-        // Limpiar estado del asesor sin mostrar menú
-        userSessions[userPhone].state = 'MAIN_MENU';
         break;
       
       case 'WITH_ADVISOR':
@@ -2364,7 +2017,6 @@ module.exports = {
   isUserWithAdvisor,
   deactivateAdvisorMode,
   markAdvisorResponse,  // Exportar para que el panel la pueda usar
-  finalizeAdvisorConversation,
   updateLastActivity,  // Exportar para que el webhook la pueda usar
   getUserSession: (userPhone) => userSessions[userPhone]  // Exportar para verificar estado
 };

@@ -3,8 +3,6 @@ const { handleMenuSelection, updateLastActivity, isUserWithAdvisor } = require('
 const { processMediaMessage } = require('../services/mediaService');
 const { addMessage } = require('../services/conversationService');
 
-const ADVISOR_PHONE = process.env.ADVISOR_PHONE_NUMBER || '573173745021';
-
 // Cache de mensajes procesados para prevenir duplicados
 const processedMessages = new Map(); // { messageId: timestamp }
 const MESSAGE_EXPIRY = 5 * 60 * 1000; // 5 minutos
@@ -83,58 +81,6 @@ const handleIncomingMessage = async (req, res) => {
         const messageType = message.type;
 
         console.log(`📱 Mensaje de ${from}: ${messageBody}`);
-
-        // Si el mensaje viene del ASESOR, verificar si es comando /finalizar o respuesta interactiva
-        if (from === ADVISOR_PHONE) {
-          console.log(`👨‍💼 Mensaje del asesor recibido: ${messageBody}`);
-          
-          // Si el asesor escribe comandos especiales, procesarlos
-          const lowerMessage = messageBody.trim().toLowerCase();
-          if (lowerMessage === '/finalizar' || lowerMessage === '/comandos' || lowerMessage.startsWith('/actualizar_promo')) {
-            await handleMenuSelection(from, messageBody);
-            res.sendStatus(200);
-            return;
-          }
-          
-          // Si el asesor selecciona un botón/lista interactiva (ej: finalizar cliente)
-          if (messageType === 'interactive') {
-            const interactiveResponse = message.interactive;
-            let selectedOption = null;
-            
-            if (interactiveResponse.type === 'button_reply') {
-              selectedOption = interactiveResponse.button_reply.id;
-            } else if (interactiveResponse.type === 'list_reply') {
-              selectedOption = interactiveResponse.list_reply.id;
-            }
-            
-            // Procesar botones del menú de comandos (cmd_finalizar, cmd_promo)
-            if (selectedOption && (selectedOption === 'cmd_finalizar' || selectedOption === 'cmd_promo')) {
-              await handleMenuSelection(from, selectedOption);
-              res.sendStatus(200);
-              return;
-            }
-            
-            // Procesar botones de finalizar conversación específica
-            if (selectedOption && selectedOption.startsWith('finalizar_')) {
-              await handleMenuSelection(from, selectedOption);
-              res.sendStatus(200);
-              return;
-            }
-          }
-          
-          // Si el asesor está actualizando promociones, procesar el mensaje
-          const { getUserSession } = require('../services/menuService');
-          const advisorSession = getUserSession(from);
-          if (advisorSession && advisorSession.state === 'UPDATING_PROMO') {
-            await handleMenuSelection(from, messageBody);
-            res.sendStatus(200);
-            return;
-          }
-          
-          // Nota: Los demás mensajes del asesor se manejan directamente en WhatsApp Business
-          res.sendStatus(200);
-          return;
-        }
 
         // Procesar el mensaje según el tipo
         if (messageType === 'text') {
