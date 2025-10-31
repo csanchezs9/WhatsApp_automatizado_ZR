@@ -10,17 +10,10 @@ const MESSAGE_EXPIRY = 5 * 60 * 1000; // 5 minutos
 // Limpieza periódica de mensajes antiguos cada 5 minutos
 setInterval(() => {
   const now = Date.now();
-  let cleanedCount = 0;
-  
   for (const [messageId, timestamp] of processedMessages.entries()) {
     if (now - timestamp > MESSAGE_EXPIRY) {
       processedMessages.delete(messageId);
-      cleanedCount++;
     }
-  }
-  
-  if (cleanedCount > 0) {
-    console.log(`🧹 Limpieza: ${cleanedCount} message IDs antiguos eliminados`);
   }
 }, MESSAGE_EXPIRY);
 
@@ -32,19 +25,15 @@ const handleWebhookVerification = (req, res) => {
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
-  console.log('🔍 Verificación recibida:', { mode, token, challenge });
-  console.log('🔑 Token esperado:', process.env.WEBHOOK_VERIFY_TOKEN);
-
   if (mode && token) {
     if (mode === 'subscribe' && token === process.env.WEBHOOK_VERIFY_TOKEN) {
-      console.log('✅ Webhook verificado correctamente');
       return res.status(200).send(challenge);
     } else {
-      console.log('❌ Verificación fallida - Token no coincide');
+      console.error('❌ Verificación fallida - Token no coincide');
       return res.sendStatus(403);
     }
   } else {
-    console.log('❌ Verificación fallida - Faltan parámetros');
+    console.error('❌ Verificación fallida - Faltan parámetros');
     return res.sendStatus(400);
   }
 };
@@ -68,19 +57,16 @@ const handleIncomingMessage = async (req, res) => {
         
         // Validar si el mensaje ya fue procesado (prevenir duplicados)
         if (processedMessages.has(messageId)) {
-          console.log(`⚠️ Mensaje duplicado detectado: ${messageId} - Ignorando`);
           res.sendStatus(200);
           return;
         }
-        
+
         // Marcar mensaje como procesado
         processedMessages.set(messageId, Date.now());
-        
-        const from = message.from; // Número del usuario
+
+        const from = message.from;
         const messageBody = message.text?.body || '';
         const messageType = message.type;
-
-        console.log(`📱 Mensaje de ${from}: ${messageBody}`);
 
         // Procesar el mensaje según el tipo
         if (messageType === 'text') {
@@ -105,14 +91,10 @@ const handleIncomingMessage = async (req, res) => {
 
           if (isWithAdvisor || isWaitingAdvisorQuery) {
             try {
-              console.log(`📎 Procesando ${messageType} de ${from}`);
               const mediaInfo = await processMediaMessage(message);
 
               // Si está esperando enviar consulta, activar modo asesor primero
               if (isWaitingAdvisorQuery && !isWithAdvisor) {
-                console.log(`🔄 Usuario ${from} enviando imagen como consulta al asesor`);
-
-                // Determinar tipo de consulta según el estado
                 let consultationType = 'general';
                 if (userState === 'WAITING_WARRANTY_REQUEST') {
                   consultationType = 'garantia';
@@ -120,14 +102,8 @@ const handleIncomingMessage = async (req, res) => {
                   consultationType = 'cotizacion';
                 }
 
-                // Usar el caption de la imagen como consulta, o texto por defecto
                 const queryText = mediaInfo.caption || '[El cliente envió una imagen]';
-
-                // Activar modo asesor con tipo de consulta específico
-                // skipInitialMessage=true para evitar duplicar el mensaje (la imagen ya tiene caption)
                 await activateAdvisorMode(from, queryText, consultationType, true);
-
-                // Pequeña pausa para asegurar que el modo asesor se active
                 await new Promise(resolve => setTimeout(resolve, 100));
               }
 
@@ -141,8 +117,6 @@ const handleIncomingMessage = async (req, res) => {
                 filename: mediaInfo.filename,
                 size: mediaInfo.size
               });
-
-              console.log(`✅ ${messageType} guardado: ${mediaInfo.localPath}`);
 
               // Emitir por socket al panel
               const io = req.app.get('io');
@@ -194,8 +168,6 @@ const handleIncomingMessage = async (req, res) => {
 
           const descriptiveText = messageTypeLabels[messageType] || `[${messageType}]`;
 
-          console.log(`ℹ️ ${from} envió ${descriptiveText} - tipo no soportado`);
-
           // Si está con asesor, guardar indicador en el panel
           if (isWithAdvisor) {
             addMessage(from, {
@@ -242,8 +214,6 @@ const handleIncomingMessage = async (req, res) => {
         } else {
           // Catch-all para cualquier otro tipo de mensaje no manejado
           const isWithAdvisor = isUserWithAdvisor(from);
-
-          console.log(`⚠️ Tipo de mensaje desconocido: ${messageType}`);
 
           if (isWithAdvisor) {
             addMessage(from, {

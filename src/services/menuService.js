@@ -45,7 +45,6 @@ const initPromoFile = () => {
     const dir = path.dirname(PROMO_FILE_PATH);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
-      console.log('📁 Directorio de promociones creado:', dir);
     }
 
     // Crear archivo con mensaje por defecto si no existe
@@ -56,9 +55,7 @@ const initPromoFile = () => {
         updatedBy: 'Sistema'
       };
       fs.writeFileSync(PROMO_FILE_PATH, JSON.stringify(defaultData, null, 2), 'utf8');
-      console.log('✅ Archivo de promociones inicializado con mensaje por defecto');
-    } else {
-      console.log('✅ Archivo de promociones encontrado:', PROMO_FILE_PATH);
+    }
     }
   } catch (error) {
     console.error('❌ Error inicializando archivo de promociones:', error);
@@ -126,11 +123,6 @@ const cleanupOldSessions = () => {
     }
   }
 
-  if (cleanedCount > 0) {
-    console.log(`🧹 Limpieza automática: ${cleanedCount} sesiones antiguas eliminadas de memoria`);
-  }
-
-  console.log(`📊 Sesiones activas en memoria: ${Object.keys(userSessions).length}`);
 };
 
 // Ejecutar limpieza periódica cada 24 horas
@@ -173,7 +165,6 @@ const isSessionExpired = (userPhone) => {
   const timeSinceLastActivity = now - session.lastActivity;
 
   if (timeSinceLastActivity > INACTIVITY_TIMEOUT) {
-    console.log(`⏰ Sesión expirada por inactividad para ${userPhone} (${Math.round(timeSinceLastActivity / 60000)} minutos)`);
     return true;
   }
 
@@ -275,7 +266,6 @@ const isUserWithAdvisor = (userPhone) => {
 
   // Si han pasado 24 horas desde el inicio, finalizar conversación automáticamente
   if (timeSinceStart > ADVISOR_CONVERSATION_TIMEOUT) {
-    console.log(`⏰ Conversación con asesor expiró después de 24h para ${userPhone}`);
     usersWithAdvisor.delete(userPhone);
     return false;
   }
@@ -304,7 +294,6 @@ const activateAdvisorMode = async (userPhone, userQuery = '', consultationType =
     ];
 
     await sendInteractiveButtons(userPhone, outOfHoursMessage, buttons);
-    console.log(`⏰ Usuario ${userPhone} intentó contactar asesor fuera de horario`);
     return;
   }
 
@@ -341,7 +330,6 @@ const activateAdvisorMode = async (userPhone, userQuery = '', consultationType =
   ];
 
   await sendInteractiveButtons(userPhone, clientMessage, buttons);
-  console.log(`👤 Usuario ${userPhone} ahora está en modo asesor con consulta: "${userQuery}"`);
 
   // CREAR mensaje de sistema con el tipo de consulta en el panel
   const systemMessage = `${consultaIcon} *Tipo de consulta:* ${consultaType}`;
@@ -359,9 +347,6 @@ const activateAdvisorMode = async (userPhone, userQuery = '', consultationType =
       text: userQuery,
       type: 'text'
     });
-    console.log(`💾 Conversación creada en panel para ${userPhone} con tipo: ${consultaType}`);
-  } else {
-    console.log(`💾 Conversación creada en panel para ${userPhone} con tipo: ${consultaType} (sin mensaje inicial, se enviará multimedia)`);
   }
 
   // Cambiar estado de la sesión para que no procese más mensajes como nueva consulta
@@ -397,7 +382,6 @@ const deactivateAdvisorMode = async (userPhone) => {
       
     }
 
-    console.log(`🤖 Bot reactivado para ${userPhone}`);
     return true;
   }
   return false;
@@ -413,7 +397,6 @@ const markAdvisorResponse = (userPhone) => {
     session.advisorHasResponded = true;
     session.lastAdvisorMessage = Date.now();
     usersWithAdvisor.set(userPhone, session);
-    console.log(`✅ Marcado que asesor respondió a ${userPhone}`);
     return true;
   }
   return false;
@@ -579,8 +562,7 @@ const handleMenuSelection = async (userPhone, message) => {
         ];
 
         await sendInteractiveButtons(userPhone, outOfHoursMessage, buttons);
-        console.log(`⏰ Usuario ${userPhone} intentó contactar asesor fuera de horario`);
-        return;
+            return;
       }
 
       // Mostrar menú de opciones de asesor
@@ -691,7 +673,6 @@ const handleMenuSelection = async (userPhone, message) => {
     
     if (timeSinceStart > ADVISOR_CONVERSATION_TIMEOUT) {
       // Conversación expiró - cierre silencioso (sin mensaje)
-      console.log(`⏰ Conversación con asesor expiró (24h) para ${userPhone} - Cierre silencioso`);
       usersWithAdvisor.delete(userPhone);
       
       // Simplemente mostrar el menú normalmente (experiencia fluida)
@@ -716,10 +697,8 @@ const handleMenuSelection = async (userPhone, message) => {
         `Tu consulta fue enviada. El asesor te responderá pronto.\n\n` +
         `💬 Puedes seguir escribiendo y el asesor verá tus mensajes.`
       );
-      console.log(`👤 Mensaje de ${userPhone} recibido - esperando respuesta del asesor`);
     } else {
       // El asesor ya respondió, solo registrar el mensaje sin enviar recordatorio
-      console.log(`👤 Mensaje de ${userPhone} recibido - conversación activa con asesor`);
     }
 
     return;
@@ -727,7 +706,6 @@ const handleMenuSelection = async (userPhone, message) => {
 
   // VERIFICAR SI LA SESIÓN EXPIRÓ POR INACTIVIDAD (solo si NO está con asesor)
   if (isSessionExpired(userPhone)) {
-    console.log(`🔄 Sesión expirada para ${userPhone}. Mostrando menú principal...`);
     // Limpiar modo asesor si estaba activo
     deactivateAdvisorMode(userPhone);
     // Notificar al usuario que su sesión expiró
@@ -799,7 +777,6 @@ const handleMenuSelection = async (userPhone, message) => {
       case 'WITH_ADVISOR':
         // El usuario ya está con asesor, este caso ya se maneja arriba
         // No debería llegar aquí porque isUserWithAdvisor() ya lo captura
-        console.log(`⚠️ Usuario ${userPhone} en estado WITH_ADVISOR pero no está en usersWithAdvisor`);
         await showMainMenu(userPhone);
         break;
       
@@ -1111,8 +1088,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
       ];
 
       await sendInteractiveButtons(userPhone, outOfHoursMessage, buttons);
-      console.log(`⏰ Usuario ${userPhone} intentó contactar asesor fuera de horario`);
-      return;
+        return;
     }
 
     // Mostrar menú de opciones de asesor
