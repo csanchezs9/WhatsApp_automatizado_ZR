@@ -203,12 +203,25 @@ function connectWebSocket() {
         // Verificar si estamos viendo esta conversación activamente
         const isViewingThisConversation = currentConversation === data.phoneNumber;
 
-        // Solo notificar si el mensaje es del cliente Y está en modo WITH_ADVISOR Y NO es volver_menu
-        // Y NO estamos viendo activamente esta conversación
+        // Verificar si la pestaña está visible
+        const isTabVisible = !document.hidden;
+
+        // Verificar si el chat está scrolleado al final (mensaje visible)
+        const isChatAtBottom = isScrolledToBottom();
+
+        // LÓGICA MEJORADA DE NOTIFICACIONES:
+        // Solo notificar si:
+        // 1. El mensaje es del cliente
+        // 2. Está en modo WITH_ADVISOR
+        // 3. NO es el botón "volver_menu"
+        // 4. Y ALGUNA de estas condiciones:
+        //    a) NO estamos viendo esta conversación
+        //    b) Estamos en otra pestaña
+        //    c) Estamos scrolleados hacia arriba (mensaje no visible)
         const shouldNotify = data.message.from === 'client' &&
                            (data.userState === 'WITH_ADVISOR' || data.userState === 'WAITING_ADVISOR_QUERY') &&
                            !isVolverMenu &&
-                           !isViewingThisConversation;
+                           (!isViewingThisConversation || !isTabVisible || !isChatAtBottom);
 
         if (shouldNotify) {
             // Reproducir sonido de notificación
@@ -217,9 +230,11 @@ function connectWebSocket() {
             // Mostrar notificación del navegador si está permitido
             if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification('💬 Nuevo mensaje de cliente', {
-                    body: `Consulta de ${data.phoneNumber}`,
+                    body: `Consulta de ${formatPhoneNumber(data.phoneNumber)}`,
                     icon: '/favicon.ico',
-                    badge: '/favicon.ico'
+                    badge: '/favicon.ico',
+                    tag: data.phoneNumber, // Para reemplazar notificaciones del mismo número
+                    requireInteraction: false
                 });
             }
         }
@@ -233,13 +248,20 @@ function connectWebSocket() {
             }
             addMessageToChat(data.message);
 
-            // Marcar como leído inmediatamente (llamando al endpoint que marca como leído)
-            try {
-                await fetch(`/api/conversations/${data.phoneNumber}`, {
-                    headers: { 'Authorization': `Basic ${currentAuth}` }
-                });
-            } catch (error) {
-                console.error('Error al marcar conversación como leída:', error);
+            // SOLO marcar como leído si:
+            // - La pestaña está visible
+            // - Y el chat está scrolleado al final (mensaje visible)
+            if (isTabVisible && isChatAtBottom) {
+                try {
+                    await fetch(`/api/conversations/${data.phoneNumber}`, {
+                        headers: { 'Authorization': `Basic ${currentAuth}` }
+                    });
+                    console.log('✅ Conversación marcada como leída (mensaje visible)');
+                } catch (error) {
+                    console.error('Error al marcar conversación como leída:', error);
+                }
+            } else {
+                console.log('⏸️ No se marca como leído (pestaña oculta o scroll arriba)');
             }
         }
 
@@ -1727,6 +1749,54 @@ function formatPhoneNumber(phoneNumber) {
 function scrollToBottom() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
+
+// Verificar si el chat está scrolleado al final (con tolerancia de 100px)
+function isScrolledToBottom() {
+    if (!messagesContainer) return true; // Si no hay contenedor, asumir que está visible
+    const threshold = 100; // 100px de tolerancia
+    const scrollPosition = messagesContainer.scrollTop + messagesContainer.clientHeight;
+    const scrollHeight = messagesContainer.scrollHeight;
+    return scrollPosition >= scrollHeight - threshold;
+}
+
+// Marcar conversación como leída cuando sea visible
+async function markConversationAsReadIfVisible() {
+    if (!currentConversation) return;
+
+    const isTabVisible = !document.hidden;
+    const isChatAtBottom = isScrolledToBottom();
+
+    // Solo marcar como leído si el usuario realmente puede ver los mensajes
+    if (isTabVisible && isChatAtBottom) {
+        try {
+            await fetch(`/api/conversations/${currentConversation}`, {
+                headers: { 'Authorization': `Basic ${currentAuth}` }
+            });
+            console.log('✅ Conversación marcada como leída (scroll/tab visible)');
+            loadConversations(); // Actualizar lista para quitar badge naranja
+        } catch (error) {
+            console.error('Error al marcar conversación como leída:', error);
+        }
+    }
+}
+
+// Event listener: cuando el usuario hace scroll en el chat
+messagesContainer.addEventListener('scroll', () => {
+    // Usar debounce para no hacer demasiadas llamadas
+    clearTimeout(messagesContainer.scrollTimeout);
+    messagesContainer.scrollTimeout = setTimeout(() => {
+        markConversationAsReadIfVisible();
+    }, 300); // Esperar 300ms después del último scroll
+});
+
+// Event listener: cuando el usuario vuelve a la pestaña
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        console.log('👁️ Usuario volvió a la pestaña');
+        // Marcar como leído si está en el chat y scrolleado al final
+        markConversationAsReadIfVisible();
+    }
+});
 
 // ============================================
 // CUSTOM MODALS (Alertas y confirmaciones profesionales)
