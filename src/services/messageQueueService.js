@@ -75,18 +75,27 @@ class MessageQueueService {
         return new Promise((resolve, reject) => {
             const dataJson = JSON.stringify(messageData);
 
-            // Calcular cuándo intentar enviar (si estamos al límite, esperar)
+            // Calcular cuándo intentar enviar (delays cortos y escalados)
             const usage = rateLimitMonitor.getUsagePercentage();
             let scheduledAt = new Date();
+            let delaySeconds = 0;
 
             if (usage >= 90) {
-                // Si estamos al 90%, esperar 5 minutos
-                scheduledAt = new Date(Date.now() + 5 * 60000);
-                console.log(`📊 Cola: Uso al ${usage.toFixed(1)}% - Mensaje programado para ${scheduledAt.toLocaleTimeString()}`);
+                // Crítico: 90%+ → esperar 30 segundos
+                delaySeconds = 30;
+                scheduledAt = new Date(Date.now() + 30000);
+            } else if (usage >= 80) {
+                // Alto: 80-90% → esperar 15 segundos
+                delaySeconds = 15;
+                scheduledAt = new Date(Date.now() + 15000);
             } else if (usage >= 70) {
-                // Si estamos al 70%, esperar 1 minuto
-                scheduledAt = new Date(Date.now() + 60000);
-                console.log(`📊 Cola: Uso al ${usage.toFixed(1)}% - Mensaje programado para ${scheduledAt.toLocaleTimeString()}`);
+                // Moderado: 70-80% → esperar 5 segundos (casi instantáneo)
+                delaySeconds = 5;
+                scheduledAt = new Date(Date.now() + 5000);
+            }
+
+            if (delaySeconds > 0) {
+                console.log(`📊 Cola: Uso al ${usage.toFixed(1)}% - Mensaje programado en +${delaySeconds}s (${scheduledAt.toLocaleTimeString()})`);
             }
 
             const sql = `
@@ -121,9 +130,9 @@ class MessageQueueService {
             const stats = rateLimitMonitor.getStats();
             const usage = stats.usagePercentage;
 
-            // Solo procesar si estamos por debajo del 85%
-            if (usage >= 85) {
-                console.log(`⏸️ Cola pausada: Uso al ${usage}% - Esperando a que baje del 85%`);
+            // Solo procesar si estamos por debajo del 88% (aprovechar más capacidad)
+            if (usage >= 88) {
+                console.log(`⏸️ Cola pausada: Uso al ${usage.toFixed(1)}% - Esperando a que baje del 88%`);
                 this.isProcessing = false;
                 return;
             }
