@@ -3262,32 +3262,57 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
 .quick-response-selector-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    max-height: 400px;
+    gap: 12px;
+    max-height: 500px;
     overflow-y: auto;
     overflow-x: hidden;
+    padding: 4px;
+    margin: -4px;
+}
+
+/* Mejorar scrollbar */
+.quick-response-selector-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.quick-response-selector-list::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: 4px;
+}
+
+.quick-response-selector-list::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.quick-response-selector-list::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
 }
 
 .quick-response-selector-item {
-    padding: 14px 16px;
+    padding: 16px 18px;
     background: var(--bg-secondary);
     border: 2px solid var(--border-color);
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
     overflow: hidden;
+    flex-shrink: 0;
+    min-height: 70px;
 }
 
 .quick-response-selector-item:hover {
     background: var(--bg-hover);
     border-color: var(--accent-color);
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .quick-response-selector-title {
     font-weight: 600;
     font-size: 15px;
     color: var(--text-primary);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3296,10 +3321,13 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
 .quick-response-selector-preview {
     font-size: 13px;
     color: var(--text-secondary);
-    line-height: 1.4;
-    white-space: nowrap;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+    word-wrap: break-word;
 }
 
 .empty-hint {

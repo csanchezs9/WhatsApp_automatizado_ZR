@@ -114,9 +114,6 @@
                         <button class="dropdown-item" onclick="openSystemInfoModal()">
                             📊 Información del Sistema
                         </button>
-                        <button class="dropdown-item" onclick="openRateLimitModal()">
-                            📈 Rate Limits API
-                        </button>
                         <button class="dropdown-item" onclick="openPromotionsModal()">
                             🔥 Actualizar Promociones
                         </button>
@@ -294,40 +291,6 @@
                 <div class="modal-actions">
                     <button class="btn-secondary" onclick="closeSystemInfoModal()">Cerrar</button>
                     <button class="btn-primary" onclick="refreshSystemInfo()">🔄 Actualizar</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal de Rate Limits API -->
-        <div id="rate-limit-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>📈 Rate Limits de WhatsApp API</h2>
-                    <button class="close-modal" onclick="closeRateLimitModal()">✕</button>
-                </div>
-                <div class="modal-body">
-                    <div class="system-info-section">
-                        <h3>⚡ Uso Actual</h3>
-                        <div id="rate-limit-current" class="loading">Cargando...</div>
-                    </div>
-
-                    <div class="system-info-section">
-                        <h3>📊 Estadísticas de la Hora Actual</h3>
-                        <div id="rate-limit-hourly" class="loading">Cargando...</div>
-                    </div>
-
-                    <div class="system-info-section">
-                        <h3>📋 Información</h3>
-                        <p class="modal-description">
-                            <strong>Límite de WhatsApp:</strong> 5,000 llamadas por hora<br>
-                            <strong>Alerta:</strong> Se notifica al llegar al 70% del límite (3,500 llamadas/hora)<br><br>
-                            Este monitoreo te permite garantizar que la aplicación no exceda los límites de la API de Meta.
-                        </p>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button class="btn-secondary" onclick="closeRateLimitModal()">Cerrar</button>
-                    <button class="btn-primary" onclick="refreshRateLimitStats()">🔄 Actualizar</button>
                 </div>
             </div>
         </div>
