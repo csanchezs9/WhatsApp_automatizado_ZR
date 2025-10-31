@@ -56,7 +56,6 @@ const initPromoFile = () => {
       };
       fs.writeFileSync(PROMO_FILE_PATH, JSON.stringify(defaultData, null, 2), 'utf8');
     }
-    }
   } catch (error) {
     console.error('❌ Error inicializando archivo de promociones:', error);
   }
