@@ -509,6 +509,14 @@ function updateTextareaState(isWithAdvisor) {
         voiceBtn.style.cursor = enabled ? 'pointer' : 'not-allowed';
     }
 
+    // Deshabilitar también el botón de respuestas rápidas
+    const quickResponseBtn = document.getElementById('quick-response-btn');
+    if (quickResponseBtn) {
+        quickResponseBtn.disabled = !enabled;
+        quickResponseBtn.style.opacity = enabled ? '1' : '0.5';
+        quickResponseBtn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+    }
+
     if (!enabled) {
         messageInput.placeholder = '⚠️ El cliente no está en modo asesor. No puedes enviar mensajes.';
         messageInput.value = '';
