@@ -50,6 +50,17 @@ class QuickResponseService {
      * @returns {Promise<object>}
      */
     async createQuickResponse(title, content) {
+        // Validar longitud del contenido
+        if (content.length > 500) {
+            return Promise.reject(new Error('El contenido no puede superar los 500 caracteres'));
+        }
+
+        // Verificar límite de 20 respuestas
+        const allResponses = await this.getAllQuickResponses();
+        if (allResponses.length >= 20) {
+            return Promise.reject(new Error('Has alcanzado el límite máximo de 20 respuestas rápidas. Elimina alguna para crear una nueva.'));
+        }
+
         return new Promise((resolve, reject) => {
             const sql = `INSERT INTO quick_responses (title, content) VALUES (?, ?)`;
 
@@ -118,6 +129,11 @@ class QuickResponseService {
      * @returns {Promise<object>}
      */
     async updateQuickResponse(id, title, content) {
+        // Validar longitud del contenido
+        if (content.length > 500) {
+            return Promise.reject(new Error('El contenido no puede superar los 500 caracteres'));
+        }
+
         return new Promise((resolve, reject) => {
             const sql = `
                 UPDATE quick_responses

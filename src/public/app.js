@@ -2634,6 +2634,43 @@ async function loadQuickResponses() {
 }
 
 /**
+ * Actualizar contador de respuestas rápidas
+ */
+function updateQuickResponsesCounter() {
+    const counter = document.getElementById('quick-responses-counter');
+    const count = allQuickResponses.length;
+    counter.textContent = `${count}/20`;
+
+    // Cambiar color si está cerca del límite
+    if (count >= 20) {
+        counter.style.color = '#f44336'; // Rojo
+    } else if (count >= 15) {
+        counter.style.color = '#ff9800'; // Naranja
+    } else {
+        counter.style.color = 'var(--primary-color)'; // Azul
+    }
+
+    // Deshabilitar formulario si llegó al límite
+    const form = document.getElementById('quick-response-form');
+    const titleInput = document.getElementById('quick-response-title');
+    const contentInput = document.getElementById('quick-response-content');
+    const submitBtn = document.getElementById('quick-response-submit-btn');
+    const editId = document.getElementById('quick-response-edit-id').value;
+
+    // Solo deshabilitar si NO está editando (editId vacío) y llegó al límite
+    if (!editId && count >= 20) {
+        titleInput.disabled = true;
+        contentInput.disabled = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Límite alcanzado (20/20)';
+    } else {
+        titleInput.disabled = false;
+        contentInput.disabled = false;
+        submitBtn.disabled = false;
+    }
+}
+
+/**
  * Abrir modal de gestión de respuestas rápidas
  */
 window.openQuickResponsesModal = async function() {
@@ -2641,6 +2678,7 @@ window.openQuickResponsesModal = async function() {
 
     await loadQuickResponses();
     renderQuickResponsesList();
+    updateQuickResponsesCounter();
 
     document.getElementById('quick-responses-modal').classList.add('show');
 };
@@ -2759,6 +2797,7 @@ window.handleQuickResponseSubmit = async function(e) {
         // Recargar lista
         await loadQuickResponses();
         renderQuickResponsesList();
+        updateQuickResponsesCounter();
         cancelQuickResponseForm();
     } catch (error) {
         console.error('Error al guardar respuesta rápida:', error);
@@ -2775,6 +2814,7 @@ window.cancelQuickResponseForm = function() {
     document.getElementById('quick-response-form-title').textContent = 'Nueva Respuesta Rápida';
     document.getElementById('quick-response-submit-btn').textContent = 'Crear Respuesta';
     document.getElementById('quick-response-preview').innerHTML = '<p class="empty-message">Escribe el contenido para ver la vista previa</p>';
+    updateQuickResponsesCounter();
 };
 
 /**
@@ -2793,6 +2833,9 @@ window.editQuickResponse = function(id, title, content) {
 
     // Actualizar vista previa
     document.getElementById('quick-response-preview').innerHTML = `<div class="preview-message">${decodedContent.replace(/\n/g, '<br>')}</div>`;
+
+    // Actualizar contador (al editar, habilita el formulario)
+    updateQuickResponsesCounter();
 
     // Scroll al formulario
     document.getElementById('quick-response-form').scrollIntoView({ behavior: 'smooth' });
@@ -2838,6 +2881,7 @@ window.deleteQuickResponse = async function(id, title) {
         // Recargar lista
         await loadQuickResponses();
         renderQuickResponsesList();
+        updateQuickResponsesCounter();
     } catch (error) {
         console.error('Error al eliminar respuesta rápida:', error);
         await showCustomAlert('Error', 'No se pudo eliminar la respuesta rápida', error.message, 'error');

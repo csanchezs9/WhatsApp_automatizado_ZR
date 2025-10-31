@@ -491,6 +491,7 @@
                 <div class="modal-body">
                     <p class="modal-description">
                         Crea respuestas predefinidas para responder rápidamente a tus clientes.
+                        <span id="quick-responses-counter" style="float: right; font-weight: 600; color: var(--primary-color);">0/20</span>
                     </p>
 
                     <!-- Formulario para crear/editar respuesta rápida -->
@@ -519,10 +520,10 @@
                                     name="content"
                                     class="form-input"
                                     placeholder="Ej: ¡Gracias por escribirnos! Que tengas un excelente día 😊"
-                                    rows="3"
-                                    maxlength="150"
+                                    rows="4"
+                                    maxlength="500"
                                     required></textarea>
-                                <small class="form-hint">Máximo 150 caracteres.</small>
+                                <small class="form-hint">Máximo 500 caracteres.</small>
                             </div>
 
                             <div class="preview-container">
