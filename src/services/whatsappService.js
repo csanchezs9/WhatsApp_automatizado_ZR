@@ -3,6 +3,7 @@ const conversationService = require('./conversationService');
 const FormData = require('form-data');
 const fs = require('fs');
 const rateLimitMonitor = require('./rateLimitMonitor');
+const messageQueueService = require('./messageQueueService');
 
 const WHATSAPP_API_URL = `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`;
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
@@ -21,6 +22,18 @@ const getIsUserWithAdvisor = () => {
 // Configuración de reintentos
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000; // 2 segundos
+
+// Umbral para activar cola (70% del límite)
+const QUEUE_THRESHOLD = 70;
+
+/**
+ * Verificar si se debe usar cola en vez de envío directo
+ * @returns {boolean}
+ */
+const shouldUseQueue = () => {
+  const usage = rateLimitMonitor.getUsagePercentage();
+  return usage >= QUEUE_THRESHOLD;
+};
 
 /**
  * Función auxiliar para reintentar peticiones en caso de errores de red
@@ -59,6 +72,13 @@ const retryRequest = async (requestFn, retries = MAX_RETRIES) => {
  */
 const sendTextMessage = async (to, text) => {
   try {
+    // Verificar si debemos usar cola
+    if (shouldUseQueue()) {
+      console.log(`📊 Uso al ${rateLimitMonitor.getUsagePercentage().toFixed(1)}% - Encolando mensaje de texto`);
+      await messageQueueService.enqueue(to, 'text', { text }, 5);
+      return { queued: true };
+    }
+
     // Registrar llamada API
     rateLimitMonitor.trackCall('send_message');
 
@@ -270,6 +290,13 @@ const sendInteractiveList = async (to, bodyText, buttonText, sections) => {
  */
 const sendRawTextMessage = async (to, text) => {
   try {
+    // Verificar si debemos usar cola
+    if (shouldUseQueue()) {
+      console.log(`📊 Uso al ${rateLimitMonitor.getUsagePercentage().toFixed(1)}% - Encolando mensaje RAW`);
+      await messageQueueService.enqueue(to, 'text', { text }, 3); // Prioridad 3 (asesor tiene prioridad)
+      return { queued: true };
+    }
+
     // Registrar llamada API
     rateLimitMonitor.trackCall('send_message');
 
