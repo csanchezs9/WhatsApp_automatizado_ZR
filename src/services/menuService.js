@@ -497,41 +497,39 @@ const handleMenuSelection = async (userPhone, message) => {
   if (messageText === 'asesor_varios') {
     // Flujo actual: pedir consulta general
     userSessions[userPhone].state = 'WAITING_ADVISOR_QUERY';
-    await sendTextMessage(
-      userPhone,
-      `¡Perfecto! 👨‍💼\n\n` +
+
+    const mensaje = `¡Perfecto! 👨‍💼\n\n` +
       `*¿Has elegido hablar con un asesor?*\n\n` +
       `Cuéntanos aquí tu problema o consulta, y un asesor se contactará contigo *en breve* para ayudarte. 😊\n\n` +
-      `💬 _Escribe tu consulta ahora:_`
-    );
+      `💬 _Escribe tu consulta ahora:_\n\n` +
+      `Estoy atento si necesitas más información o ayuda 😊`;
 
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
-    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
     return;
   }
 
   if (messageText === 'asesor_cotizar') {
     // Nuevo flujo: pedir datos para cotización
     userSessions[userPhone].state = 'WAITING_QUOTE_DATA_FOR_ADVISOR';
-    await sendTextMessage(
-      userPhone,
-      `¡Perfecto! 🚗 *Para ayudarte a cotizar, por favor compárteme los siguientes datos:*\n\n` +
+
+    const mensaje = `¡Perfecto! 🚗 *Para ayudarte a cotizar, por favor compárteme los siguientes datos:*\n\n` +
       `✔ Marca del vehículo (Hyundai, Kia, Chevrolet, Renault, etc.)\n` +
       `✔ Modelo o línea (por ejemplo, Accent, Sail, Logan…)\n` +
       `✔ Año o cilindraje del vehículo.\n` +
       `✔ Nombre del repuesto que necesitas (ej: radiador, rótula, correa, etc.)\n` +
       `✔ Si tienes la referencia original o una foto, ¡envíala aquí! 📸\n\n` +
-      `💬 _Escribe toda la información ahora:_`
-    );
+      `💬 _Escribe toda la información ahora:_\n\n` +
+      `Estoy atento si necesitas más información o ayuda 😊`;
 
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
-    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
     return;
   }
 
@@ -638,29 +636,27 @@ const handleMenuSelection = async (userPhone, message) => {
       return;
     } else if (menuOption === 'promociones') {
       userSessions[userPhone].state = 'VIEWING_INFO';
-      const mensaje = getPromoMessage();
-      await sendTextMessage(userPhone, mensaje);
-      const buttonMessage = 'Estoy atento si necesitas más información o ayuda 😊';
+      const mensajePromo = getPromoMessage();
+      const mensajeFinal = mensajePromo + '\n\nEstoy atento si necesitas más información o ayuda 😊';
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
-      await sendInteractiveButtons(userPhone, buttonMessage, buttons);
+      await sendInteractiveButtons(userPhone, mensajeFinal, buttons);
       return;
     } else if (menuOption === 'pedidos') {
       userSessions[userPhone].state = 'WAITING_EMAIL_FOR_ORDERS';
-      await sendTextMessage(
-        userPhone,
-        `¡Perfecto! 🎯\n\n` +
+
+      const mensaje = `¡Perfecto! 🎯\n\n` +
         `📦 *¿Quieres consultar tu pedido?*\n\n` +
         `Por favor, escríbeme el 📧 *correo electrónico* con el que hiciste tu compra y te mostraré toda la información de tu pedido. 😊\n\n` +
-        `✍️ _Escribe tu correo aquí:_`
-      );
+        `✍️ _Escribe tu correo aquí:_\n\n` +
+        `Estoy atento si necesitas más información o ayuda 😊`;
 
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
 
-      await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+      await sendInteractiveButtons(userPhone, mensaje, buttons);
       return;
     }
   }
@@ -1167,34 +1163,29 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
   } else if (messageText.includes('promo') || messageText.includes('descuento') || messageText.includes('oferta')) {
     userSessions[userPhone].state = 'VIEWING_INFO';
     // Obtener mensaje de promociones
-    const mensaje = getPromoMessage();
+    const mensajePromo = getPromoMessage();
+    const mensajeFinal = mensajePromo + '\n\nEstoy atento si necesitas más información o ayuda 😊';
 
-    // Enviar el mensaje de promociones sin botones (sin límite de caracteres)
-    await sendTextMessage(userPhone, mensaje);
-
-    // Enviar botones en mensaje separado
-    const buttonMessage = 'Estoy atento si necesitas más información o ayuda 😊';
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
-    await sendInteractiveButtons(userPhone, buttonMessage, buttons);
+    await sendInteractiveButtons(userPhone, mensajeFinal, buttons);
   } else if (messageText.includes('pedido') || messageText.includes('orden') || messageText.includes('estado')) {
     // Solicitar email para consultar pedidos
     userSessions[userPhone].state = 'WAITING_EMAIL_FOR_ORDERS';
-    await sendTextMessage(
-      userPhone,
-      `¡Perfecto! 🎯\n\n` +
+
+    const mensaje = `¡Perfecto! 🎯\n\n` +
       `📦 *¿Quieres consultar tu pedido?*\n\n` +
       `Por favor, escríbeme el 📧 *correo electrónico* con el que hiciste tu compra y te mostraré toda la información de tu pedido. 😊\n\n` +
-      `✍️ _Escribe tu correo aquí:_`
-    );
+      `✍️ _Escribe tu correo aquí:_\n\n` +
+      `Estoy atento si necesitas más información o ayuda 😊`;
 
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
-    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
   } else {
     // Rechazar cualquier otro input (incluyendo números)
     const errorMsg = `❌ *Opción no válida.*\n\n` +
@@ -1213,8 +1204,7 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
  */
 const showCategories = async (userPhone) => {
   userSessions[userPhone].state = 'CATEGORY_LIST';
-  await sendTextMessage(userPhone, '⏳ Cargando catálogo...');
-  
+
   try {
     const categories = await getCategories();
     
@@ -1291,7 +1281,6 @@ const handleCategorySelection = async (userPhone, message) => {
  */
 const showSubCategories = async (userPhone, categoryId, categoryName = null) => {
   userSessions[userPhone].state = 'SUBCATEGORY_LIST';
-  await sendTextMessage(userPhone, '⏳ Cargando subcategorías...');
 
   try {
     const subcategories = await getSubCategories(categoryId);
@@ -1363,8 +1352,6 @@ const handleSubcategorySelection = async (userPhone, message) => {
   userSessions[userPhone].selectedSubcategoryData = selectedSubcategory; // Guardar datos completos
   
   // Primero verificar si esta subcategoría tiene más subcategorías
-  await sendTextMessage(userPhone, '⏳ Verificando opciones disponibles...');
-  
   const subSubcategories = await getSubCategories(selectedSubcategory.id);
   
   if (subSubcategories && subSubcategories.length > 0) {
@@ -1381,7 +1368,6 @@ const handleSubcategorySelection = async (userPhone, message) => {
  */
 const showProducts = async (userPhone, subcategoryId) => {
   userSessions[userPhone].state = 'PRODUCT_LIST';
-  await sendTextMessage(userPhone, '⏳ Cargando productos...');
 
   try {
     const products = await getProducts(subcategoryId);
@@ -1455,17 +1441,15 @@ const showProducts = async (userPhone, subcategoryId) => {
       mensaje += `https://zonarepuestera.com.co/products/`;
     }
 
-    // Enviar el mensaje con los productos (sin botones para evitar límite de 1024 caracteres)
-    await sendTextMessage(userPhone, mensaje);
+    // Combinar mensaje de productos con botones
+    mensaje += '\n\nEstoy atento si necesitas más información o ayuda 😊';
 
-    // Enviar botones en un mensaje separado corto
-    const buttonMessage = 'Estoy atento si necesitas más información o ayuda 😊';
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' },
       { id: 'menu_catalogo', title: '📚 Ver catálogo' }
     ];
 
-    await sendInteractiveButtons(userPhone, buttonMessage, buttons);
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
     // Mantener estado PRODUCT_LIST para permitir selección por número
     
   } catch (error) {
@@ -1557,44 +1541,37 @@ const handleOrdersEmailInput = async (userPhone, email) => {
 
   // Validar formato de email
   if (!isValidEmail(trimmedEmail)) {
-    await sendTextMessage(
-      userPhone,
-      `❌ *Email inválido*\n\n` +
+    const mensaje = `❌ *Email inválido*\n\n` +
       `Por favor ingresa un correo electrónico válido.\n\n` +
       `Ejemplo: *juan@email.com*\n\n` +
-      `_Escribe tu correo nuevamente o vuelve al menú:_`
-    );
+      `_Escribe tu correo nuevamente o vuelve al menú:_\n\n` +
+      `Estoy atento si necesitas más información o ayuda 😊`;
 
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' },
       { id: 'repetir_correo', title: '✉️ Repetir correo' }
     ];
 
-    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+    await sendInteractiveButtons(userPhone, mensaje, buttons);
     return;
   }
 
   try {
-    // Mostrar mensaje de carga
-    await sendTextMessage(userPhone, '⏳ Buscando pedidos...');
-    
     // Obtener pedidos del backend
     const orders = await getOrdersByEmail(trimmedEmail);
     
     if (!orders || orders.length === 0) {
-      await sendTextMessage(
-        userPhone,
-        `📦 *No se encontraron pedidos*\n\n` +
+      const mensaje = `📦 *No se encontraron pedidos*\n\n` +
         `No hay pedidos asociados al correo *${trimmedEmail}*.\n\n` +
-        `Verifica que el correo sea el mismo que usaste al hacer tu compra.`
-      );
+        `Verifica que el correo sea el mismo que usaste al hacer tu compra.\n\n` +
+        `Estoy atento si necesitas más información o ayuda 😊`;
 
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' },
         { id: 'repetir_correo', title: '✉️ Repetir correo' }
       ];
 
-      await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+      await sendInteractiveButtons(userPhone, mensaje, buttons);
       userSessions[userPhone].state = 'MAIN_MENU';
       return;
     }
@@ -1606,33 +1583,30 @@ const handleOrdersEmailInput = async (userPhone, email) => {
     // Si solo hay 1 pedido, mostrar detalles directamente
     if (orders.length === 1) {
       const orderDetails = formatOrderDetails(orders[0]);
-      await sendTextMessage(userPhone, orderDetails);
-      
+      const mensajeFinal = orderDetails + '\n\nEstoy atento si necesitas más información o ayuda 😊';
+
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
 
-      await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+      await sendInteractiveButtons(userPhone, mensajeFinal, buttons);
       userSessions[userPhone].state = 'MAIN_MENU';
       return;
     }
 
     // Si hay múltiples pedidos, mostrar lista resumida
     const ordersList = formatOrdersList(orders);
-    await sendTextMessage(userPhone, ordersList);
-    
-    await sendTextMessage(
-      userPhone,
-      `\n💬 *Para ver detalles de un pedido:*\n` +
+    const mensajeFinal = ordersList +
+      `\n\n💬 *Para ver detalles de un pedido:*\n` +
       `Escribe el *número del pedido*\n\n` +
-      `_Ejemplo: escribe *${orders[0].id}* para ver el pedido #${orders[0].id}_`
-    );
-    
+      `_Ejemplo: escribe *${orders[0].id}* para ver el pedido #${orders[0].id}_\n\n` +
+      `Estoy atento si necesitas más información o ayuda 😊`;
+
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
     ];
 
-    await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+    await sendInteractiveButtons(userPhone, mensajeFinal, buttons);
     userSessions[userPhone].state = 'VIEWING_ORDER_DETAILS';
 
   } catch (error) {
@@ -1733,18 +1707,6 @@ const startQuoteFlow = async (userPhone) => {
   };
   userSessions[userPhone].lastActivity = Date.now();
 
-  await sendTextMessage(
-    userPhone,
-    `*Trabajo para ti 24/7 para responder tus consultas rapidamente y ayudarte con tu cotización.*\n\n` +
-    `*!Vamos a buscar tu repuesto!*\n\n` +
-    `Buscaremos por:\n` +
-    `1️⃣ Marca de tu vehículo\n` +
-    `2️⃣ Modelo\n` +
-    `3️⃣ Categoría del repuesto\n` +
-    `4️⃣ Subcategoría (opcional)\n\n` +
-    `⏳ _Cargando marcas disponibles..._`
-  );
-
   await showCarBrands(userPhone);
 };
 
@@ -1753,7 +1715,7 @@ const startQuoteFlow = async (userPhone) => {
  */
 const showCarBrands = async (userPhone) => {
   const result = await getCarBrands();
-  
+
   if (!result.success || !result.data || result.data.length === 0) {
     await sendTextMessage(
       userPhone,
@@ -1764,10 +1726,18 @@ const showCarBrands = async (userPhone) => {
   }
 
   userSessions[userPhone].carBrandsList = result.data;
-  
+
   // Crear lista numerada en texto (sin límite de 10)
-  let message = `🚗 *SELECCIONA LA MARCA DE TU VEHÍCULO*\n\n`;
-  message += `Tenemos ${result.data.length} marcas disponibles.\n\n`;
+  let message = `*Trabajo para ti 24/7!* 🚗\n\n` +
+    `*¡Vamos a buscar tu repuesto!*\n\n` +
+    `Buscaremos por:\n` +
+    `1️⃣ Marca de tu vehículo\n` +
+    `2️⃣ Modelo\n` +
+    `3️⃣ Categoría del repuesto\n` +
+    `4️⃣ Subcategoría (opcional)\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🚗 *SELECCIONA LA MARCA DE TU VEHÍCULO*\n\n` +
+    `Tenemos ${result.data.length} marcas disponibles.\n\n`;
 
   result.data.forEach((brand, index) => {
     message += `${index + 1}. ${brand.name}\n`;
@@ -1902,12 +1872,6 @@ const showQuoteSubcategories = async (userPhone, categoryId, categoryName = null
  */
 const searchQuoteProducts = async (userPhone) => {
   const filters = userSessions[userPhone].quoteFilters;
-  
-  await sendTextMessage(
-    userPhone,
-    `🔍 *Buscando productos...*\n\n` +
-    `Por favor espera un momento.`
-  );
 
   const result = await searchProducts(filters);
   
@@ -1947,19 +1911,16 @@ const searchQuoteProducts = async (userPhone) => {
   userSessions[userPhone].state = 'QUOTE_VIEW_RESULTS';
 
   const productList = formatProductList(result.data, 1, 10, filters);
-  await sendTextMessage(userPhone, productList);
-
-  // Agregar instrucción para seleccionar producto por número
-  await sendTextMessage(
-    userPhone,
-    `💬 *Escribe el número del producto para ver sus detalles y el link de compra*`
-  );
+  const mensajeFinal = productList +
+    `\n\n💬 *Escribe el número del producto para ver sus detalles y el link de compra*\n\n` +
+    `Estoy atento si necesitas más información o ayuda 😊`;
 
   const buttons = [
     { id: 'menu_cotizar', title: '🔍 Nueva búsqueda' },
     { id: 'volver_menu', title: '🏠 Volver al menú' }
   ];
-  await sendInteractiveButtons(userPhone, 'Estoy atento si necesitas más información o ayuda 😊', buttons);
+
+  await sendInteractiveButtons(userPhone, mensajeFinal, buttons);
 };
 
 /**
