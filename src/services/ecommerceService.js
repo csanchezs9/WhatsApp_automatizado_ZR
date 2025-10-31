@@ -4,60 +4,114 @@ const ECOMMERCE_API_URL = process.env.ECOMMERCE_API_URL || 'http://localhost:800
 
 /**
  * Obtiene las categorías del e-commerce
+ * IMPORTANTE: SIN DATOS QUEMADOS - TODO DINÁMICO desde la API
  */
 const getCategories = async () => {
   try {
-    const response = await axios.get(`${ECOMMERCE_API_URL}/catalog/categorias/`);
-    console.log(`📦 Categorías obtenidas: ${response.data.length}`);
+    const url = `${ECOMMERCE_API_URL}/catalog/categorias/`;
+    console.log(`🔍 Consultando categorías: ${url}`);
+
+    const response = await axios.get(url, {
+      timeout: 10000, // 10 segundos timeout
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'WhatsApp-Bot/1.0'
+      }
+    });
+
+    console.log(`✅ Categorías obtenidas: ${response.data.length}`);
+
+    if (!response.data || response.data.length === 0) {
+      console.warn('⚠️ API devolvió array vacío de categorías');
+      throw new Error('No hay categorías disponibles en la API');
+    }
+
     return response.data;
   } catch (error) {
-    console.error('Error obteniendo categorías:', error.message);
+    console.error('❌ ERROR CRÍTICO obteniendo categorías:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.status,
+      data: error.response?.data,
+      url: `${ECOMMERCE_API_URL}/catalog/categorias/`
+    });
 
-    // Datos de prueba con IDs REALES de la API (actualizados 2025)
-    console.log('⚠️ Usando datos de prueba con IDs reales');
-    return [
-      { id: 262, name: 'Motor', product_count: 719, subcategory_count: 18 },
-      { id: 263, name: 'Sistema de refrigeración', product_count: 205, subcategory_count: 10 },
-      { id: 256, name: 'Caja', product_count: 40, subcategory_count: 6 },
-      { id: 259, name: 'Embrague', product_count: 52, subcategory_count: 6 },
-      { id: 264, name: 'Suspensión', product_count: 991, subcategory_count: 16 },
-      { id: 261, name: 'Frenos', product_count: 193, subcategory_count: 7 },
-      { id: 258, name: 'Eléctricos', product_count: 131, subcategory_count: 13 },
-      { id: 257, name: 'Carrocería', product_count: 29, subcategory_count: 6 },
-      { id: 260, name: 'Filtros', product_count: 129, subcategory_count: 7 }
-    ];
+    // NO USAR DATOS DE PRUEBA - Lanzar error para manejo correcto
+    throw new Error(`Error conectando con la API de productos: ${error.message}`);
   }
 };
 
 /**
  * Obtiene las subcategorías de una categoría
+ * IMPORTANTE: SIN DATOS QUEMADOS - TODO DINÁMICO desde la API
  */
 const getSubCategories = async (categoryId) => {
   try {
-    const response = await axios.get(`${ECOMMERCE_API_URL}/catalog/sub-categorias/?category=${categoryId}`);
-    console.log(`📂 Subcategorías obtenidas para categoría ${categoryId}: ${response.data.length}`);
-    return response.data;
+    const url = `${ECOMMERCE_API_URL}/catalog/sub-categorias/?category=${categoryId}`;
+    console.log(`🔍 Consultando subcategorías: ${url}`);
+
+    const response = await axios.get(url, {
+      timeout: 10000,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'WhatsApp-Bot/1.0'
+      }
+    });
+
+    console.log(`✅ Subcategorías obtenidas para categoría ${categoryId}: ${response.data.length}`);
+    return response.data; // Puede ser array vacío si no hay subcategorías
+
   } catch (error) {
-    console.error('Error obteniendo subcategorías:', error.message);
-    return [];
+    console.error('❌ ERROR obteniendo subcategorías:', {
+      categoryId,
+      message: error.message,
+      code: error.code,
+      response: error.response?.status,
+      data: error.response?.data,
+      url: `${ECOMMERCE_API_URL}/catalog/sub-categorias/?category=${categoryId}`
+    });
+
+    // NO devolver datos de prueba - Lanzar error
+    throw new Error(`Error obteniendo subcategorías: ${error.message}`);
   }
 };
 
 /**
  * Obtiene los productos de una categoría o subcategoría
+ * IMPORTANTE: SIN DATOS QUEMADOS - TODO DINÁMICO desde la API
  */
 const getProducts = async (subcategoryId) => {
   try {
     const url = `${ECOMMERCE_API_URL}/products/products/?subcategory=${subcategoryId}`;
-    
-    const response = await axios.get(url);
-    console.log(`🔧 Productos obtenidos para subcategoría ${subcategoryId}: ${response.data.results?.length || response.data.length || 0}`);
-    
+    console.log(`🔍 Consultando productos: ${url}`);
+
+    const response = await axios.get(url, {
+      timeout: 15000, // 15 segundos para productos (puede ser más pesado)
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'WhatsApp-Bot/1.0'
+      }
+    });
+
     // La API puede devolver {results: [...]} o directamente [...]
-    return response.data.results || response.data;
+    const products = response.data.results || response.data;
+
+    console.log(`✅ Productos obtenidos para subcategoría ${subcategoryId}: ${products.length}`);
+
+    return products; // Puede ser array vacío si no hay productos
+
   } catch (error) {
-    console.error('Error obteniendo productos:', error.message);
-    return [];
+    console.error('❌ ERROR obteniendo productos:', {
+      subcategoryId,
+      message: error.message,
+      code: error.code,
+      response: error.response?.status,
+      data: error.response?.data,
+      url: `${ECOMMERCE_API_URL}/products/products/?subcategory=${subcategoryId}`
+    });
+
+    // NO devolver datos de prueba - Lanzar error
+    throw new Error(`Error obteniendo productos: ${error.message}`);
   }
 };
 
