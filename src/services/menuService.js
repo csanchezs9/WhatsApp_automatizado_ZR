@@ -1441,15 +1441,31 @@ const showProducts = async (userPhone, subcategoryId) => {
       mensaje += `https://zonarepuestera.com.co/products/`;
     }
 
-    // Combinar mensaje de productos con botones
-    mensaje += '\n\nEstoy atento si necesitas más información o ayuda 😊';
+    // WhatsApp limita mensajes con botones a 1024 caracteres
+    // Si el mensaje es muy largo, dividir en 2: texto + botones
+    const MAX_BUTTON_MESSAGE_LENGTH = 1000; // Margen de seguridad
 
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' },
       { id: 'menu_catalogo', title: '📚 Ver catálogo' }
     ];
 
-    await sendInteractiveButtons(userPhone, mensaje, buttons);
+    if (mensaje.length > MAX_BUTTON_MESSAGE_LENGTH) {
+      // Mensaje largo: dividir en 2
+      console.log(`⚠️ Mensaje largo (${mensaje.length} chars) - Dividiendo en 2 mensajes`);
+
+      // 1. Enviar productos sin botones
+      await sendTextMessage(userPhone, mensaje);
+
+      // 2. Enviar botones en mensaje corto separado
+      const shortMessage = 'Estoy atento si necesitas más información o ayuda 😊';
+      await sendInteractiveButtons(userPhone, shortMessage, buttons);
+    } else {
+      // Mensaje corto: enviar todo junto
+      mensaje += '\n\nEstoy atento si necesitas más información o ayuda 😊';
+      await sendInteractiveButtons(userPhone, mensaje, buttons);
+    }
+
     // Mantener estado PRODUCT_LIST para permitir selección por número
     
   } catch (error) {
