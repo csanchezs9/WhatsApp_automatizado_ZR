@@ -2710,10 +2710,10 @@ function renderQuickResponsesList() {
             </div>
             <div class="quick-response-item-actions">
                 <button class="label-edit-btn" onclick="editQuickResponse(${qr.id}, '${escapeHtml(qr.title)}', '${escapeHtml(qr.content)}')">
-                    Editar
+                    ✏️ Editar
                 </button>
                 <button class="label-delete-btn" onclick="deleteQuickResponse(${qr.id}, '${escapeHtml(qr.title)}')">
-                    Eliminar
+                    🗑️ Eliminar
                 </button>
             </div>
         </div>

@@ -3173,6 +3173,52 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
     flex-shrink: 0;
 }
 
+/* Botones de respuestas rápidas (más profesionales) */
+.quick-response-item-actions button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.quick-response-item-actions .label-edit-btn {
+    background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
+}
+
+.quick-response-item-actions .label-edit-btn:hover {
+    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
+.quick-response-item-actions .label-edit-btn:active {
+    transform: translateY(0);
+}
+
+.quick-response-item-actions .label-delete-btn {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.quick-response-item-actions .label-delete-btn:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+.quick-response-item-actions .label-delete-btn:active {
+    transform: translateY(0);
+}
+
 /* Vista previa del mensaje */
 .preview-container {
     margin-top: 20px;
@@ -3279,6 +3325,37 @@ body.dark-mode .message-audio-player::-webkit-media-controls-time-remaining-disp
     font-weight: 600;
     color: var(--text-primary);
     background: transparent;
+}
+
+/* Inputs del formulario de respuestas rápidas */
+.form-container .form-input {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.form-container .form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: var(--bg-secondary);
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.form-container .form-input::placeholder {
+    color: var(--text-tertiary);
+    opacity: 0.7;
+}
+
+.form-container .form-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: var(--bg-primary);
 }
 
 /* Textarea para contenido */
