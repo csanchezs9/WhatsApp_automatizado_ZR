@@ -12,18 +12,19 @@ const getCategories = async () => {
     return response.data;
   } catch (error) {
     console.error('Error obteniendo categorías:', error.message);
-    
-    // Datos de prueba si falla la conexión
-    console.log('⚠️ Usando datos de prueba');
+
+    // Datos de prueba con IDs REALES de la API (actualizados 2025)
+    console.log('⚠️ Usando datos de prueba con IDs reales');
     return [
-      { id: 1, name: 'Motor', product_count: 18, subcategory_count: 3 },
-      { id: 2, name: 'Sistema de refrigeración', product_count: 10, subcategory_count: 2 },
-      { id: 3, name: 'Caja', product_count: 6, subcategory_count: 4 },
-      { id: 4, name: 'Embrague', product_count: 6, subcategory_count: 2 },
-      { id: 5, name: 'Suspensión', product_count: 16, subcategory_count: 3 },
-      { id: 6, name: 'Frenos', product_count: 7, subcategory_count: 2 },
-      { id: 7, name: 'Eléctricos', product_count: 13, subcategory_count: 5 },
-      { id: 8, name: 'Carrocería', product_count: 6, subcategory_count: 3 }
+      { id: 262, name: 'Motor', product_count: 719, subcategory_count: 18 },
+      { id: 263, name: 'Sistema de refrigeración', product_count: 205, subcategory_count: 10 },
+      { id: 256, name: 'Caja', product_count: 40, subcategory_count: 6 },
+      { id: 259, name: 'Embrague', product_count: 52, subcategory_count: 6 },
+      { id: 264, name: 'Suspensión', product_count: 991, subcategory_count: 16 },
+      { id: 261, name: 'Frenos', product_count: 193, subcategory_count: 7 },
+      { id: 258, name: 'Eléctricos', product_count: 131, subcategory_count: 13 },
+      { id: 257, name: 'Carrocería', product_count: 29, subcategory_count: 6 },
+      { id: 260, name: 'Filtros', product_count: 129, subcategory_count: 7 }
     ];
   }
 };
