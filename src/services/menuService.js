@@ -2016,6 +2016,7 @@ module.exports = {
   showMainMenu,
   isUserWithAdvisor,
   deactivateAdvisorMode,
+  activateAdvisorMode,  // Exportar para activar desde webhook cuando envíe imagen
   markAdvisorResponse,  // Exportar para que el panel la pueda usar
   updateLastActivity,  // Exportar para que el webhook la pueda usar
   getUserSession: (userPhone) => userSessions[userPhone]  // Exportar para verificar estado

@@ -1,5 +1,5 @@
 const { sendWhatsAppMessage } = require('../services/whatsappService');
-const { handleMenuSelection, updateLastActivity, isUserWithAdvisor } = require('../services/menuService');
+const { handleMenuSelection, updateLastActivity, isUserWithAdvisor, activateAdvisorMode } = require('../services/menuService');
 const { processMediaMessage } = require('../services/mediaService');
 const { addMessage } = require('../services/conversationService');
 
@@ -94,13 +94,41 @@ const handleIncomingMessage = async (req, res) => {
             await handleMenuSelection(from, interactiveResponse.list_reply.id);
           }
         } else if (['image', 'document', 'audio'].includes(messageType)) {
-          // Procesar archivos multimedia soportados (solo cuando está con asesor)
+          // Procesar archivos multimedia soportados
           const isWithAdvisor = isUserWithAdvisor(from);
+          const { getUserSession } = require('../services/menuService');
+          const userSession = getUserSession(from);
+          const userState = userSession?.state;
 
-          if (isWithAdvisor) {
+          // Verificar si está esperando enviar consulta al asesor
+          const isWaitingAdvisorQuery = ['WAITING_ADVISOR_QUERY', 'WAITING_WARRANTY_REQUEST', 'WAITING_QUOTE_DATA_FOR_ADVISOR'].includes(userState);
+
+          if (isWithAdvisor || isWaitingAdvisorQuery) {
             try {
               console.log(`📎 Procesando ${messageType} de ${from}`);
               const mediaInfo = await processMediaMessage(message);
+
+              // Si está esperando enviar consulta, activar modo asesor primero
+              if (isWaitingAdvisorQuery && !isWithAdvisor) {
+                console.log(`🔄 Usuario ${from} enviando imagen como consulta al asesor`);
+
+                // Determinar tipo de consulta según el estado
+                let consultationType = 'general';
+                if (userState === 'WAITING_WARRANTY_REQUEST') {
+                  consultationType = 'garantia';
+                } else if (userState === 'WAITING_QUOTE_DATA_FOR_ADVISOR') {
+                  consultationType = 'cotizacion';
+                }
+
+                // Usar el caption de la imagen como consulta, o texto por defecto
+                const queryText = mediaInfo.caption || '[El cliente envió una imagen]';
+
+                // Activar modo asesor con tipo de consulta específico
+                await activateAdvisorMode(from, queryText, consultationType);
+
+                // Pequeña pausa para asegurar que el modo asesor se active
+                await new Promise(resolve => setTimeout(resolve, 100));
+              }
 
               // Guardar mensaje multimedia en conversación
               addMessage(from, {
@@ -118,8 +146,7 @@ const handleIncomingMessage = async (req, res) => {
               // Emitir por socket al panel
               const io = req.app.get('io');
               if (io) {
-                const { getUserSession } = require('../services/menuService');
-                const userSession = getUserSession(from);
+                const updatedSession = getUserSession(from);
 
                 io.emit('new_message', {
                   phoneNumber: from,
@@ -132,8 +159,8 @@ const handleIncomingMessage = async (req, res) => {
                     filename: mediaInfo.filename,
                     timestamp: new Date()
                   },
-                  isWithAdvisor: isWithAdvisor,
-                  userState: userSession?.state
+                  isWithAdvisor: true,
+                  userState: updatedSession?.state
                 });
               }
             } catch (error) {
