@@ -286,8 +286,9 @@ const isUserWithAdvisor = (userPhone) => {
 /**
  * Activa el modo asesor para un usuario
  * @param {string} consultationType - Tipo de consulta: 'cotizacion', 'garantia', 'general'
+ * @param {boolean} skipInitialMessage - Si es true, no guarda el mensaje inicial (usado cuando se envía imagen)
  */
-const activateAdvisorMode = async (userPhone, userQuery = '', consultationType = 'general') => {
+const activateAdvisorMode = async (userPhone, userQuery = '', consultationType = 'general', skipInitialMessage = false) => {
   // Verificar si estamos dentro del horario de atención
   if (!isWithinBusinessHours()) {
     const outOfHoursMessage = `⏰ *FUERA DE HORARIO DE ATENCIÓN*\n\n` +
@@ -351,12 +352,17 @@ const activateAdvisorMode = async (userPhone, userQuery = '', consultationType =
   });
 
   // CREAR conversación en el panel con la consulta inicial
-  conversationService.addMessage(userPhone, {
-    from: 'client',
-    text: userQuery,
-    type: 'text'
-  });
-  console.log(`💾 Conversación creada en panel para ${userPhone} con tipo: ${consultaType}`);
+  // SOLO si no se debe saltar (skipInitialMessage se usa cuando envía imagen)
+  if (!skipInitialMessage) {
+    conversationService.addMessage(userPhone, {
+      from: 'client',
+      text: userQuery,
+      type: 'text'
+    });
+    console.log(`💾 Conversación creada en panel para ${userPhone} con tipo: ${consultaType}`);
+  } else {
+    console.log(`💾 Conversación creada en panel para ${userPhone} con tipo: ${consultaType} (sin mensaje inicial, se enviará multimedia)`);
+  }
 
   // Cambiar estado de la sesión para que no procese más mensajes como nueva consulta
   if (userSessions[userPhone]) {

@@ -124,7 +124,8 @@ const handleIncomingMessage = async (req, res) => {
                 const queryText = mediaInfo.caption || '[El cliente envió una imagen]';
 
                 // Activar modo asesor con tipo de consulta específico
-                await activateAdvisorMode(from, queryText, consultationType);
+                // skipInitialMessage=true para evitar duplicar el mensaje (la imagen ya tiene caption)
+                await activateAdvisorMode(from, queryText, consultationType, true);
 
                 // Pequeña pausa para asegurar que el modo asesor se active
                 await new Promise(resolve => setTimeout(resolve, 100));
