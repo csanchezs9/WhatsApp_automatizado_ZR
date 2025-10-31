@@ -6,6 +6,7 @@ const menuService = require('../services/menuService');
 const mediaService = require('../services/mediaService');
 const audioConverter = require('../services/audioConverter');
 const rateLimitMonitor = require('../services/rateLimitMonitor');
+const quickResponseService = require('../services/quickResponseService');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -906,6 +907,102 @@ router.get('/rate-limit-stats', authMiddleware, (req, res) => {
     } catch (error) {
         console.error('Error al obtener estadísticas de rate limit:', error);
         res.status(500).json({ error: 'Error al obtener estadísticas' });
+    }
+});
+
+// ============================================================================
+// RUTAS DE RESPUESTAS RÁPIDAS
+// ============================================================================
+
+/**
+ * Obtener todas las respuestas rápidas
+ */
+router.get('/quick-responses', async (req, res) => {
+    try {
+        const responses = await quickResponseService.getAllQuickResponses();
+        res.json({
+            success: true,
+            responses
+        });
+    } catch (error) {
+        console.error('Error al obtener respuestas rápidas:', error);
+        res.status(500).json({ error: 'Error al obtener respuestas rápidas' });
+    }
+});
+
+/**
+ * Crear una nueva respuesta rápida
+ */
+router.post('/quick-responses', async (req, res) => {
+    try {
+        const { title, content } = req.body;
+
+        if (!title || !content) {
+            return res.status(400).json({ error: 'Título y contenido son requeridos' });
+        }
+
+        const response = await quickResponseService.createQuickResponse(title, content);
+        res.json({
+            success: true,
+            response
+        });
+    } catch (error) {
+        console.error('Error al crear respuesta rápida:', error);
+        if (error.message.includes('Ya existe')) {
+            res.status(409).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Error al crear respuesta rápida' });
+        }
+    }
+});
+
+/**
+ * Actualizar una respuesta rápida
+ */
+router.put('/quick-responses/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, content } = req.body;
+
+        if (!title || !content) {
+            return res.status(400).json({ error: 'Título y contenido son requeridos' });
+        }
+
+        const response = await quickResponseService.updateQuickResponse(parseInt(id), title, content);
+        res.json({
+            success: true,
+            response
+        });
+    } catch (error) {
+        console.error('Error al actualizar respuesta rápida:', error);
+        if (error.message.includes('no encontrada')) {
+            res.status(404).json({ error: error.message });
+        } else if (error.message.includes('Ya existe')) {
+            res.status(409).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Error al actualizar respuesta rápida' });
+        }
+    }
+});
+
+/**
+ * Eliminar una respuesta rápida
+ */
+router.delete('/quick-responses/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await quickResponseService.deleteQuickResponse(parseInt(id));
+        res.json({
+            success: true,
+            message: 'Respuesta rápida eliminada'
+        });
+    } catch (error) {
+        console.error('Error al eliminar respuesta rápida:', error);
+        if (error.message.includes('no encontrada')) {
+            res.status(404).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Error al eliminar respuesta rápida' });
+        }
     }
 });
 

@@ -123,6 +123,9 @@
                         <button class="dropdown-item" onclick="openLabelsModal()">
                             🏷️ Gestionar Etiquetas
                         </button>
+                        <button class="dropdown-item" onclick="openQuickResponsesModal()">
+                            ⚡ Gestionar Respuestas Rápidas
+                        </button>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-item theme-toggle-item">
                             <span id="theme-label" class="theme-label">Dark</span>
@@ -172,6 +175,11 @@
                                 <span class="btn-icon">🏷️</span>
                                 <span class="btn-text-full">Etiquetas</span>
                                 <span class="btn-text-short">Etiquetas</span>
+                            </button>
+                            <button id="quick-response-btn" class="action-btn quick-response">
+                                <span class="btn-icon">⚡</span>
+                                <span class="btn-text-full">Respuesta Rápida</span>
+                                <span class="btn-text-short">Respuesta</span>
                             </button>
                             <button id="finalize-btn" class="action-btn success">
                                 <span class="btn-icon">✓</span>
@@ -468,6 +476,90 @@
                         <div id="labels-list" class="labels-list">
                             <p class="empty-message">No hay etiquetas creadas aún.</p>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de gestión de respuestas rápidas -->
+        <div id="quick-responses-modal" class="modal">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h2>⚡ Gestionar Respuestas Rápidas</h2>
+                    <button class="close-modal" onclick="closeQuickResponsesModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-description">
+                        Crea respuestas predefinidas para responder rápidamente a tus clientes.
+                    </p>
+
+                    <!-- Formulario para crear/editar respuesta rápida -->
+                    <div class="form-container">
+                        <h3 id="quick-response-form-title">Nueva Respuesta Rápida</h3>
+                        <form id="quick-response-form" onsubmit="handleQuickResponseSubmit(event)">
+                            <input type="hidden" id="quick-response-edit-id">
+
+                            <div class="form-group">
+                                <label for="quick-response-title">Título de la respuesta <span class="required">*</span></label>
+                                <input
+                                    type="text"
+                                    id="quick-response-title"
+                                    name="title"
+                                    class="form-input"
+                                    placeholder="Ej: Despedida, Saludo, Horarios"
+                                    maxlength="50"
+                                    required>
+                                <small class="form-hint">Nombre corto que identifica esta respuesta.</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="quick-response-content">Contenido del mensaje <span class="required">*</span></label>
+                                <textarea
+                                    id="quick-response-content"
+                                    name="content"
+                                    class="form-input"
+                                    placeholder="Ej: ¡Gracias por escribirnos! Que tengas un excelente día 😊"
+                                    rows="5"
+                                    maxlength="1000"
+                                    required></textarea>
+                                <small class="form-hint">El texto que se enviará al cliente.</small>
+                            </div>
+
+                            <div class="preview-container">
+                                <h4>Vista Previa</h4>
+                                <div id="quick-response-preview" class="message-preview">
+                                    <p class="empty-message">Escribe el contenido para ver la vista previa</p>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" onclick="cancelQuickResponseForm()">Cancelar</button>
+                                <button type="submit" class="btn-primary" id="quick-response-submit-btn">Crear Respuesta</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Lista de respuestas rápidas existentes -->
+                    <div class="labels-list-container">
+                        <h3>Respuestas Rápidas Existentes</h3>
+                        <div id="quick-responses-list" class="quick-responses-list">
+                            <p class="empty-message">No hay respuestas rápidas creadas aún.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal selector de respuestas rápidas (en el chat) -->
+        <div id="quick-response-selector-modal" class="modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>⚡ Seleccionar Respuesta Rápida</h2>
+                    <button class="close-modal" onclick="closeQuickResponseSelectorModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div id="quick-response-selector-list" class="quick-response-selector-list">
+                        <p class="empty-message">No hay respuestas rápidas disponibles.</p>
                     </div>
                 </div>
             </div>

@@ -2595,3 +2595,295 @@ window.addEventListener('load', () => {
         showLoginScreen();
     }
 });
+
+// ============================================================================
+// RESPUESTAS RÁPIDAS
+// ============================================================================
+
+let allQuickResponses = [];
+
+/**
+ * Cargar respuestas rápidas desde el servidor
+ */
+async function loadQuickResponses() {
+    try {
+        const response = await fetch('/api/quick-responses', {
+            headers: {
+                'Authorization': `Basic ${currentAuth}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al cargar respuestas rápidas');
+        }
+
+        const data = await response.json();
+        allQuickResponses = data.responses || [];
+    } catch (error) {
+        console.error('Error al cargar respuestas rápidas:', error);
+        allQuickResponses = [];
+    }
+}
+
+/**
+ * Abrir modal de gestión de respuestas rápidas
+ */
+window.openQuickResponsesModal = async function() {
+    dropdownMenu.classList.remove('show');
+
+    await loadQuickResponses();
+    renderQuickResponsesList();
+
+    document.getElementById('quick-responses-modal').classList.add('show');
+};
+
+/**
+ * Cerrar modal de gestión de respuestas rápidas
+ */
+window.closeQuickResponsesModal = function() {
+    document.getElementById('quick-responses-modal').classList.remove('show');
+    cancelQuickResponseForm();
+};
+
+/**
+ * Renderizar lista de respuestas rápidas existentes
+ */
+function renderQuickResponsesList() {
+    const list = document.getElementById('quick-responses-list');
+
+    if (allQuickResponses.length === 0) {
+        list.innerHTML = '<p class="empty-message">No hay respuestas rápidas creadas aún.</p>';
+        return;
+    }
+
+    list.innerHTML = allQuickResponses.map(qr => `
+        <div class="quick-response-item">
+            <div class="quick-response-item-info">
+                <div class="quick-response-item-title">⚡ ${qr.title}</div>
+                <div class="quick-response-item-content">${qr.content.substring(0, 80)}${qr.content.length > 80 ? '...' : ''}</div>
+            </div>
+            <div class="quick-response-item-actions">
+                <button class="label-edit-btn" onclick="editQuickResponse(${qr.id}, '${escapeHtml(qr.title)}', '${escapeHtml(qr.content)}')">
+                    Editar
+                </button>
+                <button class="label-delete-btn" onclick="deleteQuickResponse(${qr.id}, '${escapeHtml(qr.title)}')">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+/**
+ * Escapar HTML para prevenir XSS
+ */
+function escapeHtml(text) {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+        .replace(/\n/g, '\\n');
+}
+
+/**
+ * Actualizar vista previa del contenido
+ */
+document.getElementById('quick-response-content')?.addEventListener('input', (e) => {
+    const content = e.target.value.trim();
+    const preview = document.getElementById('quick-response-preview');
+
+    if (content) {
+        preview.innerHTML = `<div class="preview-message">${content.replace(/\n/g, '<br>')}</div>`;
+    } else {
+        preview.innerHTML = '<p class="empty-message">Escribe el contenido para ver la vista previa</p>';
+    }
+});
+
+/**
+ * Manejar envío del formulario de respuestas rápidas
+ */
+window.handleQuickResponseSubmit = async function(e) {
+    e.preventDefault();
+
+    const title = document.getElementById('quick-response-title').value.trim();
+    const content = document.getElementById('quick-response-content').value.trim();
+    const editId = document.getElementById('quick-response-edit-id').value;
+
+    if (!title || !content) {
+        await showCustomAlert('Campos incompletos', 'Por favor completa todos los campos', 'Debes proporcionar un título y contenido para la respuesta rápida.', 'warning');
+        return;
+    }
+
+    try {
+        let response;
+
+        if (editId) {
+            // Editar respuesta rápida existente
+            response = await fetch(`/api/quick-responses/${editId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Basic ${currentAuth}`
+                },
+                body: JSON.stringify({ title, content })
+            });
+        } else {
+            // Crear nueva respuesta rápida
+            response = await fetch('/api/quick-responses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Basic ${currentAuth}`
+                },
+                body: JSON.stringify({ title, content })
+            });
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al guardar respuesta rápida');
+        }
+
+        await showCustomAlert('¡Éxito!', editId ? 'Respuesta actualizada' : 'Respuesta creada', 'Los cambios se han guardado correctamente.', 'success');
+
+        // Recargar lista
+        await loadQuickResponses();
+        renderQuickResponsesList();
+        cancelQuickResponseForm();
+    } catch (error) {
+        console.error('Error al guardar respuesta rápida:', error);
+        await showCustomAlert('Error', 'No se pudo guardar la respuesta rápida', error.message, 'error');
+    }
+};
+
+/**
+ * Cancelar formulario de respuesta rápida
+ */
+window.cancelQuickResponseForm = function() {
+    document.getElementById('quick-response-form').reset();
+    document.getElementById('quick-response-edit-id').value = '';
+    document.getElementById('quick-response-form-title').textContent = 'Nueva Respuesta Rápida';
+    document.getElementById('quick-response-submit-btn').textContent = 'Crear Respuesta';
+    document.getElementById('quick-response-preview').innerHTML = '<p class="empty-message">Escribe el contenido para ver la vista previa</p>';
+};
+
+/**
+ * Editar respuesta rápida existente
+ */
+window.editQuickResponse = function(id, title, content) {
+    // Decodificar entidades HTML
+    const decodedTitle = decodeHtml(title);
+    const decodedContent = decodeHtml(content);
+
+    document.getElementById('quick-response-edit-id').value = id;
+    document.getElementById('quick-response-title').value = decodedTitle;
+    document.getElementById('quick-response-content').value = decodedContent;
+    document.getElementById('quick-response-form-title').textContent = 'Editar Respuesta Rápida';
+    document.getElementById('quick-response-submit-btn').textContent = 'Actualizar Respuesta';
+
+    // Actualizar vista previa
+    document.getElementById('quick-response-preview').innerHTML = `<div class="preview-message">${decodedContent.replace(/\n/g, '<br>')}</div>`;
+
+    // Scroll al formulario
+    document.getElementById('quick-response-form').scrollIntoView({ behavior: 'smooth' });
+};
+
+/**
+ * Decodificar HTML entities
+ */
+function decodeHtml(html) {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = html;
+    return txt.value;
+}
+
+/**
+ * Eliminar respuesta rápida
+ */
+window.deleteQuickResponse = async function(id, title) {
+    const decodedTitle = decodeHtml(title);
+
+    const confirmed = await showConfirm(
+        '¿Eliminar respuesta rápida?',
+        `¿Estás seguro de que deseas eliminar "${decodedTitle}"?`,
+        'Esta acción no se puede deshacer.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`/api/quick-responses/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Basic ${currentAuth}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al eliminar respuesta rápida');
+        }
+
+        await showCustomAlert('¡Eliminada!', 'Respuesta rápida eliminada', 'La respuesta rápida se ha eliminado correctamente.', 'success');
+
+        // Recargar lista
+        await loadQuickResponses();
+        renderQuickResponsesList();
+    } catch (error) {
+        console.error('Error al eliminar respuesta rápida:', error);
+        await showCustomAlert('Error', 'No se pudo eliminar la respuesta rápida', error.message, 'error');
+    }
+};
+
+/**
+ * Abrir selector de respuestas rápidas en el chat
+ */
+window.openQuickResponseSelector = async function() {
+    await loadQuickResponses();
+
+    const list = document.getElementById('quick-response-selector-list');
+
+    if (allQuickResponses.length === 0) {
+        list.innerHTML = `
+            <p class="empty-message">No hay respuestas rápidas disponibles.</p>
+            <p class="empty-hint">Crea respuestas desde el menú: ⚙️ → ⚡ Gestionar Respuestas Rápidas</p>
+        `;
+    } else {
+        list.innerHTML = allQuickResponses.map(qr => `
+            <div class="quick-response-selector-item" onclick="selectQuickResponse('${escapeHtml(qr.content)}')">
+                <div class="quick-response-selector-title">⚡ ${qr.title}</div>
+                <div class="quick-response-selector-preview">${qr.content.substring(0, 60)}${qr.content.length > 60 ? '...' : ''}</div>
+            </div>
+        `).join('');
+    }
+
+    document.getElementById('quick-response-selector-modal').classList.add('show');
+};
+
+/**
+ * Cerrar selector de respuestas rápidas
+ */
+window.closeQuickResponseSelectorModal = function() {
+    document.getElementById('quick-response-selector-modal').classList.remove('show');
+};
+
+/**
+ * Seleccionar una respuesta rápida e insertarla en el textarea
+ */
+window.selectQuickResponse = function(content) {
+    const decodedContent = decodeHtml(content);
+    const textarea = document.getElementById('message-input');
+
+    // Insertar el texto en el textarea
+    textarea.value = decodedContent;
+
+    // Cerrar el modal
+    closeQuickResponseSelectorModal();
+
+    // Hacer foco en el textarea
+    textarea.focus();
+};
+
+// Event listener para el botón de respuestas rápidas en el chat
+document.getElementById('quick-response-btn')?.addEventListener('click', openQuickResponseSelector);
