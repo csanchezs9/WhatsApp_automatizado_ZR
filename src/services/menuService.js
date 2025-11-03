@@ -13,6 +13,7 @@ const {
 const conversationService = require('./conversationService');
 const fs = require('fs');
 const path = require('path');
+const holidaysColombia = require('festivos-colombianos').default;
 
 // Almacenamiento temporal de sesiones de usuario (en producción usa Redis o DB)
 const userSessions = {};
@@ -206,10 +207,28 @@ const normalizeText = (text) => {
 };
 
 /**
+ * Verifica si una fecha es festivo en Colombia
+ * @param {Date} date - Fecha a verificar
+ * @returns {boolean} - true si es festivo, false si no
+ */
+const isColombianaHoliday = (date) => {
+  const year = date.getFullYear();
+  const holidays = holidaysColombia(year);
+
+  // Formatear la fecha a verificar como YYYY-MM-DD
+  const pad = (num) => (num < 10 ? `0${num}` : `${num}`);
+  const dateString = `${year}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+
+  // Verificar si la fecha está en la lista de festivos
+  return holidays.some(holiday => holiday.holiday === dateString);
+};
+
+/**
  * Verifica si estamos dentro del horario de atención
  * Lunes a viernes: 8:00 AM - 4:30 PM
  * Sábados: 8:00 AM - 12:40 PM
  * Domingos: Cerrado
+ * Festivos: Cerrado
  * Zona horaria: Colombia (America/Bogota, UTC-5)
  */
 const isWithinBusinessHours = () => {
@@ -224,6 +243,11 @@ const isWithinBusinessHours = () => {
   const hour = colombiaDate.getHours();
   const minutes = colombiaDate.getMinutes();
   const currentTime = hour + minutes / 60;
+
+  // Verificar si es festivo en Colombia
+  if (isColombianaHoliday(colombiaDate)) {
+    return false;
+  }
 
   // Domingo = cerrado
   if (day === 0) {
@@ -278,7 +302,8 @@ const activateAdvisorMode = async (userPhone, userQuery = '', consultationType =
       `📅 *Nuestros horarios son:*\n` +
       `• Lunes a viernes: 8:00 AM - 4:30 PM\n` +
       `• Sábados: 8:00 AM - 12:40 PM\n` +
-      `• Domingos: Cerrado\n\n` +
+      `• Domingos: Cerrado\n` +
+      `• Festivos: Cerrado\n\n` +
       `💡 Puedes contactarnos en nuestros horarios o seguir explorando más opciones en nuestro menú automático.`;
 
     const buttons = [
@@ -544,7 +569,8 @@ const handleMenuSelection = async (userPhone, message) => {
           `📅 *Nuestros horarios son:*\n` +
           `• Lunes a viernes: 8:00 AM - 4:30 PM\n` +
           `• Sábados: 8:00 AM - 12:40 PM\n` +
-          `• Domingos: Cerrado\n\n` +
+          `• Domingos: Cerrado\n` +
+          `• Festivos: Cerrado\n\n` +
           `💡 Puedes contactarnos en nuestros horarios o seguir explorando más opciones en nuestro menú automático.`;
 
         const buttons = [
@@ -575,7 +601,8 @@ const handleMenuSelection = async (userPhone, message) => {
       const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
         `Lunes a Viernes: 8:00 AM - 4:30 PM\n` +
         `Sábados: 8:00 AM - 12:40 PM\n` +
-        `Domingos: Cerrado`;
+        `Domingos: Cerrado\n` +
+        `Festivos: Cerrado`;
       const buttons = [
         { id: 'volver_menu', title: '🏠 Volver al menú' }
       ];
@@ -1068,7 +1095,8 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
         `📅 *Nuestros horarios son:*\n` +
         `• Lunes a viernes: 8:00 AM - 4:30 PM\n` +
         `• Sábados: 8:00 AM - 12:40 PM\n` +
-        `• Domingos: Cerrado\n\n` +
+        `• Domingos: Cerrado\n` +
+        `• Festivos: Cerrado\n\n` +
         `💡 Puedes contactarnos en nuestros horarios o seguir explorando más opciones en nuestro menú automático.`;
 
       const buttons = [
@@ -1098,7 +1126,8 @@ const handleMainMenuSelection = async (userPhone, messageText) => {
     const mensaje = `🕒 *HORARIOS DE ATENCIÓN*\n\n` +
       `Lunes a Viernes: 8:00 AM - 4:30 PM\n` +
       `Sábados: 8:00 AM - 12:40 PM\n` +
-      `Domingos: Cerrado`;
+      `Domingos: Cerrado\n` +
+      `Festivos: Cerrado`;
 
     const buttons = [
       { id: 'volver_menu', title: '🏠 Volver al menú' }
