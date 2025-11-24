@@ -461,6 +461,17 @@ function showConversation(conversation) {
     const formattedPhone = formatPhoneNumber(conversation.phoneNumber);
     document.getElementById('chat-phone-number').textContent = formattedPhone;
 
+    // Formatear y mostrar fecha de última actividad
+    const dateInfoEl = document.getElementById('chat-date-info');
+    if (conversation.lastActivity) {
+        const lastActivityDate = new Date(conversation.lastActivity);
+        const formattedDate = formatDateForHeader(lastActivityDate);
+        dateInfoEl.textContent = `Última actividad: ${formattedDate}`;
+        dateInfoEl.style.display = 'inline-block';
+    } else {
+        dateInfoEl.style.display = 'none';
+    }
+
     messagesContainer.innerHTML = '';
     conversation.messages.forEach(msg => {
         addMessageToChat(msg);
@@ -1427,6 +1438,34 @@ function formatDate(date) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+function formatDateForHeader(date) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const timeStr = date.toLocaleTimeString('es-CO', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    if (targetDate.getTime() === today.getTime()) {
+        return `Hoy a las ${timeStr}`;
+    } else if (targetDate.getTime() === yesterday.getTime()) {
+        return `Ayer a las ${timeStr}`;
+    } else {
+        return date.toLocaleDateString('es-CO', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
 }
 
 /**
